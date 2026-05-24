@@ -1,9 +1,6 @@
 #ifndef _WHYCON_DEBUG_IMAGE_MANAGER_HPP_
 #define _WHYCON_DEBUG_IMAGE_MANAGER_HPP_
 
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>

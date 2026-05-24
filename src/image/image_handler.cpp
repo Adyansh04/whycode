@@ -131,7 +131,7 @@ void ImageHandler::binarizeSIMD(uint8_t threshold) {
     binary_packed_->binarizeBitPacked(aligned_gray_, threshold);
 }
 
-bool ImageHandler::updateFromROS(const sensor_msgs::Image::ConstPtr& ros_image) {
+bool ImageHandler::updateFromROS(const sensor_msgs::msg::Image::ConstSharedPtr& ros_image) {
     std::memcpy(data_, &ros_image->data[0], size_);
 
     // Store timestamp

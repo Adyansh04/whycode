@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(whycon_whycode_localization)
+
 option(DISABLE_ROS "Do not build for ROS, but as standalone code" OFF)
+option(BUILD_BENCHMARKS "Build benchmark executables" ON)
+option(BUILD_TOOLS "Build tool executables" OFF)
+option(BUILD_TRIANGULATION "Build triangulation nodes" OFF)
 
-# Build control options
-option(BUILD_BENCHMARKS "Build benchmark executables" ON) 
-option(BUILD_TOOLS "Build tool executables" ON)
-option(BUILD_TRIANGULATION "Build triangulation nodes" ON)
+if(DISABLE_ROS)
+  message(FATAL_ERROR "DISABLE_ROS=ON is not supported in this ROS2 port yet.")
+endif()
 
-#=============================================================================
-# Compiler Settings & Optimizations
-#=============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -17,99 +17,56 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # General optimization flags
 set(OPTIMIZATION_FLAGS -O3 -msse3 -mavx -mfma -ffast-math -flto=jobserver -march=native)
 
-# Standard developer warnings to catch potential issues
-# set(COMPILER_WARNINGS -Wall -Wextra -Wpedantic)
-
-# add_compile_options(-fopt-info-vec) # Uncomment for vectorization optimization info
-
 # Check for AVX2 support and add it conditionally
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG(-mavx2 COMPILER_SUPPORTS_AVX2)
+check_cxx_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
 if(COMPILER_SUPPORTS_AVX2)
   message(STATUS "Compiler supports AVX2, enabling it with -mavx2 flag.")
   set(OPTIMIZATION_FLAGS ${OPTIMIZATION_FLAGS} -mavx2)
 else()
-  message(WARNING "Your compiler does not support AVX2. The AVX2-optimized code will not compile.")
+  message(WARNING "Compiler does not support AVX2. The AVX2-optimized code will not compile.")
 endif()
 
-#=============================================================================
-# Find ROS & System Dependencies
-#=============================================================================
-if(NOT DISABLE_ROS)
-  # Find required ROS components
-  find_package(catkin REQUIRED COMPONENTS
-    cv_bridge
-    geometry_msgs
-    image_transport
-    message_generation
-    nodelet
-    pluginlib
-    rosbag
-    roscpp
-    std_msgs
-    sensor_msgs
-    tf
-    visualization_msgs
-  )
-endif()
+# ROS2 dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
-# Find required system libraries
+# System dependencies
 find_package(OpenCV REQUIRED)
 message(STATUS "Using OpenCV version ${OpenCV_VERSION}")
 find_package(yaml-cpp REQUIRED)
-
+find_package(iceoryx_posh REQUIRED)
 
 # Find the Simd library for accelerated image processing
 find_path(SIMD_INCLUDE_DIR Simd/SimdLib.hpp)
 find_library(SIMD_LIBRARY NAMES Simd)
 if(NOT SIMD_INCLUDE_DIR OR NOT SIMD_LIBRARY)
-  message(FATAL_ERROR "Simd Library not found. Please ensure it is installed correctly (e.g., in /usr/local).")
+  message(FATAL_ERROR "Simd library not found. Please ensure it is installed correctly (e.g., in /usr/local).")
 else()
-  message(STATUS "Found Simd Library: ${SIMD_LIBRARY}")
+  message(STATUS "Found Simd library: ${SIMD_LIBRARY}")
 endif()
 
 include_directories(/usr/include/eigen3)
 
-# Iceoryx Shared Memory 
-find_package(iceoryx_posh REQUIRED)
-
-#=============================================================================
-# Custom Message Generation
-#=============================================================================
-if(NOT DISABLE_ROS)
-  add_message_files(
-    FILES
-    WhyCodePose.msg
-    WhyCodePoseArray.msg
-  )
-
-  generate_messages(
-    DEPENDENCIES
-    std_msgs
-    geometry_msgs
-  )
-endif()
-#=============================================================================
-# Catkin Package Configuration
-#=============================================================================
-if(NOT DISABLE_ROS)
-  catkin_package(
-    INCLUDE_DIRS include
-    LIBRARIES ${PROJECT_NAME}
-    CATKIN_DEPENDS roscpp std_msgs sensor_msgs geometry_msgs message_runtime nodelet pluginlib visualization_msgs
-  )
-endif()
-
-#=============================================================================
-# Build Targets (Core Library & Main Executable)
-#=============================================================================
-# Add public include directory for all targets in this project
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
+# ROS2 custom message generation
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/WhyCodePose.msg"
+  "msg/WhyCodePoseArray.msg"
+  DEPENDENCIES std_msgs geometry_msgs
 )
 
-#--- WhyCon Core Library (no ROS) ---
+# WhyCon Core Library (algorithmic core + image pipeline)
 add_library(whycon_core SHARED
   src/core/CNecklace.cpp
   src/utils/coord_lut.cpp
@@ -133,56 +90,51 @@ target_include_directories(whycon_core PUBLIC
   ${YAML_CPP_INCLUDE_DIR}
 )
 
-target_compile_options(whycon_core PRIVATE ${OPTIMIZATION_FLAGS} ${COMPILER_WARNINGS})
+target_compile_options(whycon_core PRIVATE ${OPTIMIZATION_FLAGS})
 
 target_link_libraries(whycon_core
-  PUBLIC
+  # PUBLIC
   ${OpenCV_LIBS}
   ${YAML_CPP_LIBRARIES}
   ${SIMD_LIBRARY}
-  ${catkin_LIBRARIES}
   iceoryx_posh::iceoryx_posh
 )
 
-if(NOT DISABLE_ROS)
-  #--- WhyCon ROS Nodelet ---
-  add_library(whycon_ros_nodelet SHARED
-    src/ros/whycon_ros_interface.cpp
-    src/ros/whycon_nodelet.cpp
-  )
+ament_target_dependencies(whycon_core
+  sensor_msgs
+)
 
-  target_compile_options(whycon_ros_nodelet PRIVATE ${OPTIMIZATION_FLAGS} ${COMPILER_WARNINGS})
+# WhyCon ROS2 node
+add_executable(whycon
+  src/ros/whycon_localization_node.cpp
+  src/ros/whycon_ros_interface.cpp
+)
 
-  target_link_libraries(whycon_ros_nodelet 
-    whycon_core 
-    ${catkin_LIBRARIES}
-  )
+target_compile_options(whycon PRIVATE ${OPTIMIZATION_FLAGS})
 
-  #--- WhyCon ROS Node ---
-  add_executable(whycon_localization_node
-    src/ros/whycon_localization_node.cpp
-  )
+target_link_libraries(whycon
+  whycon_core
+)
 
-  set_target_properties(whycon_localization_node PROPERTIES OUTPUT_NAME whycon)
+ament_target_dependencies(whycon
+  ament_index_cpp
+  rclcpp
+  cv_bridge
+  image_transport
+  sensor_msgs
+  std_msgs
+  std_srvs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+)
 
-  target_compile_options(whycon_localization_node PRIVATE ${OPTIMIZATION_FLAGS} ${COMPILER_WARNINGS})
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(whycon "${cpp_typesupport_target}")
 
-  target_link_libraries(whycon_localization_node
-    whycon_core
-    whycon_ros_nodelet
-    ${catkin_LIBRARIES}
-    ${cv_bridge_LIBRARIES}
-  )
-
-  # Add dependency to ensure messages are generated before the node is built
-  add_dependencies(whycon_localization_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-endif()
-
-#=============================================================================
 # WhyCode Marker Generator Tool
-#=============================================================================
-add_executable(whycode_gen 
+add_executable(whycode_gen
   src/tools/whycode_gen.cpp
   src/core/CNecklace.cpp
 )
@@ -199,57 +151,43 @@ target_link_libraries(whycode_gen
   ${CMAKE_MATH_LIBS}
 )
 
-#=============================================================================
-# Optional Subdirectories
-#=============================================================================
-
-# Tools directory (cameras, bag processing, etc.)
-if(BUILD_TOOLS AND NOT DISABLE_ROS)
-  add_subdirectory(src/tools)
+# Optional subdirectories
+if(BUILD_TOOLS)
+  message(WARNING "BUILD_TOOLS is ON, but ROS2 port for src/tools is not completed yet. Skipping tools build.")
 endif()
 
-# Triangulation nodes
-if(BUILD_TRIANGULATION AND NOT DISABLE_ROS)
-  add_subdirectory(src/triangulate)
+if(BUILD_TRIANGULATION)
+  message(WARNING "BUILD_TRIANGULATION is ON, but ROS2 port for src/triangulate is not completed yet. Skipping triangulation build.")
 endif()
 
-# Benchmark executables
 if(BUILD_BENCHMARKS)
   add_subdirectory(src/benchmarks)
 endif()
 
-#=============================================================================
-# Installation Rules
-#=============================================================================
-if(NOT DISABLE_ROS)
-  install(TARGETS whycon_core whycon_ros_nodelet whycon_localization_node
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
-
-  install(FILES nodelet_plugins.xml
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-  )
-
-  install(DIRECTORY launch/
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  )
-
-  install(DIRECTORY config/
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
-    FILES_MATCHING PATTERN "*.yaml"
-  )
-
-  install(DIRECTORY include/
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  )
-endif()
-
-# Install the marker generator tool
-install(TARGETS whycode_gen
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# Install
+install(TARGETS whycon_core whycode_gen whycon
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+install(DIRECTORY include/
+  DESTINATION include
+)
 
+install(DIRECTORY config launch
+  DESTINATION share/${PROJECT_NAME}
+)
 
+# Export and package
+ament_export_include_directories(include)
+ament_export_libraries(whycon_core)
+ament_export_dependencies(
+  rclcpp
+  sensor_msgs
+  std_msgs
+  geometry_msgs
+  rosidl_default_runtime
+)
+
+ament_package()

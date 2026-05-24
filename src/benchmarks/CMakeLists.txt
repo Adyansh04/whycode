@@ -22,7 +22,7 @@ set(BENCHMARK_LIBRARIES
 set(BENCHMARK_COMPILE_OPTIONS 
   ${OPTIMIZATION_FLAGS} 
   -DNDEBUG
-  -include xsimd/config/xsimd_inline.hpp  # Force include inline definitions first
+  # -include xsimd/config/xsimd_inline.hpp  # Force include inline definitions first
 )
 
 #=============================================================================

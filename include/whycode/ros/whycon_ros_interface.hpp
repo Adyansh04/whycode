@@ -1,17 +1,17 @@
 #ifndef WHYCON_ROS_INTERFACE_HPP
 #define WHYCON_ROS_INTERFACE_HPP
 
-#include <cv_bridge/cv_bridge.h>
-#include <geometry_msgs/PoseArray.h>
-#include <image_transport/image_transport.h>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <std_srvs/SetBool.h>
-#include <tf/transform_broadcaster.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <whycon_whycode_localization/WhyCodePose.h>
-#include <whycon_whycode_localization/WhyCodePoseArray.h>
+#include <cv_bridge/cv_bridge.hpp>
+#include <image_transport/image_transport.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/header.hpp>
+#include <std_srvs/srv/set_bool.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <whycon_whycode_localization/msg/why_code_pose.hpp>
+#include <whycon_whycode_localization/msg/why_code_pose_array.hpp>
 
 #include <memory>
 #include <sstream>
@@ -29,26 +29,27 @@ namespace whycon {
 
 class WhyconRosInterface {
   public:
-    explicit WhyconRosInterface(ros::NodeHandle& n);
-
-    bool detectionControlCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+    explicit WhyconRosInterface(rclcpp::Node* node);
 
   private:
     // Helper methods for initialization and publishing
     void loadParameters();
     void setupROSTopics();
     void initializeWhyConModules();
-    void publishResults(const std_msgs::Header& header);
+    void publishResults(const std_msgs::msg::Header& header);
     void publishSingleTF(const whycon::LocalizationSystem::MarkerPose& pose, const int marker_index);
-    void publishVisualizationMarkers(const std_msgs::Header& header);
     void createMarkerVisualization(const whycon::LocalizationSystem::MarkerPose& pose, int marker_index,
-                                   const std_msgs::Header& header, visualization_msgs::Marker& marker);
+                                   const std_msgs::msg::Header& header, visualization_msgs::msg::Marker& marker);
 
     // Processing
-    void onRosImageReceived(const sensor_msgs::ImageConstPtr& image_msg);
+    void onRosImageReceived(const sensor_msgs::msg::Image::ConstSharedPtr image_msg);
     void onIceoryxImageReceived();
-    void processTimerCallback(const ros::TimerEvent& event);
+    void processTimerCallback();
     void processLatestFrame();
+    void detectionControlCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
+                                  std::shared_ptr<std_srvs::srv::SetBool::Response>      res);
+
+    rclcpp::Node* node_ = nullptr;
 
     // Core WhyCon components
     whycon::DetectorParameters                  parameters_;
@@ -60,30 +61,29 @@ class WhyconRosInterface {
     std::unique_ptr<DebugImageManager>          debug_manager_   = nullptr;
 
     // ROS-specific members
-    image_transport::ImageTransport           it_;
-    image_transport::Subscriber               image_sub_;
-    ros::ServiceServer                        detection_control_service_;
-    ros::Publisher                            image_pub_, poses_pub_, debug_images_pub_;
-    ros::Publisher                            whycode_pose_pub_;
-    ros::Publisher                            visualization_markers_pub_;
-    std::unique_ptr<tf::TransformBroadcaster> tf_broadcaster_;
-    ros::Timer                                process_timer_;
+    image_transport::Subscriber                                     image_sub_;
+    rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr             detection_control_service_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr          image_pub_, debug_images_pub_;
+    rclcpp::Publisher<whycon_whycode_localization::msg::WhyCodePoseArray>::SharedPtr whycode_pose_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualization_markers_pub_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster>                 tf_broadcaster_;
+    rclcpp::TimerBase::SharedPtr                                   process_timer_;
 
     // TF parameters
     std::string tf_frame_prefix_{};
     std::string parent_frame_id_{};
 
     // Reusable buffers
-    cv::Mat                                       output_image_buffer_;
-    whycon_whycode_localization::WhyCodePoseArray whycode_pose_array;
-    whycon::LocalizationSystem::MarkerPose        pose_buffer_;
-    whycon_whycode_localization::WhyCodePose      whycode_pose_msg_buffer_;
-    visualization_msgs::Marker                    marker_buffer_;
+    cv::Mat                                               output_image_buffer_;
+    whycon_whycode_localization::msg::WhyCodePoseArray   whycode_pose_array;
+    whycon::LocalizationSystem::MarkerPose                pose_buffer_;
+    whycon_whycode_localization::msg::WhyCodePose        whycode_pose_msg_buffer_;
+    visualization_msgs::msg::Marker                      marker_buffer_;
 
     std::ostringstream                           string_stream_buffer_;
     std::vector<whycon::MarkerDetector::Marker*> valid_detections_buffer_;
     std::vector<int>                             removed_ids_buffer_;
-    visualization_msgs::MarkerArray              marker_array_buffer_;
+    visualization_msgs::msg::MarkerArray         marker_array_buffer_;
 
     // Camera parameters
     cv::Mat camera_matrix_;
@@ -116,8 +116,8 @@ class WhyconRosInterface {
     bool new_frame_available_ = false;
 
     // Latest frame state
-    std_msgs::Header latest_header_;
-    ros::Time        latest_ros_timestamp_;
+    std_msgs::msg::Header latest_header_;
+    rclcpp::Time          latest_ros_timestamp_;
 
     // Proecessing rate
     double process_rate_hz_ = 30.0;

@@ -1,56 +1,32 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>whycon_whycode_localization</name>
   <version>0.0.0</version>
   <description>The whycon_whycode_localization package</description>
-  <maintainer email="root@todo.todo">root</maintainer>
-  <author email="gupta.adyansh@gmail.com">Adyansh Gupta</author>
+
+  <maintainer email="gupta.adyansh@gmail.com">Adyansh Gupta</maintainer>
   <license>TODO</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
 
-  <build_depend>message_generation</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>camera_info_manager</build_depend>
-  <build_depend>image_geometry</build_depend>
-  <build_depend>angles</build_depend>
-  <build_depend>std_srvs</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>yaml-cpp</build_depend>
-  <build_depend>pluginlib</build_depend>
+  <depend>ament_index_cpp</depend>
+  <depend>cv_bridge</depend>
+  <depend>geometry_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
 
-  <exec_depend>message_runtime</exec_depend>
-  <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>camera_info_manager</exec_depend>
-  <exec_depend>image_geometry</exec_depend>
-  <exec_depend>angles</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
-  <exec_depend>visualization_msgs</exec_depend>
-  <exec_depend>tf</exec_depend>
-  <exec_depend>nodelet</exec_depend>
-  <exec_depend>yaml-cpp</exec_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
 
-
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>image_transport</build_depend>
-  <build_depend>message_filters</build_depend>
-
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>image_transport</exec_depend>
-  <exec_depend>message_filters</exec_depend>
-  <exec_depend>pluginlib</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
   <export>
-    <nodelet plugin="${prefix}/nodelet_plugins.xml"/>
+    <build_type>ament_cmake</build_type>
   </export>
-
-
 </package>

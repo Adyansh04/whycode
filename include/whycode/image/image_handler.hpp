@@ -1,11 +1,15 @@
 #ifndef WHYCON_IMAGE_HANDLER_HPP
 #define WHYCON_IMAGE_HANDLER_HPP
 
-#include <sensor_msgs/Image.h>
+#include <builtin_interfaces/msg/time.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <sys/types.h>
 
+#include <functional>
 #include <memory>
 #include <opencv2/opencv.hpp>
+#include <string>
+#include <vector>
 
 #include "iceoryx_posh/popo/listener.hpp"
 #include "iceoryx_posh/popo/untyped_subscriber.hpp"
@@ -62,7 +66,7 @@ class ImageHandler {
      * @param ros_image ROS image message
      * @return true if successful, false on error
      */
-    bool updateFromROS(const sensor_msgs::Image::ConstPtr& ros_image);
+    bool updateFromROS(const sensor_msgs::msg::Image::ConstSharedPtr& ros_image);
 
     /**
      * @brief Set callback for Iceoryx mode
@@ -72,8 +76,8 @@ class ImageHandler {
     void setIceoryxCallback(IceoryxCallback callback);
 
     // Get latest timesetamp for publishing
-    ros::Time getLastRosTimestamp() const { return last_ros_timestamp_; }
-    int64_t   getLastIceoryxTimestamp() const { return last_iceoryx_timestamp_us_; }
+    const builtin_interfaces::msg::Time& getLastRosTimestamp() const { return last_ros_timestamp_; }
+    int64_t                               getLastIceoryxTimestamp() const { return last_iceoryx_timestamp_us_; }
 
     /**
      * @brief SIMD-optimized binarization with bit-packing (1 bit per pixel)
@@ -165,8 +169,8 @@ class ImageHandler {
     IceoryxCallback                               iceoryx_callback_;
 
     // Timestamp tracking
-    ros::Time last_ros_timestamp_;
-    int64_t   last_iceoryx_timestamp_us_ = 0;
+    builtin_interfaces::msg::Time last_ros_timestamp_;
+    int64_t                       last_iceoryx_timestamp_us_ = 0;
 
     // Static callback for Iceoryx listener
     static void onIceoryxSampleReceived(iox::popo::UntypedSubscriber* subscriber, ImageHandler* self);

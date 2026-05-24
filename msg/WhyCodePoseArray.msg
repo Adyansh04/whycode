@@ -1,5 +1,5 @@
 # Array of WhyCode marker poses
 
-Header header
+std_msgs/Header header
 int32 detected_marker_count
-WhyCodePose[] poses 
+WhyCodePose[] poses

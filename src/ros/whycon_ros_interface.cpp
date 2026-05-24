@@ -1,17 +1,26 @@
 #include "whycode/ros/whycon_ros_interface.hpp"
 
-#include <ros/package.h>
-#include <tf/tf.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <rmw/qos_profiles.h>
 #include <yaml-cpp/yaml.h>
 
+#include <chrono>
+#include <functional>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <stdexcept>
 
-#include "ros/forwards.h"
 #include "whycode/utils/coord_lut.hpp"
 #include "whycode/utils/whycon_config.h"
 
-whycon::WhyconRosInterface::WhyconRosInterface(ros::NodeHandle& n) : it_(n) {
+whycon::WhyconRosInterface::WhyconRosInterface(rclcpp::Node* node) : node_(node) {
+    if (node_ == nullptr) {
+        throw std::invalid_argument("WhyconRosInterface received null node pointer");
+    }
+
     // Load all parameters from the config file
     loadParameters();
 
@@ -31,34 +40,33 @@ whycon::WhyconRosInterface::WhyconRosInterface(ros::NodeHandle& n) : it_(n) {
 }
 
 void whycon::WhyconRosInterface::loadParameters() {
-    ros::NodeHandle private_nh("~");
-    ros::NodeHandle nh;  // Use global namespace
-
-    std::string config_file_path;
-    if (!private_nh.getParam("config_file", config_file_path)) {
-        // Fallback to the exact parameter name that's set in launch file
-        ROS_WARN("No config_file parameter specified in private namespace, checking global namespace.");
-        // Try to get the config_file parameter from the global namespace
-        bool found = nh.getParam("/whycon_nodelet/config_file", config_file_path);
-        if (found) {
-            ROS_WARN("Found config_file parameter in global namespace: %s", config_file_path.c_str());
-        } else {
-            // Default configuration file path
-            config_file_path = ros::package::getPath("whycon_whycode_localization") + "/config/whycon_config_rs.yaml";
-            ROS_WARN("No config_file parameter specified, using default: %s", config_file_path.c_str());
-        }
+    std::string default_config_file;
+    try {
+        default_config_file =
+                ament_index_cpp::get_package_share_directory("whycon_whycode_localization") + "/config/whycon_config_rs.yaml";
+    } catch (const std::exception& e) {
+        RCLCPP_FATAL(node_->get_logger(), "Failed to resolve package share directory for whycon_whycode_localization: %s",
+                     e.what());
+        rclcpp::shutdown();
+        return;
     }
+
+    std::string config_file_path = node_->declare_parameter<std::string>("config_file", default_config_file);
+    if (config_file_path.empty()) {
+        config_file_path = default_config_file;
+        RCLCPP_WARN(node_->get_logger(), "Empty config_file parameter, using default: %s", config_file_path.c_str());
+    }
+
     try {
         whycon::WhyConConfig::initialize(config_file_path);
     } catch (const std::exception& e) {
-        ROS_FATAL("Failed to initialize WhyCon configuration from %s: %s", config_file_path.c_str(), e.what());
-        ros::shutdown();
+        RCLCPP_FATAL(node_->get_logger(), "Failed to initialize WhyCon configuration from %s: %s", config_file_path.c_str(),
+                     e.what());
+        rclcpp::shutdown();
         return;
     }
 
     const auto& params = whycon::WhyConConfig::getParamLoader();
-
-    // Input source and processing rate
 
     // System parameters
     targets_                     = params.getParams<int>("system", "targets");
@@ -113,16 +121,26 @@ void whycon::WhyconRosInterface::loadParameters() {
     cam_height_ = params.getParams<int>("camera", "image_height");
     cam_width_  = params.getParams<int>("camera", "image_width");
 
-    auto        camera_package_name = params.getParams<std::string>("camera", "package_name");
-    auto        camera_config_path  = params.getParams<std::string>("camera", "config_path");
-    std::string camera_file_path    = ros::package::getPath(camera_package_name) + "/" + camera_config_path;
+    auto camera_package_name = params.getParams<std::string>("camera", "package_name");
+    auto camera_config_path  = params.getParams<std::string>("camera", "config_path");
+
+    std::string camera_file_path;
+    try {
+        camera_file_path = ament_index_cpp::get_package_share_directory(camera_package_name) + "/" + camera_config_path;
+    } catch (const std::exception& e) {
+        RCLCPP_FATAL(node_->get_logger(), "Failed to resolve package share directory for %s: %s", camera_package_name.c_str(),
+                     e.what());
+        rclcpp::shutdown();
+        return;
+    }
 
     if (params.loadCameraIntrinsics(camera_file_path, camera_matrix_, distortion_coeffs_)) {
         camera_params_loaded_ = true;
-        ROS_INFO("Camera parameters loaded successfully from: %s", camera_file_path.c_str());
+        RCLCPP_INFO(node_->get_logger(), "Camera parameters loaded successfully from: %s", camera_file_path.c_str());
     } else {
-        ROS_FATAL("Failed to load camera parameters from %s. Shutting down.", camera_file_path.c_str());
-        ros::shutdown();
+        RCLCPP_FATAL(node_->get_logger(), "Failed to load camera parameters from %s. Shutting down.",
+                     camera_file_path.c_str());
+        rclcpp::shutdown();
     }
 }
 
@@ -142,7 +160,7 @@ void whycon::WhyconRosInterface::initializeWhyConModules() {
                                                            distortion_coeffs_, parameters_);
 
     if (publish_tf_) {
-        tf_broadcaster_ = std::make_unique<tf::TransformBroadcaster>();
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*node_);
     }
 
     // Load Iceoryx parameters from config
@@ -169,82 +187,96 @@ void whycon::WhyconRosInterface::initializeWhyConModules() {
 }
 
 void whycon::WhyconRosInterface::setupROSTopics() {
-    ros::NodeHandle nh;
-    const auto&     params             = whycon::WhyConConfig::getParamLoader();
-    int             input_queue_size   = params.getParams<int>("ros_interface", "input_queue_size");
-    std::string     image_topic        = params.getParams<std::string>("ros_interface", "image_input_topic");
-    std::string     poses_topic        = params.getParams<std::string>("ros_interface", "poses_output_topic");
-    std::string     image_out_topic    = params.getParams<std::string>("ros_interface", "image_output_topic");
-    std::string     debug_images_topic = params.getParams<std::string>("ros_interface", "debug_images_topic");
-    std::string     visualization_markers_topic =
+    const auto& params             = whycon::WhyConConfig::getParamLoader();
+    int         input_queue_size   = params.getParams<int>("ros_interface", "input_queue_size");
+    std::string image_topic        = params.getParams<std::string>("ros_interface", "image_input_topic");
+    std::string poses_topic        = params.getParams<std::string>("ros_interface", "poses_output_topic");
+    std::string image_out_topic    = params.getParams<std::string>("ros_interface", "image_output_topic");
+    std::string debug_images_topic = params.getParams<std::string>("ros_interface", "debug_images_topic");
+    std::string visualization_markers_topic =
             params.getParams<std::string>("ros_interface", "visualization_markers_topic");
 
     std::string detection_enabled_service =
             params.getParams<std::string>("ros_interface", "detection_enabled_service_name");
 
     detection_control_service_ =
-            nh.advertiseService(detection_enabled_service, &WhyconRosInterface::detectionControlCallback, this);
+            node_->create_service<std_srvs::srv::SetBool>(detection_enabled_service,
+                                                          std::bind(&WhyconRosInterface::detectionControlCallback, this,
+                                                                    std::placeholders::_1, std::placeholders::_2));
 
-    process_timer_ =
-            nh.createTimer(ros::Duration(1.0 / process_rate_hz_), &WhyconRosInterface::processTimerCallback, this);
+    const auto period = std::chrono::duration<double>(1.0 / process_rate_hz_);
+    process_timer_    = node_->create_wall_timer(std::chrono::duration_cast<std::chrono::nanoseconds>(period),
+                                               std::bind(&WhyconRosInterface::processTimerCallback, this));
 
-    if (input_source_ == InputSource::ROS)
-        image_sub_ = it_.subscribe(image_topic, input_queue_size, &WhyconRosInterface::onRosImageReceived, this);
+    if (input_source_ == InputSource::ROS) {
+        rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
+        image_qos.depth             = static_cast<size_t>(input_queue_size);
+        image_sub_                  = image_transport::create_subscription(
+                node_, image_topic, std::bind(&WhyconRosInterface::onRosImageReceived, this, std::placeholders::_1), "raw",
+                image_qos);
+    }
 
-    if (publish_poses_)
-        whycode_pose_pub_ = nh.advertise<whycon_whycode_localization::WhyCodePoseArray>(poses_topic, 1);
+    if (publish_poses_) {
+        whycode_pose_pub_ = node_->create_publisher<whycon_whycode_localization::msg::WhyCodePoseArray>(poses_topic, 1);
+    }
 
-    if (publish_images_)
-        image_pub_ = nh.advertise<sensor_msgs::Image>(image_out_topic, 1);
+    if (publish_images_) {
+        image_pub_ = node_->create_publisher<sensor_msgs::msg::Image>(image_out_topic, 1);
+    }
 
-    if (publish_debug_images_)
-        debug_images_pub_ = nh.advertise<sensor_msgs::Image>(debug_images_topic, 1);
+    if (publish_debug_images_) {
+        debug_images_pub_ = node_->create_publisher<sensor_msgs::msg::Image>(debug_images_topic, 1);
+    }
 
     if (publish_visualization_markers_) {
-        visualization_markers_pub_ = nh.advertise<visualization_msgs::MarkerArray>(visualization_markers_topic, 1);
+        visualization_markers_pub_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>(
+                visualization_markers_topic, 1);
 
         // Pre-allocate marker array buffer
         marker_array_buffer_.markers.reserve(targets_);
     }
 }
 
-void whycon::WhyconRosInterface::onRosImageReceived(const sensor_msgs::ImageConstPtr& image_msg) {
-    if (!detection_enabled_ || !camera_params_loaded_)
+void whycon::WhyconRosInterface::onRosImageReceived(const sensor_msgs::msg::Image::ConstSharedPtr image_msg) {
+    if (!detection_enabled_ || !camera_params_loaded_) {
         return;
+    }
 
     // Update image handler
     if (!image_handler_->updateFromROS(image_msg)) {
-        ROS_ERROR("Failed to update image from ROS message");
+        RCLCPP_ERROR(node_->get_logger(), "Failed to update image from ROS message");
         return;
     }
 
     // Store latest header and signal new frame
     latest_header_        = image_msg->header;
-    latest_ros_timestamp_ = image_msg->header.stamp;
+    latest_ros_timestamp_ = rclcpp::Time(image_msg->header.stamp);
 
     // Signal new frame available
     new_frame_available_ = true;
 }
 
 void whycon::WhyconRosInterface::onIceoryxImageReceived() {
-    if (!detection_enabled_ || !camera_params_loaded_)
+    if (!detection_enabled_ || !camera_params_loaded_) {
         return;
+    }
 
     // Create header for Iceoryx input
-    latest_header_.stamp    = ros::Time::now();
+    latest_header_.stamp    = node_->now();
     latest_header_.frame_id = parent_frame_id_;
 
     // Store timestamp
-    latest_ros_timestamp_ = latest_header_.stamp;
+    latest_ros_timestamp_ = rclcpp::Time(latest_header_.stamp);
 
     // Signal new frame available
     new_frame_available_ = true;
 }
 
-void whycon::WhyconRosInterface::processTimerCallback(const ros::TimerEvent& event) {
+void whycon::WhyconRosInterface::processTimerCallback() {
     // Check new frame
-    if (!new_frame_available_)
+    if (!new_frame_available_) {
         return;
+    }
 
     // Process immediately
     processLatestFrame();
@@ -269,34 +301,36 @@ void whycon::WhyconRosInterface::processLatestFrame() {
         }
     }
 
-    // Update  trackers and stabalizers
+    // Update trackers and stabilizers
     tracker_->update(valid_detections_buffer_, *image_handler_, removed_ids_buffer_);
     id_stabilizer_->removeTracks(removed_ids_buffer_);
     pose_stabilizer_->removeTracks(removed_ids_buffer_);
 
     // Publish results
-    publishResults(latest_header_);  //? Update this if pub image only when markers are detected
+    publishResults(latest_header_);
 
     // Publish consolidated debug images if enabled
-    if (publish_debug_images_ && debug_manager_->isEnabled() && debug_images_pub_.getNumSubscribers() > 0) {
+    if (publish_debug_images_ && debug_manager_->isEnabled() && debug_images_pub_ &&
+        debug_images_pub_->get_subscription_count() > 0U) {
         cv::Mat consolidated_debug = debug_manager_->createConsolidatedImage();
         if (!consolidated_debug.empty()) {
             cv_bridge::CvImage cv_image(latest_header_, "rgb8", consolidated_debug);
-            debug_images_pub_.publish(cv_image.toImageMsg());
+            debug_images_pub_->publish(*cv_image.toImageMsg());
         }
     }
 }
 
-bool whycon::WhyconRosInterface::detectionControlCallback(std_srvs::SetBool::Request&  req,
-                                                          std_srvs::SetBool::Response& res) {
-    detection_enabled_ = req.data;
-    res.success        = true;
-    res.message        = detection_enabled_ ? "Detection enabled." : "Detection disabled.";
-    ROS_INFO_STREAM("[Whycon] Detection " << (detection_enabled_ ? "enabled" : "disabled") << " via service call.");
-    return true;
+void whycon::WhyconRosInterface::detectionControlCallback(
+        const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
+        std::shared_ptr<std_srvs::srv::SetBool::Response>      res) {
+    detection_enabled_ = req->data;
+    res->success       = true;
+    res->message       = detection_enabled_ ? "Detection enabled." : "Detection disabled.";
+    RCLCPP_INFO(node_->get_logger(), "[Whycon] Detection %s via service call.",
+                detection_enabled_ ? "enabled" : "disabled");
 }
 
-void whycon::WhyconRosInterface::publishResults(const std_msgs::Header& header) {
+void whycon::WhyconRosInterface::publishResults(const std_msgs::msg::Header& header) {
     // Prepare image output
     if (publish_images_) {
         image_handler_->toOpenCVMat(output_image_buffer_);
@@ -312,8 +346,9 @@ void whycon::WhyconRosInterface::publishResults(const std_msgs::Header& header) 
 
     // go through detected targets
     for (int i = 0; i < targets_; i++) {
-        if (!system_->isMarkerDetected(i))
+        if (!system_->isMarkerDetected(i)) {
             continue;
+        }
 
         const auto& inner_circle = system_->getMarkerByID(i);
         const auto& outer_circle = system_->getOuterMarkerByID(i);
@@ -376,56 +411,66 @@ void whycon::WhyconRosInterface::publishResults(const std_msgs::Header& header) 
         }
     }
 
-    if (publish_images_ && image_pub_.getNumSubscribers() > 0) {
+    if (publish_images_ && image_pub_ && image_pub_->get_subscription_count() > 0U) {
         cv_bridge::CvImage cv_image(header, "rgb8", output_image_buffer_);
-        image_pub_.publish(cv_image.toImageMsg());
+        image_pub_->publish(*cv_image.toImageMsg());
     }
 
     // Publish RViz markers (delete stale ones to avoid leftovers)
-    if (publish_visualization_markers_ && visualization_markers_pub_.getNumSubscribers() > 0) {
+    if (publish_visualization_markers_ && visualization_markers_pub_ &&
+        visualization_markers_pub_->get_subscription_count() > 0U) {
         for (int i = marker_count; i < last_marker_count_; ++i) {
-            visualization_msgs::Marker del;
+            visualization_msgs::msg::Marker del;
             del.header = header;
             del.ns     = "whycon_markers";
             del.id     = i;
-            del.action = visualization_msgs::Marker::DELETE;
+            del.action = visualization_msgs::msg::Marker::DELETE;
             marker_array_buffer_.markers.push_back(std::move(del));
         }
         last_marker_count_ = marker_count;
 
-        visualization_markers_pub_.publish(marker_array_buffer_);
+        visualization_markers_pub_->publish(marker_array_buffer_);
     }
 
-    if (publish_poses_) {
-        whycode_pose_array.detected_marker_count = whycode_pose_array.poses.size();
-        whycode_pose_pub_.publish(whycode_pose_array);
+    if (publish_poses_ && whycode_pose_pub_) {
+        whycode_pose_array.detected_marker_count = static_cast<int32_t>(whycode_pose_array.poses.size());
+        whycode_pose_pub_->publish(whycode_pose_array);
     }
 }
 
 void whycon::WhyconRosInterface::publishSingleTF(const whycon::LocalizationSystem::MarkerPose& pose, int track_id) {
-    tf::Transform transform;
-    transform.setOrigin(tf::Vector3(pose.pos(0), pose.pos(1), pose.pos(2)));
-    transform.setRotation(
-            tf::Quaternion(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w));
+    geometry_msgs::msg::TransformStamped transform_stamped;
+    transform_stamped.header.stamp    = node_->now();
+    transform_stamped.header.frame_id = parent_frame_id_;
+    transform_stamped.child_frame_id  = tf_frame_prefix_ + std::to_string(track_id);
 
-    tf_broadcaster_->sendTransform(tf::StampedTransform(transform, ros::Time::now(), parent_frame_id_,
-                                                        tf_frame_prefix_ + std::to_string(track_id)));
+    transform_stamped.transform.translation.x = pose.pos(0);
+    transform_stamped.transform.translation.y = pose.pos(1);
+    transform_stamped.transform.translation.z = pose.pos(2);
+    transform_stamped.transform.rotation.x    = pose.orientation.x;
+    transform_stamped.transform.rotation.y    = pose.orientation.y;
+    transform_stamped.transform.rotation.z    = pose.orientation.z;
+    transform_stamped.transform.rotation.w    = pose.orientation.w;
+
+    tf_broadcaster_->sendTransform(transform_stamped);
 }
 
 void whycon::WhyconRosInterface::createMarkerVisualization(const whycon::LocalizationSystem::MarkerPose& pose,
-                                                           int marker_index, const std_msgs::Header& header,
-                                                           visualization_msgs::Marker& marker) {
+                                                           int marker_index, const std_msgs::msg::Header& header,
+                                                           visualization_msgs::msg::Marker& marker) {
+    (void)marker_index;
+
     // Basic marker properties
     marker.header = header;
     marker.ns     = "whycon_markers";
     marker.id     = pose.ID;
-    marker.action = visualization_msgs::Marker::ADD;
+    marker.action = visualization_msgs::msg::Marker::ADD;
 
     // Set marker type and scale
-    marker.type    = visualization_msgs::Marker::CYLINDER;  // Use cylinder to represent circular markers
-    marker.scale.x = parameters_.outer_diameter;            // Diameter
-    marker.scale.y = parameters_.outer_diameter;            // Diameter
-    marker.scale.z = 0.01;                                  // Height (thin disk)
+    marker.type    = visualization_msgs::msg::Marker::CYLINDER;  // Use cylinder to represent circular markers
+    marker.scale.x = parameters_.outer_diameter;                 // Diameter
+    marker.scale.y = parameters_.outer_diameter;                 // Diameter
+    marker.scale.z = 0.01;                                       // Height (thin disk)
 
     // Set position from pose
     marker.pose.position.x = pose.pos[0];
@@ -442,8 +487,9 @@ void whycon::WhyconRosInterface::createMarkerVisualization(const whycon::Localiz
     if (pose.id_valid && pose.ID != -1) {
         // Color based on ID (cycling through colors)
         float hue = (pose.ID * 60.0f) / 360.0f;  // Spread IDs across color wheel
-        while (hue > 1.0f)
+        while (hue > 1.0f) {
             hue -= 1.0f;
+        }
 
         // Convert HSV to RGB (simple approximation)
         if (hue < 1.0f / 6.0f) {
@@ -481,7 +527,8 @@ void whycon::WhyconRosInterface::createMarkerVisualization(const whycon::Localiz
     }
 
     // Set marker lifetime
-    marker.lifetime = ros::Duration(0.1);  // Auto-delete after 100ms if not updated
+    // marker.lifetime = rclcpp::Duration::from_seconds(0.1).to_msg();  // Auto-delete after 100ms if not updated
+    marker.lifetime = rclcpp::Duration::from_seconds(0.1);  // Auto-delete after 100ms if not updated
 
     // Add text marker for ID display
     if (pose.id_valid && pose.ID != -1) {
