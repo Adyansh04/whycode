@@ -1,0 +1,112 @@
+# WhyCon System Configuration File
+
+# ==============================================================================
+# SYSTEM CONFIGURATION
+# ==============================================================================
+system:
+  targets: 4                   # Number of markers to track
+  frame_id: "whycon"           # Frame ID for published poses
+  world_frame_id: "world"      # World frame ID
+  input_source: "iceoryx"      # ros or iceoryx
+  process_rate_hz: 25.0        # Processing rate in Hz
+
+# ==============================================================================
+# ICEORYX PARAMETERS  
+# ==============================================================================
+iceoryx:
+  runtime_name: "WhyconImageHandler"     # Iceoryx runtime identifier
+  service_instance: "Camera"             # Service instance name
+  service_method: "Image"                # Service method name  
+  service_event: "RGB"                   # Service event name
+
+# ==============================================================================
+# DETECTOR PARAMETERS
+# ==============================================================================
+detector:
+  # Size constraints
+  min_size: 10                 # Minimum marker size in pixels
+  max_size: 10000              # Maximum marker size in pixels
+  
+  # Geometric tolerances
+  center_distance_tolerance_ratio: 0.01   # Center distance tolerance (ratio)
+  center_distance_tolerance_abs: 2.0      # Center distance tolerance (absolute)
+  roundness_tolerance: 0.35               # Roundness tolerance
+  circularity_tolerance: 0.35             # Circularity tolerance
+  ratio_tolerance: 1.2                    # Ratio tolerance
+  max_eccentricity: 0.9                   # Maximum eccentricity
+  
+  # Marker physical dimensions (meters)
+  inner_diameter: 0.088        # Inner diameter of marker (0.066) (0.124) (loop bag: 0.088) (big Markers: 0.136 )
+  outer_diameter: 0.146        # Outer diameter of marker (0.108) (0.206) (loop bag: 0.146)  (big Markers: 0.252)
+  outer_diameter_multiplier: 1  # Multiplier for outer diameter to scale detection size
+
+# ==============================================================================
+# IDENTIFICATION PARAMETERS
+# ==============================================================================
+identification:
+  enabled: true                # Enable ID detection
+  id_bits: 6                   # Number of ID bits
+  id_samples: 720              # Number of samples for ID detection
+  hamming_distance: 1          # Hamming distance for error correction
+  
+  # Quality thresholds for reliable detection
+  diameter_ratio_correction: 0.45   # Adjusted diameter ratio to scale for inner ellipse check. Ideally should be outer/inner.
+  variance_threshold: 0.35          # Minimum variance difference for reliable ID
+  min_marker_pixels: 20             # Minimum outer segmentg pixels inside a circle for whycode decoding
+
+  
+# ==============================================================================
+# TRACKING PARAMETERS
+# ==============================================================================
+tracking:
+  max_association_dist: 15.0  # Max distance (pixels) to associate an KF prediction with a detection.
+  max_unseen_frames: 15       # Number of frames a track can be lost before being removed
+  id_switch_threshold: 5      # Num of consecutive different ID detections needed to switch the locked ID.
+  pose_alpha: 0.2             # Smoothing factor for pose (XYZ). Smaller is smoother but has more lag. Range: 0.0-1.0.
+  min_track_age: 5            # Min frames a track must exist to be considered "confirmed" and published.
+  
+
+# ==============================================================================
+# ROS INTERFACE PARAMETERS
+# ==============================================================================
+ros_interface:
+  # Publishing options
+  publish_images: false                  # Publish processed images
+  publish_poses: true                   # Publish pose array
+  publish_tf: false                     # Publish TF transforms
+  publish_debug_images: false           # Publish consolidated debug images
+  publish_visualization_markers: false  # Publish visualization markers for RViz
+
+  # TF Parameters
+  tf_frame_prefix: "whycode_"         # Prefix for TF frames
+  parent_frame_id: "camera_link"      # Parent frame for TF Transforms
+
+
+  # Input parameters
+  input_queue_size: 1         # Input image queue size
+  image_encoding: "rgb8"      # Expected image encoding (e.g., rgb8, bgr8, mono8). MUST match the camera stream.
+  
+  # Topic names
+  image_input_topic:  "/camera/color/image_raw"
+  poses_output_topic: "/whycon/poses"
+  image_output_topic: "/whycon/image_out"
+  debug_images_topic: "/whycon/debug_images"
+  visualization_markers_topic: "/whycon/visualization_markers"
+
+
+  # Service names
+  detection_enabled_service_name:  "set_detection_enabled"  # Service name to enable/disable detection
+
+# ==============================================================================
+# CAMERA PARAMETERS 
+# ==============================================================================
+camera:
+
+  # Camera intrinsics file configuration 
+  package_name: "whycon_whycode_localization"     # Package containing camera config
+  config_path: "config/camera_intrinsics_rs.yaml" # Relative path (to package) to camera config file 
+
+  # Image dimensions
+  image_width: 640
+  image_height: 480
+ 

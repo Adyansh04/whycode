@@ -1,0 +1,16 @@
+<library path="lib/libwhycon_ros_nodelet">
+  <class name="whycon_whycode_localization/WhyconNodelet"
+         type="whycon::WhyconNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      WhyCon/WhyCode marker detection and localization nodelet.
+    </description>
+  </class>
+  <class name="whycon_whycode_localization/BagImagePublisherNodelet"
+         type="whycon::BagImagePublisherNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Publishes images from a bag file as a nodelet.
+    </description>
+  </class>
+</library>

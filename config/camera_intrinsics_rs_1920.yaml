@@ -1,0 +1,29 @@
+image_width: 1920
+image_height: 1080
+camera_name: amr/econ_camera1
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [1364.0455322265625, 0.0, 974.1401977539062, 0.0, 1364.2735595703125, 562.080810546875, 0.0, 0.0, 1.0]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.0, 0.0, 0.0, 0.0, 0.0]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [1364.0455322265625, 0.0, 974.1401977539062, 0.0, 0.0, 1364.2735595703125, 562.080810546875, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+binning_x: 0
+binning_y: 0
+roi:
+  x_offset: 0
+  y_offset: 0
+  height: 0
+  width: 0
+  do_rectify: false

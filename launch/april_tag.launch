@@ -1,0 +1,37 @@
+<launch>
+    <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+    <arg name="launch_prefix" default="" />
+
+    <!-- configure camera input -->
+    <arg name="camera_name" default="/camera_rect" />
+    <arg name="image_topic" default="image_rect" />
+    <arg name="queue_size" default="1" />
+
+    <!-- apriltag_ros continuous detection node -->
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_ros_continuous_node" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)">
+        <!-- Remap topics from those used in code to those on the ROS network -->
+        <remap from="image_rect" to="/color/image_raw" />
+        <remap from="camera_info" to="/color/camera_info" />
+
+        <param name="publish_tag_detections_image" type="bool" value="true" />
+        <!-- default: false -->
+        <param name="queue_size" type="int" value="$(arg queue_size)" />
+
+        <!-- load parameters (incl. tag family, tags, etc.) -->
+        <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml"/>
+        <!-- <rosparam command="load" file="$(find apriltag_ros)/config/tags.yaml"/> -->
+        <rosparam param="standalone_tags">
+- { id: 0, size: 0.1395 }
+- { id: 1, size: 0.1395 }
+- { id: 2, size: 0.1395 }
+- { id: 3, size: 0.1395 }
+- { id: 4, size: 0.1395 }
+- { id: 5, size: 0.1395 }
+- { id: 6, size: 0.1395 }
+- { id: 7, size: 0.1395 }
+        </rosparam>
+    </node>
+
+    <!-- <include file="$(find whycon_whycode_localization)/launch/whycon_realsense.launch"></include> -->
+
+</launch>
