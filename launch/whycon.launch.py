@@ -1,8 +1,9 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch_ros.actions import Node
+from launch_ros.actions import ComposableNodeContainer, Node
+from launch_ros.descriptions import ComposableNode
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -21,7 +22,31 @@ def generate_launch_description():
         description="Launch image_view on /whycon/image_out",
     )
 
+    use_composition_arg = DeclareLaunchArgument(
+        "use_composition",
+        default_value="false",
+        description="Run WhyCon as a composable node in a component container",
+    )
+
+    whycon_component = ComposableNode(
+        package="whycon_whycode_localization",
+        plugin="whycon::WhyconComponent",
+        name="whycon",
+        parameters=[{"config_file": LaunchConfiguration("config_file")}],
+    )
+
+    whycon_container = ComposableNodeContainer(
+        condition=IfCondition(LaunchConfiguration("use_composition")),
+        name="whycon_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        output="screen",
+        composable_node_descriptions=[whycon_component],
+    )
+
     whycon_node = Node(
+        condition=UnlessCondition(LaunchConfiguration("use_composition")),
         package="whycon_whycode_localization",
         executable="whycon",
         name="whycon",
@@ -42,6 +67,8 @@ def generate_launch_description():
     return LaunchDescription([
         config_file_arg,
         image_view_arg,
+        use_composition_arg,
+        whycon_container,
         whycon_node,
         image_view_node,
     ])

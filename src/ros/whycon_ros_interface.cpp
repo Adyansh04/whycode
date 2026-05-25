@@ -69,14 +69,7 @@ void whycon::WhyconRosInterface::loadParameters() {
     const auto& params = whycon::WhyConConfig::getParamLoader();
 
     // System parameters
-    targets_                     = params.getParams<int>("system", "targets");
-    std::string input_source_str = params.getParams<std::string>("system", "input_source");
-    if (input_source_str == "iceoryx") {
-        input_source_ = InputSource::ICEORYX;
-    } else {
-        input_source_ = InputSource::ROS;
-    }
-
+    targets_         = params.getParams<int>("system", "targets");
     process_rate_hz_ = params.getParams<double>("system", "process_rate_hz");
 
     // Detector parameters
@@ -163,27 +156,7 @@ void whycon::WhyconRosInterface::initializeWhyConModules() {
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*node_);
     }
 
-    // Load Iceoryx parameters from config
-    std::string runtime_name     = "";
-    std::string service_instance = "";
-    std::string service_method   = "";
-    std::string service_event    = "";
-
-    if (input_source_ == InputSource::ICEORYX) {
-        const auto& params = whycon::WhyConConfig::getParamLoader();
-        runtime_name       = params.getParams<std::string>("iceoryx", "runtime_name");
-        service_instance   = params.getParams<std::string>("iceoryx", "service_instance");
-        service_method     = params.getParams<std::string>("iceoryx", "service_method");
-        service_event      = params.getParams<std::string>("iceoryx", "service_event");
-    }
-
-    ImageHandler::Mode handler_mode =
-            (input_source_ == InputSource::ICEORYX) ? ImageHandler::Mode::ICEORYX : ImageHandler::Mode::ROS;
-    image_handler_ = std::make_unique<ImageHandler>(cam_width_, cam_height_, image_encoding, handler_mode, runtime_name,
-                                                    service_instance, service_method, service_event);
-    if (input_source_ == InputSource::ICEORYX) {
-        image_handler_->setIceoryxCallback([this]() { this->onIceoryxImageReceived(); });
-    }
+    image_handler_ = std::make_unique<ImageHandler>(cam_width_, cam_height_, image_encoding);
 }
 
 void whycon::WhyconRosInterface::setupROSTopics() {
@@ -208,13 +181,11 @@ void whycon::WhyconRosInterface::setupROSTopics() {
     process_timer_    = node_->create_wall_timer(std::chrono::duration_cast<std::chrono::nanoseconds>(period),
                                                std::bind(&WhyconRosInterface::processTimerCallback, this));
 
-    if (input_source_ == InputSource::ROS) {
-        rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
-        image_qos.depth             = static_cast<size_t>(input_queue_size);
-        image_sub_                  = image_transport::create_subscription(
-                node_, image_topic, std::bind(&WhyconRosInterface::onRosImageReceived, this, std::placeholders::_1), "raw",
-                image_qos);
-    }
+    rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
+    image_qos.depth             = static_cast<size_t>(input_queue_size);
+    image_sub_                  = image_transport::create_subscription(
+            node_, image_topic, std::bind(&WhyconRosInterface::onRosImageReceived, this, std::placeholders::_1), "raw",
+            image_qos);
 
     if (publish_poses_) {
         whycode_pose_pub_ = node_->create_publisher<whycon_whycode_localization::msg::WhyCodePoseArray>(poses_topic, 1);
@@ -251,22 +222,6 @@ void whycon::WhyconRosInterface::onRosImageReceived(const sensor_msgs::msg::Imag
     // Store latest header and signal new frame
     latest_header_        = image_msg->header;
     latest_ros_timestamp_ = rclcpp::Time(image_msg->header.stamp);
-
-    // Signal new frame available
-    new_frame_available_ = true;
-}
-
-void whycon::WhyconRosInterface::onIceoryxImageReceived() {
-    if (!detection_enabled_ || !camera_params_loaded_) {
-        return;
-    }
-
-    // Create header for Iceoryx input
-    latest_header_.stamp    = node_->now();
-    latest_header_.frame_id = parent_frame_id_;
-
-    // Store timestamp
-    latest_ros_timestamp_ = rclcpp::Time(latest_header_.stamp);
 
     // Signal new frame available
     new_frame_available_ = true;

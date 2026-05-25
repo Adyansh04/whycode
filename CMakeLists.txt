@@ -4,7 +4,7 @@ project(whycon_whycode_localization)
 option(DISABLE_ROS "Do not build for ROS, but as standalone code" OFF)
 option(BUILD_BENCHMARKS "Build benchmark executables" ON)
 option(BUILD_TOOLS "Build tool executables" OFF)
-option(BUILD_TRIANGULATION "Build triangulation nodes" OFF)
+option(BUILD_TRIANGULATION "Build triangulation nodes" ON)
 
 if(DISABLE_ROS)
   message(FATAL_ERROR "DISABLE_ROS=ON is not supported in this ROS2 port yet.")
@@ -32,12 +32,15 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
@@ -46,7 +49,6 @@ find_package(visualization_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 message(STATUS "Using OpenCV version ${OpenCV_VERSION}")
 find_package(yaml-cpp REQUIRED)
-find_package(iceoryx_posh REQUIRED)
 
 # Find the Simd library for accelerated image processing
 find_path(SIMD_INCLUDE_DIR Simd/SimdLib.hpp)
@@ -65,6 +67,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/WhyCodePoseArray.msg"
   DEPENDENCIES std_msgs geometry_msgs
 )
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # WhyCon Core Library (algorithmic core + image pipeline)
 add_library(whycon_core SHARED
@@ -97,30 +101,31 @@ target_link_libraries(whycon_core
   ${OpenCV_LIBS}
   ${YAML_CPP_LIBRARIES}
   ${SIMD_LIBRARY}
-  iceoryx_posh::iceoryx_posh
 )
 
 ament_target_dependencies(whycon_core
   sensor_msgs
 )
 
-# WhyCon ROS2 node
-add_executable(whycon
-  src/ros/whycon_localization_node.cpp
+add_library(whycon_component SHARED
+  src/ros/whycon_component.cpp
   src/ros/whycon_ros_interface.cpp
 )
 
-target_compile_options(whycon PRIVATE ${OPTIMIZATION_FLAGS})
+target_compile_options(whycon_component PRIVATE ${OPTIMIZATION_FLAGS})
 
-target_link_libraries(whycon
+target_link_libraries(whycon_component
   whycon_core
+  "${cpp_typesupport_target}"
 )
 
-ament_target_dependencies(whycon
+ament_target_dependencies(whycon_component
   ament_index_cpp
   rclcpp
+  rclcpp_components
   cv_bridge
   image_transport
+  nav_msgs
   sensor_msgs
   std_msgs
   std_srvs
@@ -128,9 +133,39 @@ ament_target_dependencies(whycon
   visualization_msgs
   tf2
   tf2_ros
+  tf2_geometry_msgs
 )
 
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rclcpp_components_register_nodes(whycon_component "whycon::WhyconComponent")
+
+# WhyCon ROS2 node
+add_executable(whycon
+  src/ros/whycon_localization_node.cpp
+)
+
+target_compile_options(whycon PRIVATE ${OPTIMIZATION_FLAGS})
+
+target_link_libraries(whycon
+  whycon_component
+)
+
+ament_target_dependencies(whycon
+  ament_index_cpp
+  rclcpp
+  rclcpp_components
+  cv_bridge
+  image_transport
+  nav_msgs
+  sensor_msgs
+  std_msgs
+  std_srvs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+
 target_link_libraries(whycon "${cpp_typesupport_target}")
 
 # WhyCode Marker Generator Tool
@@ -157,7 +192,47 @@ if(BUILD_TOOLS)
 endif()
 
 if(BUILD_TRIANGULATION)
-  message(WARNING "BUILD_TRIANGULATION is ON, but ROS2 port for src/triangulate is not completed yet. Skipping triangulation build.")
+  message(STATUS "BUILD_TRIANGULATION=ON: adding triangulation nodes")
+
+  add_executable(two_marker_whycode_triangulation_node
+    src/triangulate/two_marker_whycode_triangulation_node.cpp
+  )
+
+  target_compile_options(two_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS})
+
+  ament_target_dependencies(two_marker_whycode_triangulation_node
+    rclcpp
+    geometry_msgs
+    nav_msgs
+    tf2_ros
+    tf2_geometry_msgs
+  )
+
+  target_link_libraries(two_marker_whycode_triangulation_node
+    "${cpp_typesupport_target}"
+  )
+
+  add_executable(four_marker_whycode_triangulation_node
+    src/triangulate/four_marker_whycode_triangulation_node.cpp
+  )
+
+  target_compile_options(four_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS})
+
+  ament_target_dependencies(four_marker_whycode_triangulation_node
+    rclcpp
+    geometry_msgs
+    nav_msgs
+    tf2_ros
+    tf2_geometry_msgs
+  )
+
+  target_link_libraries(four_marker_whycode_triangulation_node
+    "${cpp_typesupport_target}"
+  )
+
+  install(TARGETS two_marker_whycode_triangulation_node four_marker_whycode_triangulation_node
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+  )
 endif()
 
 if(BUILD_BENCHMARKS)
@@ -165,7 +240,7 @@ if(BUILD_BENCHMARKS)
 endif()
 
 # Install
-install(TARGETS whycon_core whycode_gen whycon
+install(TARGETS whycon_core whycon_component whycode_gen whycon
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
@@ -181,13 +256,16 @@ install(DIRECTORY config launch
 
 # Export and package
 ament_export_include_directories(include)
-ament_export_libraries(whycon_core)
+ament_export_libraries(whycon_core whycon_component)
 ament_export_dependencies(
   rclcpp
+  rclcpp_components
   sensor_msgs
   std_msgs
   geometry_msgs
+  nav_msgs
   rosidl_default_runtime
+  tf2_geometry_msgs
 )
 
 ament_package()
