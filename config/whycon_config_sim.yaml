@@ -7,17 +7,7 @@ system:
   targets: 6                   # Number of markers to track
   frame_id: "whycon"           # Frame ID for published poses
   world_frame_id: "world"      # World frame ID
-  input_source: "ros"      # ros or iceoryx
   process_rate_hz: 25.0        # Processing rate in Hz
-
-# ==============================================================================
-# ICEORYX PARAMETERS  
-# ==============================================================================
-iceoryx:
-  runtime_name: "WhyconImageHandler"     # Iceoryx runtime identifier
-  service_instance: "Camera"             # Service instance name
-  service_method: "Image"                # Service method name  
-  service_event: "RGB"                   # Service event name
 
 # ==============================================================================
 # DETECTOR PARAMETERS

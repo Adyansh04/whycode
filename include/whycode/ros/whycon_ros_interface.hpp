@@ -43,7 +43,6 @@ class WhyconRosInterface {
 
     // Processing
     void onRosImageReceived(const sensor_msgs::msg::Image::ConstSharedPtr image_msg);
-    void onIceoryxImageReceived();
     void processTimerCallback();
     void processLatestFrame();
     void detectionControlCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
@@ -107,10 +106,6 @@ class WhyconRosInterface {
     bool publish_debug_images_          = false;
     bool publish_tf_                    = false;
     bool publish_visualization_markers_ = false;
-
-    // Input Source management
-    enum class InputSource { ROS, ICEORYX };
-    InputSource input_source_ = InputSource::ROS;
 
     // var
     bool new_frame_available_ = false;
