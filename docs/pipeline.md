@@ -1,58 +1,82 @@
 # Detection and Tracking Pipeline
 
-This document describes the core processing pipeline for WhyCon/WhyCode localization, focusing on the high-CPU stages and data flow between them.
+This document details the exact processing flow for one frame in `whycode_vision`, and maps each stage to concrete source files.
 
-## Pipeline Flow
+## End-to-End Frame Flow
 
 ```mermaid
 flowchart TD
-  A[Input image] --> B[Preprocess + resize/convert]
-  B --> C[Binarize and pack bits]
-  C --> D[Find contours / candidate ellipses]
-  D --> E[Ellipse validation + geometry checks]
-  E --> F[WhyCode decode (ring sampling)]
-  F --> G[Tracking and ID stabilization]
-  G --> H[Pose estimation + stabilization]
-  H --> I[Publish poses, images, TF, markers]
+  A["ROS image message"] --> B["WhyconRosInterface onRosImageReceived"]
+  B --> C["ImageHandler updateFromROS"]
+  C --> D["set new_frame_available"]
+  D --> E["process timer callback"]
+  E --> F["processLatestFrame"]
+
+  F --> G["localizeMarkers: ellipse detection"]
+  G --> H["collect valid detections"]
+  H --> I["MarkerTracker update"]
+  I --> J["ID and pose stabilization"]
+  J --> K["estimateMarkerPose per target"]
+  K --> L["publish pose image tf markers"]
 ```
 
-## Stage Details
+## WhyCode Decode Sub-Flow
 
-### 1) Image input and preprocessing
+```mermaid
+flowchart LR
+  S1["outer and inner ellipse"] --> S2["calc ellipse centers two solutions"]
+  S2 --> S3["sample ring signal for solution zero"]
+  S2 --> S4["sample ring signal for solution one"]
+  S3 --> S5["binarize and edge analysis"]
+  S4 --> S6["binarize and edge analysis"]
+  S5 --> S7["choose lower variance solution"]
+  S6 --> S7
+  S7 --> S8["CNecklace decode and hamming validation"]
+  S8 --> S9["pose orientation and euler update"]
+```
 
-* Subscribes to the configured ROS image topic via `image_transport`.
-* Converts to the internal format expected by the detector.
-* Uses a fixed-rate processing timer when configured.
+## Stage-by-Stage Mapping
 
-### 2) Binarization and packed representation
+| Stage | Main Functions | Files |
+|---|---|---|
+| Image receive | `onRosImageReceived`, `updateFromROS` | `src/ros/whycon_ros_interface.cpp`, `src/image/image_handler.cpp` |
+| Detector pass | `localizeMarkers`, `detectMarkers`, `detectMarkerPair` | `src/core/whycon_localization.cpp`, `src/core/multi_marker_detector.cpp`, `src/core/marker_detector.cpp` |
+| WhyCode decode | `processMarkerAmbiguityAndIdentify`, `processSingleSolution`, `selectSolutionAndDecodeID`, `CNecklace::decode` | `src/core/whycon_localization.cpp`, `src/core/CNecklace.cpp` |
+| Tracking | `MarkerTracker::update` | `src/tracking/marker_tracker.cpp` |
+| Stabilization | `IDStabilizer::stabilize`, `PoseStabilizer::stabilize` | `src/tracking/id_stabilizer.cpp`, `src/tracking/pose_stabilizer.cpp` |
+| Publish | `publishResults`, `publishSingleTF`, `createMarkerVisualization` | `src/ros/whycon_ros_interface.cpp` |
 
-* Converts grayscale to a binary mask using fast thresholding.
-* Packs bits to reduce memory footprint and improve cache behavior.
+## Exact Publish Flow
 
-### 3) Ellipse detection
+```mermaid
+flowchart TD
+  P0["publishResults start"] --> P1["optional image buffer export"]
+  P1 --> P2["loop targets 0 to N"]
+  P2 --> P3["is marker detected and mature track"]
+  P3 --> P4["estimate pose and stabilize"]
+  P4 --> P5["append WhyCodePose message"]
+  P4 --> P6["draw overlays on image"]
+  P4 --> P7["send TF transform"]
+  P4 --> P8["append visualization marker"]
+  P5 --> P9["publish WhyCodePoseArray"]
+  P6 --> P10["publish image out"]
+  P8 --> P11["publish MarkerArray with stale deletes"]
+```
 
-* Extracts candidate ellipses and validates geometry constraints.
-* Uses center distance, circularity, and size thresholds from config.
+## Triangulation Flow
 
-### 4) WhyCode decoding
+- Input for both nodes: `whycode_vision/msg/WhyCodePoseArray` on `/whycon/poses`.
+- Two-marker node:
+  - Matches configured marker pair.
+  - Estimates midpoint frame and orientation.
+  - Publishes pose, optional TF, and camera odometry.
+- Four-marker node:
+  - Computes left-center and right-center intermediate poses.
+  - Computes final center from intermediate centers.
+  - Publishes intermediate/final TF and camera odometry.
 
-* Samples ring segments around the detected ellipse.
-* Applies Hamming distance checks with error correction.
+## Determinism Notes
 
-### 5) Tracking and stabilization
-
-* Associates detections across frames.
-* Stabilizes IDs and poses to reduce flicker.
-
-### 6) Pose estimation and outputs
-
-* Computes 6-DOF pose using camera intrinsics and marker geometry.
-* Publishes pose arrays, debug images, TF, and visualization markers.
-
-## Related Modules
-
-* `image_handler`, `packed_binary_image`
-* `marker_detector`, `multi_marker_detector`
-* `CNecklace`
-* `marker_tracker`, `id_stabilizer`, `pose_stabilizer`
-* `whycon_localization`
+- Processing is driven by a timer with a `new_frame_available` gate.
+- Stabilizers make output less noisy but introduce expected temporal smoothing behavior.
+- Marker age gates are enforced before publish to reject very young tracks.

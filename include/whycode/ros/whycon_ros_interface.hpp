@@ -10,8 +10,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
-#include <whycon_whycode_localization/msg/why_code_pose.hpp>
-#include <whycon_whycode_localization/msg/why_code_pose_array.hpp>
+#include <whycode_vision/msg/why_code_pose.hpp>
+#include <whycode_vision/msg/why_code_pose_array.hpp>
 
 #include <memory>
 #include <sstream>
@@ -63,7 +63,7 @@ class WhyconRosInterface {
     image_transport::Subscriber                                     image_sub_;
     rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr             detection_control_service_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr          image_pub_, debug_images_pub_;
-    rclcpp::Publisher<whycon_whycode_localization::msg::WhyCodePoseArray>::SharedPtr whycode_pose_pub_;
+    rclcpp::Publisher<whycode_vision::msg::WhyCodePoseArray>::SharedPtr whycode_pose_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualization_markers_pub_;
     std::unique_ptr<tf2_ros::TransformBroadcaster>                 tf_broadcaster_;
     rclcpp::TimerBase::SharedPtr                                   process_timer_;
@@ -74,9 +74,9 @@ class WhyconRosInterface {
 
     // Reusable buffers
     cv::Mat                                               output_image_buffer_;
-    whycon_whycode_localization::msg::WhyCodePoseArray   whycode_pose_array;
+    whycode_vision::msg::WhyCodePoseArray   whycode_pose_array;
     whycon::LocalizationSystem::MarkerPose                pose_buffer_;
-    whycon_whycode_localization::msg::WhyCodePose        whycode_pose_msg_buffer_;
+    whycode_vision::msg::WhyCodePose        whycode_pose_msg_buffer_;
     visualization_msgs::msg::Marker                      marker_buffer_;
 
     std::ostringstream                           string_stream_buffer_;

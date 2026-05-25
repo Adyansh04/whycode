@@ -8,7 +8,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    package_share = FindPackageShare("whycon_whycode_localization")
+    package_share = FindPackageShare("whycode_vision")
 
     config_file_arg = DeclareLaunchArgument(
         "config_file",
@@ -29,7 +29,7 @@ def generate_launch_description():
     )
 
     whycon_component = ComposableNode(
-        package="whycon_whycode_localization",
+        package="whycode_vision",
         plugin="whycon::WhyconComponent",
         name="whycon",
         parameters=[{"config_file": LaunchConfiguration("config_file")}],
@@ -47,7 +47,7 @@ def generate_launch_description():
 
     whycon_node = Node(
         condition=UnlessCondition(LaunchConfiguration("use_composition")),
-        package="whycon_whycode_localization",
+        package="whycode_vision",
         executable="whycon",
         name="whycon",
         output="screen",

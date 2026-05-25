@@ -1,6 +1,6 @@
 ## Configuration and Tuning
 
-The `whycon_whycode_localization` node is configured via a main YAML file, specified by the `config_file` launch argument (see `whycon.launch.py`). If this parameter is not set, the node attempts to load a default configuration.
+The `whycode_vision` node is configured via a main YAML file, specified by the `config_file` launch argument (see `whycon.launch.py`). If this parameter is not set, the node attempts to load a default configuration.
 
 **Camera calibration parameters** (intrinsics and distortion coefficients) are loaded from a separate YAML file, whose path must be specified in the main configuration YAML under `camera.config_path`.
 
@@ -20,8 +20,6 @@ Below are the main sections and parameters you can set in your YAML file, with e
   *Default: `"whycon"`*
 * `world_frame_id` (string): World frame ID.
   *Default: `"world"`*
-* `input_source` (string): Image input source. Only `ros` is supported in this ROS2 port.
-  *Typical: `"ros"`*
 * `process_rate_hz` (double): Processing loop rate (Hz) when decoupled from ROS callbacks.
   *Default example: `25.0`*
 
@@ -143,7 +141,7 @@ Below are the main sections and parameters you can set in your YAML file, with e
 #### **Camera**
 
 * `package_name` (string): Package containing camera config.
-  *Default: `"whycon_whycode_localization"`*
+  *Default: `"whycode_vision"`*
 * `config_path` (string): Relative path to camera config file (intrinsics YAML).
   *Default: `"config/camera_intrinsics_rs.yaml"`*
 * `image_width` (int): Image width in pixels.

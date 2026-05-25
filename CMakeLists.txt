@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(whycon_whycode_localization)
+project(whycode_vision)
 
 option(DISABLE_ROS "Do not build for ROS, but as standalone code" OFF)
 option(BUILD_BENCHMARKS "Build benchmark executables" ON)

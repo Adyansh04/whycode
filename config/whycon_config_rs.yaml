@@ -93,7 +93,7 @@ ros_interface:
 camera:
 
   # Camera intrinsics file configuration 
-  package_name: "whycon_whycode_localization"     # Package containing camera config
+  package_name: "whycode_vision"     # Package containing camera config
   config_path: "config/camera_intrinsics_rs.yaml" # Relative path (to package) to camera config file 
 
   # Image dimensions

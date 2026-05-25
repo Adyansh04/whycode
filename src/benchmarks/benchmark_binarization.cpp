@@ -581,7 +581,7 @@ int main() {
     // Load image data (both regular and aligned)
     std::vector<uint8_t> test_image;
     aligned_vector<uint8_t> test_image_aligned;
-    std::string image_path = "/root/ros1_ws/src/whycon_whycode_localization/src/cpp_tests/image copy.png";
+    std::string image_path = "/root/ros1_ws/src/whycode_vision/src/cpp_tests/image copy.png";
     
     test_image = loadImageAsGrayscale(image_path, width, height);
     

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>whycon_whycode_localization</name>
+  <name>whycode_vision</name>
   <version>0.0.0</version>
-  <description>The whycon_whycode_localization package</description>
+  <description>The whycode_vision package</description>
 
   <maintainer email="gupta.adyansh@gmail.com">Adyansh Gupta</maintainer>
   <license>TODO</license>

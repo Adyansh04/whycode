@@ -43,9 +43,9 @@ void whycon::WhyconRosInterface::loadParameters() {
     std::string default_config_file;
     try {
         default_config_file =
-                ament_index_cpp::get_package_share_directory("whycon_whycode_localization") + "/config/whycon_config_rs.yaml";
+                ament_index_cpp::get_package_share_directory("whycode_vision") + "/config/whycon_config_rs.yaml";
     } catch (const std::exception& e) {
-        RCLCPP_FATAL(node_->get_logger(), "Failed to resolve package share directory for whycon_whycode_localization: %s",
+        RCLCPP_FATAL(node_->get_logger(), "Failed to resolve package share directory for whycode_vision: %s",
                      e.what());
         rclcpp::shutdown();
         return;
@@ -188,7 +188,7 @@ void whycon::WhyconRosInterface::setupROSTopics() {
             image_qos);
 
     if (publish_poses_) {
-        whycode_pose_pub_ = node_->create_publisher<whycon_whycode_localization::msg::WhyCodePoseArray>(poses_topic, 1);
+        whycode_pose_pub_ = node_->create_publisher<whycode_vision::msg::WhyCodePoseArray>(poses_topic, 1);
     }
 
     if (publish_images_) {

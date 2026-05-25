@@ -6,7 +6,7 @@
 #include <cmath>
 #include <functional>
 
-#include "whycon_whycode_localization/msg/why_code_pose_array.hpp"
+#include "whycode_vision/msg/why_code_pose_array.hpp"
 
 FourMarkerWhyCodeTriangulationNode::FourMarkerWhyCodeTriangulationNode(const rclcpp::NodeOptions& options)
     : rclcpp::Node("four_marker_whycode_triangulation_node", options) {
@@ -88,7 +88,7 @@ void FourMarkerWhyCodeTriangulationNode::loadParameters() {
 
 void FourMarkerWhyCodeTriangulationNode::setupRosCommunication() {
     // Subscriber
-    poses_subscriber_ = create_subscription<whycon_whycode_localization::msg::WhyCodePoseArray>(
+    poses_subscriber_ = create_subscription<whycode_vision::msg::WhyCodePoseArray>(
             "whycon/poses", rclcpp::QoS(10),
             std::bind(&FourMarkerWhyCodeTriangulationNode::posesCallback, this, std::placeholders::_1));
 
@@ -120,7 +120,7 @@ void FourMarkerWhyCodeTriangulationNode::setupRosCommunication() {
 }
 
 void FourMarkerWhyCodeTriangulationNode::posesCallback(
-        const whycon_whycode_localization::msg::WhyCodePoseArray::ConstSharedPtr& msg) {
+        const whycode_vision::msg::WhyCodePoseArray::ConstSharedPtr& msg) {
     // Reset all found flags
     marker_top_left_.reset();
     marker_bottom_left_.reset();

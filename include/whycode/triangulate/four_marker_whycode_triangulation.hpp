@@ -9,7 +9,7 @@
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
-#include <whycon_whycode_localization/msg/why_code_pose_array.hpp>
+#include <whycode_vision/msg/why_code_pose_array.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -103,7 +103,7 @@ class FourMarkerWhyCodeTriangulationNode : public rclcpp::Node {
     Eigen::Vector3d t_align_        = Eigen::Vector3d::Zero();
 
     // ROS communication
-    rclcpp::Subscription<whycon_whycode_localization::msg::WhyCodePoseArray>::SharedPtr poses_subscriber_;
+    rclcpp::Subscription<whycode_vision::msg::WhyCodePoseArray>::SharedPtr poses_subscriber_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr                        pose_publisher_;
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
@@ -130,7 +130,7 @@ class FourMarkerWhyCodeTriangulationNode : public rclcpp::Node {
     // Core functionality
     void loadParameters();
     void setupRosCommunication();
-    void posesCallback(const whycon_whycode_localization::msg::WhyCodePoseArray::ConstSharedPtr& msg);
+    void posesCallback(const whycode_vision::msg::WhyCodePoseArray::ConstSharedPtr& msg);
     void processingTimerCallback();
 
     void           groundTruthCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& msg);

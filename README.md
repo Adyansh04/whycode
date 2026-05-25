@@ -2,7 +2,7 @@
 
 ## Overview
 
-`whycon_whycode_localization` is a ROS2 package for detecting and localizing circular WhyCon/WhyCode markers and decoding embedded WhyCode IDs. It estimates the 3D pose of these markers relative to a camera.
+`whycode_vision` is a ROS2 package for detecting and localizing circular WhyCon/WhyCode markers and decoding embedded WhyCode IDs. It estimates the 3D pose of these markers relative to a camera.
 
 ## Features
 
@@ -53,11 +53,11 @@ Utility tools live in `src/tools`. The ROS2 port currently exposes the marker ge
 
 Generates printable WhyCon/WhyCode markers for lab testing and simulation assets.
 
-* Help: `ros2 run whycon_whycode_localization whycon-id-gen -h`
+* Help: `ros2 run whycode_vision whycon-id-gen -h`
 * Examples:
-  * Basic WhyCon marker: `ros2 run whycon_whycode_localization whycon-id-gen -- -l`
-  * WhyCode with 6 bits: `ros2 run whycon_whycode_localization whycon-id-gen -- 6`
-  * WhyCode with 8 bits, Hamming distance 2: `ros2 run whycon_whycode_localization whycon-id-gen -- -d 2 8`
+  * Basic WhyCon marker: `ros2 run whycode_vision whycon-id-gen -- -l`
+  * WhyCode with 6 bits: `ros2 run whycode_vision whycon-id-gen -- 6`
+  * WhyCode with 8 bits, Hamming distance 2: `ros2 run whycode_vision whycon-id-gen -- -d 2 8`
 
 ## Triangulation nodes (src/triangulate)
 
@@ -66,14 +66,14 @@ These ROS2 nodes estimate poses using known marker layouts. They are built when 
 ### two_marker_whycode_triangulation_node
 
 * Purpose: Compute a pose from two WhyCode markers with a known separation.
-* Input: `whycon_whycode_localization/msg/WhyCodePoseArray` (from the main WhyCon node).
+* Input: `whycode_vision/msg/WhyCodePoseArray` (from the main WhyCon node).
 * Output: `geometry_msgs/msg/PoseStamped` and TF (broadcast), plus optional `nav_msgs/msg/Odometry` if enabled.
 * Notes: Expects two specific marker IDs; includes utilities to compute roll, pitch, and yaw from the camera plane.
 
 ### four_marker_whycode_triangulation_node
 
 * Purpose: Hierarchical triangulation using four WhyCode markers to improve robustness.
-* Input: `whycon_whycode_localization/msg/WhyCodePoseArray`.
+* Input: `whycode_vision/msg/WhyCodePoseArray`.
 * Output: `geometry_msgs/msg/PoseStamped` and TF (broadcast), plus optional `nav_msgs/msg/Odometry`.
 * Notes: Designed for rigs with four arranged WhyCode markers; see `src/triangulate/four_marker_whycode_triangulation.cpp` for parameter hints.
 
@@ -226,13 +226,13 @@ The primary way to run the package is through the `whycon.launch.py` file, which
 ### Running with composition
 
 ```bash
-ros2 launch whycon_whycode_localization whycon.launch.py use_composition:=true
+ros2 launch whycode_vision whycon.launch.py use_composition:=true
 ```
 
 ### Running as a standalone node
 
 ```bash
-ros2 launch whycon_whycode_localization whycon.launch.py use_composition:=false
+ros2 launch whycode_vision whycon.launch.py use_composition:=false
 ```
 
 ### Launch Arguments
@@ -255,7 +255,7 @@ Full parameter reference: see [docs/configuration/README.md](docs/configuration/
 
 ## Published Topics
 
-* `/whycon/poses` (`whycon_whycode_localization/msg/WhyCodePoseArray`): Poses for all detected markers.
+* `/whycon/poses` (`whycode_vision/msg/WhyCodePoseArray`): Poses for all detected markers.
 * `/whycon/image_out` (`sensor_msgs/msg/Image`): Annotated image showing detected WhyCode/WhyCon markers.
 * `/whycon/debug_images` (`sensor_msgs/msg/Image`): Consolidated debug image with ellipses, marker IDs, and geometric overlays.
 * `/tf` (`tf2_msgs/msg/TFMessage`): Broadcasts TF transforms.
