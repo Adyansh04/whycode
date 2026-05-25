@@ -7,7 +7,7 @@ system:
   targets: 6                   # Number of markers to track
   frame_id: "whycon"           # Frame ID for published poses
   world_frame_id: "world"      # World frame ID
-  process_rate_hz: 25.0        # Processing rate in Hz
+  process_rate_hz: 40.0        # Processing rate in Hz
 
 # ==============================================================================
 # DETECTOR PARAMETERS
