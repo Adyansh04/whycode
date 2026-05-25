@@ -1,76 +1,59 @@
-# Contains triangulation nodes for marker-based pose estimation
+# Triangulation nodes (ROS2)
 message(STATUS "Building triangulation nodes...")
 
-# Set required CMake policies
-cmake_policy(SET CMP0079 NEW)  # Allow target_link_libraries() for targets in other directories
-
-# Check for AprilTag dependency for AprilTag triangulation
-find_package(apriltag_ros QUIET)
-if(apriltag_ros_FOUND)
-  set(BUILD_APRILTAG_TRIANGULATION ON)
-  message(STATUS "Found apriltag_ros - building AprilTag triangulation node")
-else()
-  set(BUILD_APRILTAG_TRIANGULATION OFF)
-  message(WARNING "apriltag_ros not found - skipping AprilTag triangulation node")
-endif()
-
-#=============================================================================
-# Four Marker WhyCode Triangulation Node
-#=============================================================================
-add_executable(four_marker_whycode_triangulation_node
-  four_marker_whycode_triangulation.cpp
-)
-
-target_compile_options(four_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS} ${COMPILER_WARNINGS})
-
-target_link_libraries(four_marker_whycode_triangulation_node
-  ${catkin_LIBRARIES}
-)
-
-add_dependencies(four_marker_whycode_triangulation_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-#=============================================================================
-# Two Marker WhyCode Triangulation Node
-#=============================================================================
+# Two marker WhyCode triangulation
 add_executable(two_marker_whycode_triangulation_node
   two_marker_whycode_triangulation.cpp
+  two_marker_whycode_triangulation_node.cpp
 )
 
-target_compile_options(two_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS} ${COMPILER_WARNINGS})
+target_compile_options(two_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS})
+
+target_include_directories(two_marker_whycode_triangulation_node PRIVATE
+  ${PROJECT_SOURCE_DIR}/include
+)
+
+ament_target_dependencies(two_marker_whycode_triangulation_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
 
 target_link_libraries(two_marker_whycode_triangulation_node
-  ${catkin_LIBRARIES}
+  "${cpp_typesupport_target}"
 )
 
-add_dependencies(two_marker_whycode_triangulation_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# Four marker WhyCode triangulation
+add_executable(four_marker_whycode_triangulation_node
+  four_marker_whycode_triangulation.cpp
+  four_marker_whycode_triangulation_node.cpp
+)
 
-#=============================================================================
-# Two Marker AprilTag Triangulation Node (conditional)
-#=============================================================================
-if(BUILD_APRILTAG_TRIANGULATION)
-  add_executable(two_marker_apriltag_triangulation_node
-    two_marker_apriltag_triangulation.cpp
-  )
+target_compile_options(four_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS})
 
-  target_compile_options(two_marker_apriltag_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS} ${COMPILER_WARNINGS})
+target_include_directories(four_marker_whycode_triangulation_node PRIVATE
+  ${PROJECT_SOURCE_DIR}/include
+)
 
-  target_link_libraries(two_marker_apriltag_triangulation_node
-    ${catkin_LIBRARIES}
-  )
+ament_target_dependencies(four_marker_whycode_triangulation_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
 
-  add_dependencies(two_marker_apriltag_triangulation_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-  
-  # Install AprilTag node
-  install(TARGETS two_marker_apriltag_triangulation_node
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
-endif()
+target_link_libraries(four_marker_whycode_triangulation_node
+  "${cpp_typesupport_target}"
+)
 
-#=============================================================================
-# Installation
-#=============================================================================
-install(TARGETS 
-  four_marker_whycode_triangulation_node
+# Install executables
+install(TARGETS
   two_marker_whycode_triangulation_node
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  four_marker_whycode_triangulation_node
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )

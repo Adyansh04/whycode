@@ -7,9 +7,9 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
-#include <whycon_whycode_localization/WhyCodePoseArray.h>
+#include <whycon_whycode_localization/msg/why_code_pose_array.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -17,10 +17,10 @@
 #include <memory>
 #include <string>
 
-class FourMarkerWhyCodeTriangulationNode {
+class FourMarkerWhyCodeTriangulationNode : public rclcpp::Node {
   public:
     struct MarkerData {
-        geometry_msgs::Pose                   pose;
+        geometry_msgs::msg::Pose              pose;
         int                                   whycode_id  = -1;
         int                                   tracking_id = -1;
         bool                                  id_valid    = false;
@@ -88,30 +88,23 @@ class FourMarkerWhyCodeTriangulationNode {
         double    y        = 0.0;
         double    theta    = 0.0;
         bool      is_valid = false;
-        ros::Time timestamp;
+        rclcpp::Time timestamp;
     };
 
     // Constructor
-    explicit FourMarkerWhyCodeTriangulationNode(ros::NodeHandle& nh, ros::NodeHandle& private_nh);
+    explicit FourMarkerWhyCodeTriangulationNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
     // Destructor
     ~FourMarkerWhyCodeTriangulationNode() = default;
-
-    // Main processing loop
-    void spin();
 
   private:
     bool            have_alignment_ = false;
     Eigen::Matrix3d R_align_        = Eigen::Matrix3d::Identity();
     Eigen::Vector3d t_align_        = Eigen::Vector3d::Zero();
 
-    // ROS handles
-    ros::NodeHandle& nh_;
-    ros::NodeHandle& private_nh_;
-
     // ROS communication
-    ros::Subscriber                                poses_subscriber_;
-    ros::Publisher                                 pose_publisher_;
+    rclcpp::Subscription<whycon_whycode_localization::msg::WhyCodePoseArray>::SharedPtr poses_subscriber_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr                        pose_publisher_;
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     // Configuration and data - 4 markers
@@ -122,25 +115,25 @@ class FourMarkerWhyCodeTriangulationNode {
     MarkerData          marker_bottom_right_;
 
     // Ground truth comparison
-    ros::Subscriber    ground_truth_subscriber_;
-    nav_msgs::Odometry latest_ground_truth_;
-    bool               ground_truth_received_ = false;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr ground_truth_subscriber_;
+    nav_msgs::msg::Odometry                                  latest_ground_truth_;
+    bool                                                     ground_truth_received_ = false;
 
     // Camera odometry
-    ros::Publisher camera_odom_publisher_;
-    CameraOdometry latest_camera_odom_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr camera_odom_publisher_;
+    CameraOdometry                                      latest_camera_odom_;
 
     // Timing
-    ros::Timer                            processing_timer_;
+    rclcpp::TimerBase::SharedPtr          processing_timer_;
     std::chrono::steady_clock::time_point last_successful_estimation_;
 
     // Core functionality
     void loadParameters();
     void setupRosCommunication();
-    void posesCallback(const whycon_whycode_localization::WhyCodePoseArray::ConstPtr& msg);
-    void processingTimerCallback(const ros::TimerEvent& event);
+    void posesCallback(const whycon_whycode_localization::msg::WhyCodePoseArray::ConstSharedPtr& msg);
+    void processingTimerCallback();
 
-    void           groundTruthCallback(const nav_msgs::Odometry::ConstPtr& msg);
+    void           groundTruthCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& msg);
     CameraOdometry calculateCameraOdometry(const PoseEstimationResult& result);
     void           publishCameraOdometry(const CameraOdometry& odom);
     void           compareWithGroundTruth(const CameraOdometry& calculated_odom);
@@ -166,7 +159,8 @@ class FourMarkerWhyCodeTriangulationNode {
     // Publishing functions
     void                       publishTransform(const PoseEstimationResult& result, const std::string& frame_name);
     void                       publishPose(const PoseEstimationResult& result);
-    geometry_msgs::PoseStamped eigenToRosPose(const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation) const;
+    geometry_msgs::msg::PoseStamped eigenToRosPose(const Eigen::Vector3d& position,
+                                                   const Eigen::Matrix3d& rotation) const;
 
     bool   gt_aligned_ = false;
     double gt_x0_ = 0.0, gt_y0_ = 0.0, gt_theta0_ = 0.0;

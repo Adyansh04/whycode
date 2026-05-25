@@ -4,88 +4,112 @@
 #include <Eigen/Geometry>
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
-#include "whycon_whycode_localization/WhyCodePoseArray.h"
+#include "whycon_whycode_localization/msg/why_code_pose_array.hpp"
 
-TwoMarkerWhyCodeTriangulationNode::TwoMarkerWhyCodeTriangulationNode(ros::NodeHandle& nh, ros::NodeHandle& private_nh)
-    : nh_(nh), private_nh_(private_nh) {
+TwoMarkerWhyCodeTriangulationNode::TwoMarkerWhyCodeTriangulationNode(const rclcpp::NodeOptions& options)
+    : rclcpp::Node("two_marker_whycode_triangulation_node", options) {
     loadParameters();
     setupRosCommunication();
 
     last_successful_estimation_ = std::chrono::steady_clock::now();
 
-    ROS_INFO("WhyCode 2-Marker Triangulation Node initialized");
-    ROS_INFO("Tracking markers: ID1=%d, ID2=%d", config_.marker_id_1, config_.marker_id_2);
-    ROS_INFO("Known distance: %.3f m", config_.known_distance);
+    RCLCPP_INFO(get_logger(), "WhyCode 2-Marker Triangulation Node initialized");
+    RCLCPP_INFO(get_logger(), "Tracking markers: ID1=%d, ID2=%d", config_.marker_id_1, config_.marker_id_2);
+    RCLCPP_INFO(get_logger(), "Known distance: %.3f m", config_.known_distance);
 }
 
 void TwoMarkerWhyCodeTriangulationNode::loadParameters() {
-    private_nh_.param("marker_id_1", config_.marker_id_1, config_.marker_id_1);
-    private_nh_.param("marker_id_2", config_.marker_id_2, config_.marker_id_2);
-    private_nh_.param("known_distance", config_.known_distance, config_.known_distance);
+    declare_parameter<int>("marker_id_1", config_.marker_id_1);
+    declare_parameter<int>("marker_id_2", config_.marker_id_2);
+    declare_parameter<double>("known_distance", config_.known_distance);
+    declare_parameter<double>("distance_tolerance", config_.distance_tolerance);
+    declare_parameter<double>("marker_timeout", config_.marker_timeout);
+    declare_parameter<std::string>("camera_frame", config_.camera_frame);
+    declare_parameter<std::string>("target_frame", config_.target_frame);
+    declare_parameter<bool>("publish_tf", config_.publish_tf);
+    declare_parameter<bool>("publish_pose", config_.publish_pose);
+    declare_parameter<bool>("publish_camera_odom", config_.publish_camera_odom);
+    declare_parameter<std::string>("odom_frame", config_.odom_frame);
+    declare_parameter<std::string>("base_link_frame", config_.base_link_frame);
+    declare_parameter<bool>("enable_ground_truth_comparison", config_.enable_ground_truth_comparison);
+    declare_parameter<bool>("publish_camera_odom_tf", config_.publish_camera_odom_tf);
+    declare_parameter<bool>("align_first_measurement", config_.align_first_measurement);
+    declare_parameter<std::string>("camera_odom_child_frame", config_.camera_odom_child_frame);
+    declare_parameter<std::string>("camera_odom_parent_frame", config_.camera_odom_parent_frame);
+    declare_parameter<bool>("align_ground_truth", config_.align_ground_truth);
 
-    private_nh_.param("distance_tolerance", config_.distance_tolerance, config_.distance_tolerance);
-    private_nh_.param("marker_timeout", config_.marker_timeout, config_.marker_timeout);
-    private_nh_.param("camera_frame", config_.camera_frame, config_.camera_frame);
-    private_nh_.param("target_frame", config_.target_frame, config_.target_frame);
-    private_nh_.param("publish_tf", config_.publish_tf, config_.publish_tf);
-    private_nh_.param("publish_pose", config_.publish_pose, config_.publish_pose);
-    private_nh_.param("publish_camera_odom", config_.publish_camera_odom, config_.publish_camera_odom);
-    private_nh_.param("odom_frame", config_.odom_frame, config_.odom_frame);
-    private_nh_.param("base_link_frame", config_.base_link_frame, config_.base_link_frame);
-    private_nh_.param("enable_ground_truth_comparison", config_.enable_ground_truth_comparison,
-                      config_.enable_ground_truth_comparison);
-    private_nh_.param("publish_camera_odom_tf", config_.publish_camera_odom_tf, config_.publish_camera_odom_tf);
-    private_nh_.param("align_first_measurement", config_.align_first_measurement, config_.align_first_measurement);
-    private_nh_.param("camera_odom_child_frame", config_.camera_odom_child_frame, config_.camera_odom_child_frame);
-    private_nh_.param("camera_odom_parent_frame", config_.camera_odom_parent_frame, config_.camera_odom_parent_frame);
-    private_nh_.param("align_ground_truth", config_.align_ground_truth, config_.align_ground_truth);
+    get_parameter("marker_id_1", config_.marker_id_1);
+    get_parameter("marker_id_2", config_.marker_id_2);
+    get_parameter("known_distance", config_.known_distance);
+    get_parameter("distance_tolerance", config_.distance_tolerance);
+    get_parameter("marker_timeout", config_.marker_timeout);
+    get_parameter("camera_frame", config_.camera_frame);
+    get_parameter("target_frame", config_.target_frame);
+    get_parameter("publish_tf", config_.publish_tf);
+    get_parameter("publish_pose", config_.publish_pose);
+    get_parameter("publish_camera_odom", config_.publish_camera_odom);
+    get_parameter("odom_frame", config_.odom_frame);
+    get_parameter("base_link_frame", config_.base_link_frame);
+    get_parameter("enable_ground_truth_comparison", config_.enable_ground_truth_comparison);
+    get_parameter("publish_camera_odom_tf", config_.publish_camera_odom_tf);
+    get_parameter("align_first_measurement", config_.align_first_measurement);
+    get_parameter("camera_odom_child_frame", config_.camera_odom_child_frame);
+    get_parameter("camera_odom_parent_frame", config_.camera_odom_parent_frame);
+    get_parameter("align_ground_truth", config_.align_ground_truth);
 
     // Validation
     if (config_.marker_id_1 == config_.marker_id_2) {
-        ROS_ERROR("Marker IDs must be different! marker_id_1=%d, marker_id_2=%d", config_.marker_id_1,
-                  config_.marker_id_2);
-        ros::shutdown();
+        RCLCPP_ERROR(get_logger(), "Marker IDs must be different! marker_id_1=%d, marker_id_2=%d",
+                     config_.marker_id_1, config_.marker_id_2);
+        rclcpp::shutdown();
         return;
     }
 
     if (config_.known_distance <= MIN_KNOWN_DISTANCE) {
-        ROS_ERROR("Known distance must be positive and > %.2e", MIN_KNOWN_DISTANCE);
-        ros::shutdown();
+        RCLCPP_ERROR(get_logger(), "Known distance must be positive and > %.2e", MIN_KNOWN_DISTANCE);
+        rclcpp::shutdown();
     }
 }
 
 void TwoMarkerWhyCodeTriangulationNode::setupRosCommunication() {
     // Subscriber
-    poses_subscriber_ = nh_.subscribe("whycon/poses", 1, &TwoMarkerWhyCodeTriangulationNode::posesCallback, this);
+    poses_subscriber_ = create_subscription<whycon_whycode_localization::msg::WhyCodePoseArray>(
+            "whycon/poses", rclcpp::QoS(10),
+            std::bind(&TwoMarkerWhyCodeTriangulationNode::posesCallback, this, std::placeholders::_1));
 
     // Publishers
     if (config_.publish_pose) {
-        pose_publisher_ = nh_.advertise<geometry_msgs::PoseStamped>("two_marker_triangulation_whycode/pose", 1);
+        pose_publisher_ = create_publisher<geometry_msgs::msg::PoseStamped>(
+            "two_marker_triangulation_whycode/pose", rclcpp::QoS(10));
     }
 
     if (config_.publish_tf) {
-        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>();
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     }
 
     // Ground truth subscriber
     if (config_.enable_ground_truth_comparison) {
-        ground_truth_subscriber_ =
-                nh_.subscribe("/odom_ground_truth", 1, &TwoMarkerWhyCodeTriangulationNode::groundTruthCallback, this);
+        ground_truth_subscriber_ = create_subscription<nav_msgs::msg::Odometry>(
+            "/odom_ground_truth", rclcpp::QoS(10),
+            std::bind(&TwoMarkerWhyCodeTriangulationNode::groundTruthCallback, this, std::placeholders::_1));
     }
 
     // Camera odometry publisher
     if (config_.publish_camera_odom) {
-        camera_odom_publisher_ = nh_.advertise<nav_msgs::Odometry>("two_marker_triangulation_whycode/camera_odom", 1);
+        camera_odom_publisher_ = create_publisher<nav_msgs::msg::Odometry>(
+            "two_marker_triangulation_whycode/camera_odom", rclcpp::QoS(10));
     }
 
     // Processing timer
-    processing_timer_ = nh_.createTimer(ros::Duration(1.0 / PROCESSING_RATE),
-                                        &TwoMarkerWhyCodeTriangulationNode::processingTimerCallback, this);
+    const auto period = std::chrono::duration<double>(1.0 / PROCESSING_RATE);
+    processing_timer_ = create_wall_timer(std::chrono::duration_cast<std::chrono::nanoseconds>(period),
+                                          std::bind(&TwoMarkerWhyCodeTriangulationNode::processingTimerCallback, this));
 }
 
 void TwoMarkerWhyCodeTriangulationNode::posesCallback(
-        const whycon_whycode_localization::WhyCodePoseArray::ConstPtr& msg) {
+        const whycon_whycode_localization::msg::WhyCodePoseArray::ConstSharedPtr& msg) {
     // Reset found flags
     marker1_.reset();
     marker2_.reset();
@@ -112,7 +136,7 @@ void TwoMarkerWhyCodeTriangulationNode::posesCallback(
     }
 }
 
-void TwoMarkerWhyCodeTriangulationNode::processingTimerCallback(const ros::TimerEvent& event) {
+void TwoMarkerWhyCodeTriangulationNode::processingTimerCallback() {
     if (!areTwoMarkersValid()) {
         return;
     }
@@ -144,7 +168,7 @@ void TwoMarkerWhyCodeTriangulationNode::processingTimerCallback(const ros::Timer
             publishCameraOdometry(camera_odom);
 
             if (config_.publish_camera_odom_tf) {
-                geometry_msgs::TransformStamped ts;
+                geometry_msgs::msg::TransformStamped ts;
                 ts.header.stamp            = camera_odom.timestamp;
                 ts.header.frame_id         = config_.camera_odom_parent_frame;
                 ts.child_frame_id          = config_.camera_odom_child_frame;
@@ -164,10 +188,12 @@ void TwoMarkerWhyCodeTriangulationNode::processingTimerCallback(const ros::Timer
         }
 
         // Debug output
-        // ROS_INFO_THROTTLE(1.0, "2-Marker pose estimated successfully. Angle: %.2f degrees",
+        // RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000,
+        //                      "2-Marker pose estimated successfully. Angle: %.2f degrees",
         //                   result.camera_plane_angles * 180.0 / M_PI);
     } else {
-        ROS_WARN_THROTTLE(1.0, "2-Marker pose estimation failed: %s", result.error_message.c_str());
+        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000,
+                             "2-Marker pose estimation failed: %s", result.error_message.c_str());
     }
 }
 
@@ -257,7 +283,7 @@ bool TwoMarkerWhyCodeTriangulationNode::areTwoMarkersValid() const {
     return true;
 }
 
-void TwoMarkerWhyCodeTriangulationNode::groundTruthCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+void TwoMarkerWhyCodeTriangulationNode::groundTruthCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& msg) {
     latest_ground_truth_   = *msg;
     ground_truth_received_ = true;
 }
@@ -265,7 +291,7 @@ void TwoMarkerWhyCodeTriangulationNode::groundTruthCallback(const nav_msgs::Odom
 TwoMarkerWhyCodeTriangulationNode::CameraOdometry
 TwoMarkerWhyCodeTriangulationNode::calculateCameraOdometry(const PoseEstimationResult& result) {
     CameraOdometry odom;
-    odom.timestamp = ros::Time::now();
+    odom.timestamp = now();
 
     // T_camera_marker = [R_cm, t_cm]
     const Eigen::Matrix3d R_cm = result.rotation;
@@ -306,11 +332,11 @@ void TwoMarkerWhyCodeTriangulationNode::maybeInitAlignment(const Eigen::Matrix3d
     t_align_        = -R_align_ * t_mc;
     have_alignment_ = true;
 
-    ROS_INFO("Initialized 2-marker camera odom alignment: start at x=0,y=0,theta=0");
+    RCLCPP_INFO(get_logger(), "Initialized 2-marker camera odom alignment: start at x=0,y=0,theta=0");
 }
 
 void TwoMarkerWhyCodeTriangulationNode::publishCameraOdometry(const CameraOdometry& odom) {
-    nav_msgs::Odometry odom_msg;
+    nav_msgs::msg::Odometry odom_msg;
 
     odom_msg.header.stamp    = odom.timestamp;
     odom_msg.header.frame_id = config_.camera_odom_parent_frame;
@@ -332,7 +358,7 @@ void TwoMarkerWhyCodeTriangulationNode::publishCameraOdometry(const CameraOdomet
     odom_msg.pose.covariance[7]  = 0.01;  // y variance
     odom_msg.pose.covariance[35] = 0.05;  // yaw variance
 
-    camera_odom_publisher_.publish(odom_msg);
+    camera_odom_publisher_->publish(odom_msg);
 }
 
 void TwoMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdometry& calculated_odom) {
@@ -352,7 +378,7 @@ void TwoMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdome
             gt_y0_      = gt_y;
             gt_theta0_  = gt_theta;
             gt_aligned_ = true;
-            ROS_INFO("Initialized 2-marker ground truth alignment to start at 0,0,0");
+            RCLCPP_INFO(get_logger(), "Initialized 2-marker ground truth alignment to start at 0,0,0");
         }
         gt_x -= gt_x0_;
         gt_y -= gt_y0_;
@@ -368,26 +394,33 @@ void TwoMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdome
     double distance_error = std::sqrt(error_x * error_x + error_y * error_y);
 
     // Log comparison (throttled to avoid spam)
-    ROS_INFO_THROTTLE(0.5, "2-Marker Odometry Comparison:");
-    ROS_INFO_THROTTLE(0.5, "  Calculated: x=%.3f, y=%.3f, theta=%.3f°", calculated_odom.x, calculated_odom.y,
-                      calculated_odom.theta * 180.0 / M_PI);
-    ROS_INFO_THROTTLE(0.5, "  Ground Truth: x=%.3f, y=%.3f, theta=%.3f°", gt_x, gt_y, gt_theta * 180.0 / M_PI);
-    ROS_INFO_THROTTLE(0.5, "  Errors: dx=%.3f, dy=%.3f, dtheta=%.3f°, distance=%.3f", error_x, error_y,
-                      error_theta * 180.0 / M_PI, distance_error);
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500, "2-Marker Odometry Comparison:");
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
+                         "  Calculated: x=%.3f, y=%.3f, theta=%.3f°", calculated_odom.x, calculated_odom.y,
+                         calculated_odom.theta * 180.0 / M_PI);
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
+                         "  Ground Truth: x=%.3f, y=%.3f, theta=%.3f°", gt_x, gt_y, gt_theta * 180.0 / M_PI);
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
+                         "  Errors: dx=%.3f, dy=%.3f, dtheta=%.3f°, distance=%.3f", error_x, error_y,
+                         error_theta * 180.0 / M_PI, distance_error);
 
     // Log warnings for large errors (red), success for small errors (green)
     if (distance_error > 0.1) {  // 10cm threshold
-        ROS_ERROR_STREAM("\033[1;31m[2-Marker] Large position error detected: " << distance_error << " m\033[0m");
+        RCLCPP_ERROR_STREAM(get_logger(),
+                            "\033[1;31m[2-Marker] Large position error detected: " << distance_error << " m\033[0m");
     } else {
-        ROS_INFO_STREAM("\033[1;32m[2-Marker] Position error within threshold: " << distance_error << " m\033[0m");
+        RCLCPP_INFO_STREAM(get_logger(),
+                           "\033[1;32m[2-Marker] Position error within threshold: " << distance_error << " m\033[0m");
     }
 
     if (std::abs(error_theta) > 0.175) {  // ~10 degree threshold
-        ROS_ERROR_STREAM("\033[1;31m[2-Marker] Large orientation error detected: "
-                         << std::abs(error_theta) * 180.0 / M_PI << " degrees\033[0m");
-    } else {
-        ROS_INFO_STREAM("\033[1;32m[2-Marker] Orientation error within threshold: "
+        RCLCPP_ERROR_STREAM(get_logger(),
+                    "\033[1;31m[2-Marker] Large orientation error detected: "
                         << std::abs(error_theta) * 180.0 / M_PI << " degrees\033[0m");
+    } else {
+        RCLCPP_INFO_STREAM(get_logger(),
+                   "\033[1;32m[2-Marker] Orientation error within threshold: "
+                       << std::abs(error_theta) * 180.0 / M_PI << " degrees\033[0m");
     }
 }
 
@@ -403,20 +436,22 @@ bool TwoMarkerWhyCodeTriangulationNode::validateInputs(const Eigen::Vector3d& P1
                                                        double known_distance) const {
     // Check for NaN or inf
     if (!P1.allFinite() || !P2.allFinite()) {
-        ROS_ERROR("[2-Marker] Invalid input: P1 or P2 contains NaN or inf.");
+        RCLCPP_ERROR(get_logger(), "[2-Marker] Invalid input: P1 or P2 contains NaN or inf.");
         return false;
     }
 
     // Check known distance
     if (known_distance <= MIN_KNOWN_DISTANCE) {
-        ROS_ERROR("[2-Marker] Invalid input: known_distance must be positive and > %.2e", MIN_KNOWN_DISTANCE);
+        RCLCPP_ERROR(get_logger(), "[2-Marker] Invalid input: known_distance must be positive and > %.2e",
+                     MIN_KNOWN_DISTANCE);
         return false;
     }
 
     // Check if markers are too close
     const double observed_distance = (P2 - P1).norm();
     if (observed_distance < MIN_DISTANCE) {
-        ROS_ERROR("[2-Marker] Invalid input: Markers are too close to each other: %.3f m", observed_distance);
+        RCLCPP_ERROR(get_logger(), "[2-Marker] Invalid input: Markers are too close to each other: %.3f m",
+                     observed_distance);
         return false;
     }
     return true;
@@ -465,9 +500,9 @@ TwoMarkerWhyCodeTriangulationNode::calculateCameraPlaneAngles(const Eigen::Vecto
 }
 
 void TwoMarkerWhyCodeTriangulationNode::publishTransform(const PoseEstimationResult& result) {
-    geometry_msgs::TransformStamped transform_stamped;
+    geometry_msgs::msg::TransformStamped transform_stamped;
 
-    transform_stamped.header.stamp    = ros::Time::now();
+    transform_stamped.header.stamp    = now();
     transform_stamped.header.frame_id = config_.camera_frame;  // camera_link
     transform_stamped.child_frame_id  = config_.target_frame;  // marker_center
 
@@ -487,17 +522,16 @@ void TwoMarkerWhyCodeTriangulationNode::publishTransform(const PoseEstimationRes
 }
 
 void TwoMarkerWhyCodeTriangulationNode::publishPose(const PoseEstimationResult& result) {
-    geometry_msgs::PoseStamped pose_msg = eigenToRosPose(result.position, result.rotation);
-    pose_publisher_.publish(pose_msg);
+    geometry_msgs::msg::PoseStamped pose_msg = eigenToRosPose(result.position, result.rotation);
+    pose_publisher_->publish(pose_msg);
 }
 
-geometry_msgs::PoseStamped TwoMarkerWhyCodeTriangulationNode::eigenToRosPose(const Eigen::Vector3d& position,
-                                                                             const Eigen::Matrix3d& rotation) const {
-    geometry_msgs::PoseStamped pose;
+geometry_msgs::msg::PoseStamped TwoMarkerWhyCodeTriangulationNode::eigenToRosPose(
+        const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation) const {
+    geometry_msgs::msg::PoseStamped pose;
 
-    pose.header.stamp    = ros::Time::now();
+    pose.header.stamp    = now();
     pose.header.frame_id = config_.camera_frame;
-    pose.header.seq++;
 
     // Position
     pose.pose.position.x = position.x();
@@ -512,26 +546,4 @@ geometry_msgs::PoseStamped TwoMarkerWhyCodeTriangulationNode::eigenToRosPose(con
     pose.pose.orientation.w = quat.w();
 
     return pose;
-}
-
-void TwoMarkerWhyCodeTriangulationNode::spin() {
-    ros::spin();
-}
-
-// Main function
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "two_marker_triangulation_node");
-
-    ros::NodeHandle nh;
-    ros::NodeHandle private_nh("~");
-
-    try {
-        TwoMarkerWhyCodeTriangulationNode node(nh, private_nh);
-        node.spin();
-    } catch (const std::exception& e) {
-        ROS_ERROR("[2-Marker] Exception in triangulation node: %s", e.what());
-        return 1;
-    }
-
-    return 0;
 }

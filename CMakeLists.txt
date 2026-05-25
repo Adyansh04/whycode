@@ -193,46 +193,7 @@ endif()
 
 if(BUILD_TRIANGULATION)
   message(STATUS "BUILD_TRIANGULATION=ON: adding triangulation nodes")
-
-  add_executable(two_marker_whycode_triangulation_node
-    src/triangulate/two_marker_whycode_triangulation_node.cpp
-  )
-
-  target_compile_options(two_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS})
-
-  ament_target_dependencies(two_marker_whycode_triangulation_node
-    rclcpp
-    geometry_msgs
-    nav_msgs
-    tf2_ros
-    tf2_geometry_msgs
-  )
-
-  target_link_libraries(two_marker_whycode_triangulation_node
-    "${cpp_typesupport_target}"
-  )
-
-  add_executable(four_marker_whycode_triangulation_node
-    src/triangulate/four_marker_whycode_triangulation_node.cpp
-  )
-
-  target_compile_options(four_marker_whycode_triangulation_node PRIVATE ${OPTIMIZATION_FLAGS})
-
-  ament_target_dependencies(four_marker_whycode_triangulation_node
-    rclcpp
-    geometry_msgs
-    nav_msgs
-    tf2_ros
-    tf2_geometry_msgs
-  )
-
-  target_link_libraries(four_marker_whycode_triangulation_node
-    "${cpp_typesupport_target}"
-  )
-
-  install(TARGETS two_marker_whycode_triangulation_node four_marker_whycode_triangulation_node
-    RUNTIME DESTINATION lib/${PROJECT_NAME}
-  )
+  add_subdirectory(src/triangulate)
 endif()
 
 if(BUILD_BENCHMARKS)
