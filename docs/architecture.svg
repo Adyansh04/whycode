@@ -1,0 +1,342 @@
+<svg width="1134pt" height="821pt" viewBox="0.00 0.00 1134.24 820.80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 816.8)">
+<title>WhyConPipeline</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-816.8 1130.24,-816.8 1130.24,4 -4,4"/>
+<!-- ros_image -->
+<g id="node1" class="node">
+<title>ros_image</title>
+<polygon fill="lightcyan" stroke="black" points="178.62,-775.2 23.35,-775.2 23.35,-733.6 178.62,-733.6 178.62,-775.2"/>
+<text text-anchor="middle" x="100.99" y="-758.6" font-family="Arial" font-size="14.00">ROS Image</text>
+<text text-anchor="middle" x="100.99" y="-741.8" font-family="Arial" font-size="14.00">(sensor_msgs::Image)</text>
+</g>
+<!-- image_handler -->
+<g id="node2" class="node">
+<title>image_handler</title>
+<polygon fill="lightgreen" stroke="black" points="184.07,-648 17.9,-648 17.9,-572.8 184.07,-572.8 184.07,-648"/>
+<text text-anchor="middle" x="100.99" y="-631.4" font-family="Arial" font-size="14.00">ImageHandler</text>
+<text text-anchor="middle" x="100.99" y="-614.6" font-family="Arial" font-size="14.00">• Format conversion</text>
+<text text-anchor="middle" x="100.99" y="-597.8" font-family="Arial" font-size="14.00">• Grayscale conversion</text>
+<text text-anchor="middle" x="100.99" y="-581" font-family="Arial" font-size="14.00">• Binarization</text>
+</g>
+<!-- ros_image&#45;&gt;image_handler -->
+<g id="edge1" class="edge">
+<title>ros_image-&gt;image_handler</title>
+<path fill="none" stroke="black" d="M100.99,-733.36C100.99,-714.26 100.99,-684.78 100.99,-659.58"/>
+<polygon fill="black" stroke="black" points="104.49,-659.87 100.99,-649.87 97.49,-659.87 104.49,-659.87"/>
+<text text-anchor="middle" x="137.12" y="-669" font-family="Arial" font-size="10.00">Raw image data</text>
+</g>
+<!-- prev_frame -->
+<g id="node3" class="node">
+<title>prev_frame</title>
+<polygon fill="lightgreen" stroke="black" points="894.39,-631.2 779.58,-631.2 779.58,-589.6 894.39,-589.6 894.39,-631.2"/>
+<text text-anchor="middle" x="836.99" y="-614.6" font-family="Arial" font-size="14.00">Previous Frame</text>
+<text text-anchor="middle" x="836.99" y="-597.8" font-family="Arial" font-size="14.00">(for optical flow)</text>
+</g>
+<!-- image_handler&#45;&gt;prev_frame -->
+<g id="edge3" class="edge">
+<title>image_handler-&gt;prev_frame</title>
+<path fill="none" stroke="black" d="M184.34,-610.4C330.99,-610.4 632.41,-610.4 768.11,-610.4"/>
+<polygon fill="black" stroke="black" points="768.03,-613.9 778.03,-610.4 768.03,-606.9 768.03,-613.9"/>
+<text text-anchor="middle" x="481.83" y="-628.4" font-family="Arial" font-size="10.00">Store for</text>
+<text text-anchor="middle" x="481.83" y="-616.4" font-family="Arial" font-size="10.00">next frame</text>
+</g>
+<!-- multi_detector -->
+<g id="node4" class="node">
+<title>multi_detector</title>
+<polygon fill="lightyellow" stroke="black" points="187.97,-504.4 0,-504.4 0,-462.8 187.97,-462.8 187.97,-504.4"/>
+<text text-anchor="middle" x="93.99" y="-487.8" font-family="Arial" font-size="14.00">MultiMarkerDetector</text>
+<text text-anchor="middle" x="93.99" y="-471" font-family="Arial" font-size="14.00">• Manages multiple targets</text>
+</g>
+<!-- image_handler&#45;&gt;multi_detector -->
+<g id="edge2" class="edge">
+<title>image_handler-&gt;multi_detector</title>
+<path fill="none" stroke="black" d="M98.92,-572.63C97.91,-554.64 96.71,-533.2 95.75,-515.99"/>
+<polygon fill="black" stroke="black" points="99.26,-516.14 95.21,-506.35 92.27,-516.53 99.26,-516.14"/>
+<text text-anchor="middle" x="139.04" y="-545.8" font-family="Arial" font-size="10.00">Processed images</text>
+<text text-anchor="middle" x="139.04" y="-533.8" font-family="Arial" font-size="10.00">(gray, binary)</text>
+</g>
+<!-- marker_tracker -->
+<g id="node9" class="node">
+<title>marker_tracker</title>
+<polygon fill="plum" stroke="black" points="598.4,-271.2 441.57,-271.2 441.57,-196 598.4,-196 598.4,-271.2"/>
+<text text-anchor="middle" x="519.99" y="-254.6" font-family="Arial" font-size="14.00">MarkerTracker</text>
+<text text-anchor="middle" x="519.99" y="-237.8" font-family="Arial" font-size="14.00">• Optical flow tracking</text>
+<text text-anchor="middle" x="519.99" y="-221" font-family="Arial" font-size="14.00">• Data association</text>
+<text text-anchor="middle" x="519.99" y="-204.2" font-family="Arial" font-size="14.00">• Track management</text>
+</g>
+<!-- prev_frame&#45;&gt;marker_tracker -->
+<g id="edge4" class="edge">
+<title>prev_frame-&gt;marker_tracker</title>
+<path fill="none" stroke="black" d="M839.43,-589.25C845.06,-532.64 852.46,-370.96 765.99,-289.2 747.99,-272.18 680.2,-276.43 655.99,-271.2 640.98,-267.96 625.16,-264.11 609.83,-260.14"/>
+<polygon fill="black" stroke="black" points="610.79,-256.78 600.23,-257.63 609.01,-263.55 610.79,-256.78"/>
+<text text-anchor="middle" x="868.76" y="-427.4" font-family="Arial" font-size="10.00">Previous frame</text>
+<text text-anchor="middle" x="868.76" y="-415.4" font-family="Arial" font-size="10.00">for optical flow</text>
+</g>
+<!-- marker_detector -->
+<g id="node5" class="node">
+<title>marker_detector</title>
+<polygon fill="lightyellow" stroke="black" points="269.24,-394.4 128.73,-394.4 128.73,-319.2 269.24,-319.2 269.24,-394.4"/>
+<text text-anchor="middle" x="198.99" y="-377.8" font-family="Arial" font-size="14.00">MarkerDetector</text>
+<text text-anchor="middle" x="198.99" y="-361" font-family="Arial" font-size="14.00">• Flood fill analysis</text>
+<text text-anchor="middle" x="198.99" y="-344.2" font-family="Arial" font-size="14.00">• Ellipse fitting</text>
+<text text-anchor="middle" x="198.99" y="-327.4" font-family="Arial" font-size="14.00">• Validation checks</text>
+</g>
+<!-- multi_detector&#45;&gt;marker_detector -->
+<g id="edge5" class="edge">
+<title>multi_detector-&gt;marker_detector</title>
+<path fill="none" stroke="black" d="M97.49,-462.51C100.89,-447.51 107.27,-427.14 118.61,-412.4 121.31,-408.89 124.3,-405.53 127.49,-402.31"/>
+<polygon fill="black" stroke="black" points="129.71,-405.03 134.69,-395.68 124.97,-399.88 129.71,-405.03"/>
+<text text-anchor="middle" x="160.3" y="-427.4" font-family="Arial" font-size="10.00">Detection requests</text>
+<text text-anchor="middle" x="160.3" y="-415.4" font-family="Arial" font-size="10.00">per target</text>
+</g>
+<!-- detection_context -->
+<g id="node6" class="node">
+<title>detection_context</title>
+<polygon fill="lightyellow" stroke="black" points="397.24,-512.8 256.73,-512.8 256.73,-454.4 397.24,-454.4 397.24,-512.8"/>
+<text text-anchor="middle" x="326.99" y="-496.2" font-family="Arial" font-size="14.00">DetectionContext</text>
+<text text-anchor="middle" x="326.99" y="-479.4" font-family="Arial" font-size="14.00">• Shared buffers</text>
+<text text-anchor="middle" x="326.99" y="-462.6" font-family="Arial" font-size="14.00">• Segment tracking</text>
+</g>
+<!-- marker_detector&#45;&gt;detection_context -->
+<g id="edge6" class="edge">
+<title>marker_detector-&gt;detection_context</title>
+<path fill="none" stroke="black" d="M218.37,-394.78C226.91,-408.87 237.84,-424.41 250.27,-436.4 254.3,-440.28 258.7,-443.98 263.3,-447.48"/>
+<polygon fill="black" stroke="black" points="260.94,-450.1 271.12,-453.06 265.02,-444.4 260.94,-450.1"/>
+<text text-anchor="middle" x="283.63" y="-427.4" font-family="Arial" font-size="10.00">Buffer &amp; queue</text>
+<text text-anchor="middle" x="283.63" y="-415.4" font-family="Arial" font-size="10.00">operations</text>
+</g>
+<!-- localization_system -->
+<g id="node7" class="node">
+<title>localization_system</title>
+<polygon fill="lightcoral" stroke="black" points="520.8,-394.4 363.18,-394.4 363.18,-319.2 520.8,-319.2 520.8,-394.4"/>
+<text text-anchor="middle" x="441.99" y="-377.8" font-family="Arial" font-size="14.00">LocalizationSystem</text>
+<text text-anchor="middle" x="441.99" y="-361" font-family="Arial" font-size="14.00">• Camera calibration</text>
+<text text-anchor="middle" x="441.99" y="-344.2" font-family="Arial" font-size="14.00">• 3D pose estimation</text>
+<text text-anchor="middle" x="441.99" y="-327.4" font-family="Arial" font-size="14.00">• Ambiguity resolution</text>
+</g>
+<!-- marker_detector&#45;&gt;localization_system -->
+<g id="edge8" class="edge">
+<title>marker_detector-&gt;localization_system</title>
+<path fill="none" stroke="black" d="M269.6,-356.8C295.22,-356.8 324.54,-356.8 351.63,-356.8"/>
+<polygon fill="black" stroke="black" points="351.58,-360.3 361.58,-356.8 351.58,-353.3 351.58,-360.3"/>
+<text text-anchor="middle" x="316.21" y="-374.8" font-family="Arial" font-size="10.00">Detected ellipses</text>
+<text text-anchor="middle" x="316.21" y="-362.8" font-family="Arial" font-size="10.00">(inner &amp; outer)</text>
+</g>
+<!-- debug_manager -->
+<g id="node17" class="node">
+<title>debug_manager</title>
+<polygon fill="lightsteelblue" stroke="black" points="295.7,-148 102.27,-148 102.27,-89.6 295.7,-89.6 295.7,-148"/>
+<text text-anchor="middle" x="198.99" y="-131.4" font-family="Arial" font-size="14.00">DebugImageManager</text>
+<text text-anchor="middle" x="198.99" y="-114.6" font-family="Arial" font-size="14.00">• Debug image collection</text>
+<text text-anchor="middle" x="198.99" y="-97.8" font-family="Arial" font-size="14.00">• Consolidated visualization</text>
+</g>
+<!-- marker_detector&#45;&gt;debug_manager -->
+<g id="edge20" class="edge">
+<title>marker_detector-&gt;debug_manager</title>
+<path fill="none" stroke="black" d="M198.99,-318.93C198.99,-275.61 198.99,-204.02 198.99,-159.51"/>
+<polygon fill="black" stroke="black" points="202.49,-159.78 198.99,-149.78 195.49,-159.78 202.49,-159.78"/>
+<text text-anchor="middle" x="230.4" y="-236.6" font-family="Arial" font-size="10.00">Detection</text>
+<text text-anchor="middle" x="230.4" y="-224.6" font-family="Arial" font-size="10.00">debug images</text>
+</g>
+<!-- detection_context&#45;&gt;marker_detector -->
+<g id="edge7" class="edge">
+<title>detection_context-&gt;marker_detector</title>
+<path fill="none" stroke="black" d="M328.97,-453.9C328.5,-440.15 325.73,-424.16 316.99,-412.4 307.41,-399.52 294.05,-389.59 279.75,-381.95"/>
+<polygon fill="black" stroke="black" points="281.61,-378.97 271.09,-377.69 278.52,-385.25 281.61,-378.97"/>
+<text text-anchor="middle" x="355.05" y="-421.4" font-family="Arial" font-size="10.00">Shared state</text>
+</g>
+<!-- cnecklace -->
+<g id="node8" class="node">
+<title>cnecklace</title>
+<polygon fill="lightcoral" stroke="black" points="724,-386 595.97,-386 595.97,-327.6 724,-327.6 724,-386"/>
+<text text-anchor="middle" x="659.99" y="-369.4" font-family="Arial" font-size="14.00">CNecklace</text>
+<text text-anchor="middle" x="659.99" y="-352.6" font-family="Arial" font-size="14.00">• ID decoding</text>
+<text text-anchor="middle" x="659.99" y="-335.8" font-family="Arial" font-size="14.00">• Error correction</text>
+</g>
+<!-- localization_system&#45;&gt;cnecklace -->
+<g id="edge9" class="edge">
+<title>localization_system-&gt;cnecklace</title>
+<path fill="none" stroke="black" d="M520.95,-331.67C524.56,-330.95 528.16,-330.32 531.7,-329.8 552.32,-326.76 559.87,-325.91 584.55,-330.07"/>
+<polygon fill="black" stroke="black" points="583.86,-333.5 594.31,-331.81 585.09,-326.61 583.86,-333.5"/>
+<text text-anchor="middle" x="558.38" y="-344.8" font-family="Arial" font-size="10.00">ID decoding</text>
+<text text-anchor="middle" x="558.38" y="-332.8" font-family="Arial" font-size="10.00">requests</text>
+</g>
+<!-- localization_system&#45;&gt;marker_tracker -->
+<g id="edge11" class="edge">
+<title>localization_system-&gt;marker_tracker</title>
+<path fill="none" stroke="black" d="M465.81,-318.78C473.52,-306.8 482.17,-293.36 490.26,-280.79"/>
+<polygon fill="black" stroke="black" points="493.02,-282.97 495.49,-272.67 487.13,-279.18 493.02,-282.97"/>
+<text text-anchor="middle" x="518.62" y="-292.2" font-family="Arial" font-size="10.00">Valid detections</text>
+</g>
+<!-- ros_interface -->
+<g id="node12" class="node">
+<title>ros_interface</title>
+<polygon fill="lightgray" stroke="black" points="936.02,-148 765.96,-148 765.96,-89.6 936.02,-89.6 936.02,-148"/>
+<text text-anchor="middle" x="850.99" y="-131.4" font-family="Arial" font-size="14.00">WhyconRosInterface</text>
+<text text-anchor="middle" x="850.99" y="-114.6" font-family="Arial" font-size="14.00">• Result publishing</text>
+<text text-anchor="middle" x="850.99" y="-97.8" font-family="Arial" font-size="14.00">• Coordinate transforms</text>
+</g>
+<!-- localization_system&#45;&gt;ros_interface -->
+<g id="edge16" class="edge">
+<title>localization_system-&gt;ros_interface</title>
+<path fill="none" stroke="black" d="M521.22,-335.08C542.52,-329.7 565.59,-324.06 586.99,-319.2 691.78,-295.38 748.88,-348.08 823.99,-271.2 852.44,-242.07 856.57,-193.91 855.27,-159.74"/>
+<polygon fill="black" stroke="black" points="858.76,-159.58 854.69,-149.8 851.77,-159.98 858.76,-159.58"/>
+<text text-anchor="middle" x="888.31" y="-230.6" font-family="Arial" font-size="10.00">Pose estimates</text>
+</g>
+<!-- localization_system&#45;&gt;debug_manager -->
+<g id="edge21" class="edge">
+<title>localization_system-&gt;debug_manager</title>
+<path fill="none" stroke="black" d="M404.02,-318.93C358.28,-274.5 281.92,-200.35 236.42,-156.16"/>
+<polygon fill="black" stroke="black" points="239,-153.78 229.38,-149.32 234.12,-158.8 239,-153.78"/>
+<text text-anchor="middle" x="388.12" y="-236.6" font-family="Arial" font-size="10.00">Pose estimation</text>
+<text text-anchor="middle" x="388.12" y="-224.6" font-family="Arial" font-size="10.00">debug images</text>
+</g>
+<!-- cnecklace&#45;&gt;localization_system -->
+<g id="edge10" class="edge">
+<title>cnecklace-&gt;localization_system</title>
+<path fill="none" stroke="black" d="M595.55,-356.8C575.73,-356.8 553.54,-356.8 532.32,-356.8"/>
+<polygon fill="black" stroke="black" points="532.51,-353.3 522.51,-356.8 532.51,-360.3 532.51,-353.3"/>
+<text text-anchor="middle" x="558.38" y="-362.8" font-family="Arial" font-size="10.00">Decoded IDs</text>
+</g>
+<!-- id_stabilizer -->
+<g id="node10" class="node">
+<title>id_stabilizer</title>
+<polygon fill="plum" stroke="black" points="687.39,-148 544.58,-148 544.58,-89.6 687.39,-89.6 687.39,-148"/>
+<text text-anchor="middle" x="615.99" y="-131.4" font-family="Arial" font-size="14.00">IDStabilizer</text>
+<text text-anchor="middle" x="615.99" y="-114.6" font-family="Arial" font-size="14.00">• ID flicker filtering</text>
+<text text-anchor="middle" x="615.99" y="-97.8" font-family="Arial" font-size="14.00">• Hysteresis control</text>
+</g>
+<!-- marker_tracker&#45;&gt;id_stabilizer -->
+<g id="edge12" class="edge">
+<title>marker_tracker-&gt;id_stabilizer</title>
+<path fill="none" stroke="black" d="M551.42,-195.67C561.98,-183.26 573.76,-169.41 584.34,-156.99"/>
+<polygon fill="black" stroke="black" points="587,-159.26 590.81,-149.38 581.66,-154.73 587,-159.26"/>
+<text text-anchor="middle" x="604.65" y="-169" font-family="Arial" font-size="10.00">Tracking IDs</text>
+</g>
+<!-- pose_stabilizer -->
+<g id="node11" class="node">
+<title>pose_stabilizer</title>
+<polygon fill="plum" stroke="black" points="814.91,-262.8 665.06,-262.8 665.06,-204.4 814.91,-204.4 814.91,-262.8"/>
+<text text-anchor="middle" x="739.99" y="-246.2" font-family="Arial" font-size="14.00">PoseStabilizer</text>
+<text text-anchor="middle" x="739.99" y="-229.4" font-family="Arial" font-size="14.00">• Position smoothing</text>
+<text text-anchor="middle" x="739.99" y="-212.6" font-family="Arial" font-size="14.00">• EMA filtering</text>
+</g>
+<!-- marker_tracker&#45;&gt;pose_stabilizer -->
+<g id="edge13" class="edge">
+<title>marker_tracker-&gt;pose_stabilizer</title>
+<path fill="none" stroke="black" d="M598.79,-233.6C616.47,-233.6 635.33,-233.6 653.31,-233.6"/>
+<polygon fill="black" stroke="black" points="653.16,-237.1 663.16,-233.6 653.16,-230.1 653.16,-237.1"/>
+<text text-anchor="middle" x="631.73" y="-239.6" font-family="Arial" font-size="10.00">Raw poses</text>
+</g>
+<!-- id_stabilizer&#45;&gt;ros_interface -->
+<g id="edge14" class="edge">
+<title>id_stabilizer-&gt;ros_interface</title>
+<path fill="none" stroke="black" d="M687.77,-118.8C708.69,-118.8 731.9,-118.8 754.1,-118.8"/>
+<polygon fill="black" stroke="black" points="754.08,-122.3 764.08,-118.8 754.08,-115.3 754.08,-122.3"/>
+<text text-anchor="middle" x="726.67" y="-124.8" font-family="Arial" font-size="10.00">Stabilized IDs</text>
+</g>
+<!-- pose_stabilizer&#45;&gt;ros_interface -->
+<g id="edge15" class="edge">
+<title>pose_stabilizer-&gt;ros_interface</title>
+<path fill="none" stroke="black" d="M745.47,-203.97C749.07,-191.21 754.89,-176.68 764.16,-166 767.53,-162.12 771.3,-158.52 775.34,-155.18"/>
+<polygon fill="black" stroke="black" points="777.43,-157.99 783.33,-149.19 773.23,-152.39 777.43,-157.99"/>
+<text text-anchor="middle" x="800.57" y="-169" font-family="Arial" font-size="10.00">Stabilized poses</text>
+</g>
+<!-- pose_array -->
+<g id="node13" class="node">
+<title>pose_array</title>
+<polygon fill="white" stroke="black" points="864.01,-41.6 665.96,-41.6 665.96,0 864.01,0 864.01,-41.6"/>
+<text text-anchor="middle" x="764.99" y="-25" font-family="Arial" font-size="14.00">Pose Array</text>
+<text text-anchor="middle" x="764.99" y="-8.2" font-family="Arial" font-size="14.00">(geometry_msgs::PoseArray)</text>
+</g>
+<!-- ros_interface&#45;&gt;pose_array -->
+<g id="edge17" class="edge">
+<title>ros_interface-&gt;pose_array</title>
+<path fill="none" stroke="black" d="M825.42,-89.26C814.42,-76.98 801.59,-62.66 790.59,-50.38"/>
+<polygon fill="black" stroke="black" points="793.25,-48.1 783.97,-42.99 788.03,-52.77 793.25,-48.1"/>
+<text text-anchor="middle" x="824.38" y="-62.6" font-family="Arial" font-size="10.00">Publish</text>
+</g>
+<!-- tf_transforms -->
+<g id="node14" class="node">
+<title>tf_transforms</title>
+<polygon fill="white" stroke="black" points="989.88,-41.6 882.1,-41.6 882.1,0 989.88,0 989.88,-41.6"/>
+<text text-anchor="middle" x="935.99" y="-25" font-family="Arial" font-size="14.00">TF Transforms</text>
+<text text-anchor="middle" x="935.99" y="-8.2" font-family="Arial" font-size="14.00">(tf::Transform)</text>
+</g>
+<!-- ros_interface&#45;&gt;tf_transforms -->
+<g id="edge18" class="edge">
+<title>ros_interface-&gt;tf_transforms</title>
+<path fill="none" stroke="black" d="M876.26,-89.26C887.13,-76.98 899.81,-62.66 910.68,-50.38"/>
+<polygon fill="black" stroke="black" points="913.21,-52.8 917.22,-42.99 907.97,-48.16 913.21,-52.8"/>
+<text text-anchor="middle" x="923.61" y="-62.6" font-family="Arial" font-size="10.00">Broadcast</text>
+</g>
+<!-- output_images -->
+<g id="node16" class="node">
+<title>output_images</title>
+<polygon fill="white" stroke="black" points="1126.24,-139.6 999.73,-139.6 999.73,-98 1126.24,-98 1126.24,-139.6"/>
+<text text-anchor="middle" x="1062.99" y="-123" font-family="Arial" font-size="14.00">Output Images</text>
+<text text-anchor="middle" x="1062.99" y="-106.2" font-family="Arial" font-size="14.00">(with annotations)</text>
+</g>
+<!-- ros_interface&#45;&gt;output_images -->
+<g id="edge19" class="edge">
+<title>ros_interface-&gt;output_images</title>
+<path fill="none" stroke="black" d="M936.3,-118.8C953.41,-118.8 971.26,-118.8 987.99,-118.8"/>
+<polygon fill="black" stroke="black" points="987.85,-122.3 997.85,-118.8 987.85,-115.3 987.85,-122.3"/>
+<text text-anchor="middle" x="967.88" y="-136.8" font-family="Arial" font-size="10.00">Annotated</text>
+<text text-anchor="middle" x="967.88" y="-124.8" font-family="Arial" font-size="10.00">images</text>
+</g>
+<!-- debug_images -->
+<g id="node15" class="node">
+<title>debug_images</title>
+<polygon fill="white" stroke="black" points="526.62,-139.6 371.35,-139.6 371.35,-98 526.62,-98 526.62,-139.6"/>
+<text text-anchor="middle" x="448.99" y="-123" font-family="Arial" font-size="14.00">Debug Images</text>
+<text text-anchor="middle" x="448.99" y="-106.2" font-family="Arial" font-size="14.00">(sensor_msgs::Image)</text>
+</g>
+<!-- debug_manager&#45;&gt;debug_images -->
+<g id="edge22" class="edge">
+<title>debug_manager-&gt;debug_images</title>
+<path fill="none" stroke="black" d="M296,-118.8C316.96,-118.8 339.03,-118.8 359.68,-118.8"/>
+<polygon fill="black" stroke="black" points="359.47,-122.3 369.47,-118.8 359.47,-115.3 359.47,-122.3"/>
+<text text-anchor="middle" x="333.53" y="-136.8" font-family="Arial" font-size="10.00">Consolidated</text>
+<text text-anchor="middle" x="333.53" y="-124.8" font-family="Arial" font-size="10.00">debug output</text>
+</g>
+<!-- config -->
+<g id="node18" class="node">
+<title>config</title>
+<polygon fill="orange" stroke="black" points="441.99,-812.8 259.46,-754.4 441.99,-696 624.51,-754.4 441.99,-812.8"/>
+<text text-anchor="middle" x="441.99" y="-767" font-family="Arial" font-size="14.00">WhyConConfig</text>
+<text text-anchor="middle" x="441.99" y="-750.2" font-family="Arial" font-size="14.00">• Parameter management</text>
+<text text-anchor="middle" x="441.99" y="-733.4" font-family="Arial" font-size="14.00">• YAML loading</text>
+</g>
+<!-- config&#45;&gt;image_handler -->
+<g id="edge23" class="edge">
+<title>config-&gt;image_handler</title>
+<path fill="none" stroke="gray" stroke-dasharray="5,2" d="M341.01,-727.89C297.8,-715.33 247.41,-698.46 203.99,-678 189.88,-671.35 175.42,-663.06 161.95,-654.6"/>
+<polygon fill="gray" stroke="gray" points="163.93,-651.71 153.62,-649.26 160.15,-657.6 163.93,-651.71"/>
+</g>
+<!-- config&#45;&gt;marker_detector -->
+<g id="edge24" class="edge">
+<title>config-&gt;marker_detector</title>
+<path fill="none" stroke="gray" stroke-dasharray="5,2" d="M398.13,-709.62C354.62,-663.99 288.7,-588.69 247.99,-512.8 229.87,-479.02 217.18,-437.46 209.26,-405.87"/>
+<polygon fill="gray" stroke="gray" points="212.67,-405.09 206.92,-396.19 205.87,-406.74 212.67,-405.09"/>
+</g>
+<!-- config&#45;&gt;localization_system -->
+<g id="edge25" class="edge">
+<title>config-&gt;localization_system</title>
+<path fill="none" stroke="gray" stroke-dasharray="5,2" d="M441.99,-695.88C441.99,-617.56 441.99,-478.81 441.99,-405.79"/>
+<polygon fill="gray" stroke="gray" points="445.49,-406.17 441.99,-396.17 438.49,-406.17 445.49,-406.17"/>
+</g>
+<!-- config&#45;&gt;marker_tracker -->
+<g id="edge26" class="edge">
+<title>config-&gt;marker_tracker</title>
+<path fill="none" stroke="gray" stroke-dasharray="5,2" d="M585.64,-741.52C666.73,-726.04 751.99,-690.87 751.99,-611.4 751.99,-611.4 751.99,-611.4 751.99,-355.8 751.99,-337.47 746.58,-331.49 732.99,-319.2 698.44,-287.97 650.96,-267.61 609.59,-254.71"/>
+<polygon fill="gray" stroke="gray" points="610.7,-251.39 600.11,-251.87 608.68,-258.1 610.7,-251.39"/>
+</g>
+<!-- config&#45;&gt;ros_interface -->
+<g id="edge27" class="edge">
+<title>config-&gt;ros_interface</title>
+<path fill="none" stroke="gray" stroke-dasharray="5,2" d="M584.67,-741.19C734.01,-724.37 946.99,-687.11 946.99,-611.4 946.99,-611.4 946.99,-611.4 946.99,-232.6 946.99,-201.82 925.99,-175.16 903.64,-155.5"/>
+<polygon fill="gray" stroke="gray" points="906.13,-153.01 896.21,-149.28 901.64,-158.38 906.13,-153.01"/>
+</g>
+</g>
+</svg>
