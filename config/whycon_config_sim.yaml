@@ -7,7 +7,7 @@ system:
   targets: 6                   # Number of markers to track
   frame_id: "whycon"           # Frame ID for published poses
   world_frame_id: "world"      # World frame ID
-  process_rate_hz: 40.0        # Processing rate in Hz
+  process_rate_hz: 30.0        # Processing rate in Hz
 
 # ==============================================================================
 # DETECTOR PARAMETERS
@@ -41,8 +41,8 @@ identification:
   
   # Quality thresholds for reliable detection
   diameter_ratio_correction: 0.45   # Adjusted diameter ratio to scale for inner ellipse check. Ideally should be outer/inner.
-  variance_threshold: 0.35          # Minimum variance difference for reliable ID
-  min_marker_pixels: 40             # Minimum outer segmentg pixels inside a circle for whycode decoding
+  variance_threshold: 0.20          # Minimum variance difference for reliable ID
+  min_marker_pixels: 20             # Minimum outer segmentg pixels inside a circle for whycode decoding
 
   
 # ==============================================================================

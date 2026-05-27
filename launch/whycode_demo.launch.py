@@ -29,8 +29,8 @@ def generate_launch_description():
             # "world": "docking.world",
             # "world": "whycode.world",
             # "world": "whycode_1.world",
-            "world": "whycode_2.world",
-            # "world": "whycode_3.world",
+            # "world": "whycode_2.world",
+            "world": "whycode_3.world",
             "gui": "false",
         }.items(),
     )

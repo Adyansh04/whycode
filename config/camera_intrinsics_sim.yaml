@@ -4,7 +4,7 @@ camera_name: camera_link
 camera_matrix:
   rows: 3
   cols: 3
-  data: [1108.509382382374, 0.0, 640.5, 0.0, 1108.509382382374, 360.5, 0.0, 0.0, 1.0]
+  data: [762.72224426269531, 0.0, 640, 0.0, 762.72231101989746, 360, 0.0, 0.0, 1.0]
 distortion_model: plumb_bob
 distortion_coefficients:
   rows: 1
@@ -17,7 +17,7 @@ rectification_matrix:
 projection_matrix:
   rows: 3
   cols: 4
-  data: [1108.509382382374, 0.0, 640.5, -0.0, 0.0, 1108.509382382374, 360.5, 0.0, 0.0, 0.0, 1.0, 0.0]
+  data: [762.72224426269531, 0.0, 640, 0.0, 0.0, 762.72231101989746, 360, 0.0, 0.0, 0.0, 1.0, 0.0]
 binning_x: 0
 binning_y: 0
 roi:

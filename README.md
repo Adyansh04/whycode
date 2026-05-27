@@ -13,19 +13,15 @@
 * **ID Tracking and Stabilization**: Reduces ID flicker using a hysteresis-based ID stabilizer and maintains tracks over time with lightweight 2D tracking.
 * **Modular Build Options**: Enable or disable triangulation and benchmarks using CMake options.
 
-## Demo Videos (Placeholders)
-
-### Stationary WhyCode marker detection
-
-TODO: Add demo video link.
+## Demo Videos
 
 ### Moving camera and detection
 
-TODO: Add demo video link.
+![Moving camera and detection](docs/demo_media/demo1.gif)
 
 ### Four-marker triangulation demo
 
-TODO: Add demo video link.
+![Four-marker triangulation demo](docs/demo_media/demo2.gif)
 
 ## WhyCon Marker Detection Range
 
