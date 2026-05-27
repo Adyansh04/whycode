@@ -263,9 +263,7 @@ Full configuration and tuning details are documented in [docs/configuration/READ
 
 ## Further docs and test assets
 
-* Detailed documentation: Bookstack - [WhyCode Tags](https://bookstack.addverb.com/books/releases/page/whycode-tags)
-* Gazebo testing: WhyCode marker worlds and models - [fiducial-gazebo-sim](https://github.com/addverb-sandbox/fiducial-gazebo-sim)
-  This repository is also available locally under `whycode_sim/` for quick simulation.
+* Gazebo testing: WhyCode marker worlds and models - [Whycode Sim](https://github.com/Adyansh04/whycode-sim/tree/jazzy-harmonic)
 
 ## Known Limitations
 
