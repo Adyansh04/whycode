@@ -7,7 +7,8 @@
 #include <string>
 #include <vector>
 
-namespace whycon {
+namespace whycon
+{
 
 /**
  * @brief YAML-based parameter loader for WhyCon configuration management
@@ -41,8 +42,9 @@ namespace whycon {
  * std::vector<double> thresholds = loader.getParams<double>("detector", "thresholds", ',');
  * @endcode
  */
-class ParamLoader {
-  public:
+class ParamLoader
+{
+public:
     /**
      * @brief Construct a new ParamLoader and load YAML configuration
      *
@@ -74,7 +76,9 @@ class ParamLoader {
      * @throws std::runtime_error If type conversion fails
      */
     template <typename T>
-    T getParams(const std::string& category, const std::string& subcategory, const std::string& parameter) const;
+    T getParams(
+        const std::string& category, const std::string& subcategory,
+        const std::string& parameter) const;
 
     /**
      * @brief Get a parameter value with simple two-level access (category/parameter)
@@ -114,7 +118,8 @@ class ParamLoader {
      * @note Individual element conversion failures are logged but don't stop processing
      */
     template <typename T>
-    std::vector<T> getParams(const std::string& category, const std::string& parameter, char delimiter) const;
+    std::vector<T>
+    getParams(const std::string& category, const std::string& parameter, char delimiter) const;
 
     /**
      * @brief Check if a parameter exists in the configuration
@@ -145,10 +150,11 @@ class ParamLoader {
      * @param distortion_coeffs Output distortion coefficients (CV_64F)
      * @return true if successful, false on error
      */
-    bool loadCameraIntrinsics(const std::string& camera_file_path, cv::Mat& camera_matrix,
-                              cv::Mat& distortion_coeffs) const;
+    bool loadCameraIntrinsics(
+        const std::string& camera_file_path, cv::Mat& camera_matrix,
+        cv::Mat& distortion_coeffs) const;
 
-  private:
+private:
     YAML::Node  config;             ///< Loaded YAML configuration data structure
     std::string config_file_path_;  ///< Path to the configuration file (stored for error reporting)
 
@@ -166,8 +172,9 @@ class ParamLoader {
      *
      * @throws std::runtime_error If any level in the hierarchy doesn't exist
      */
-    YAML::Node navigateNode(const std::string& category, const std::string& subcategory,
-                            const std::string& parameter) const;
+    YAML::Node navigateNode(
+        const std::string& category, const std::string& subcategory,
+        const std::string& parameter) const;
 
     /**
      * @brief Navigate to a specific node in the YAML hierarchy (2-level access)

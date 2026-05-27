@@ -64,11 +64,13 @@ def generate_launch_description():
         parameters=[{"autosize": True}],
     )
 
-    return LaunchDescription([
-        config_file_arg,
-        image_view_arg,
-        use_composition_arg,
-        whycon_container,
-        whycon_node,
-        image_view_node,
-    ])
+    return LaunchDescription(
+        [
+            config_file_arg,
+            image_view_arg,
+            use_composition_arg,
+            whycon_container,
+            whycon_node,
+            image_view_node,
+        ]
+    )

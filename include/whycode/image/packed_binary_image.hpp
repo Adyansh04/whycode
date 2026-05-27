@@ -7,11 +7,13 @@
 
 #include "xsimd/xsimd.hpp"
 
-namespace whycon {
+namespace whycon
+{
 
 // Aligned allocator for optimal SIMD performance
 template <typename T>
-using aligned_vector = std::vector<T, xsimd::aligned_allocator<T, xsimd::default_arch::alignment()>>;
+using aligned_vector =
+    std::vector<T, xsimd::aligned_allocator<T, xsimd::default_arch::alignment()>>;
 
 /**
  * @brief Optimized bit-packed binary image class
@@ -20,8 +22,9 @@ using aligned_vector = std::vector<T, xsimd::aligned_allocator<T, xsimd::default
  * where each pixel is represented by a single bit (1 bit per pixel).
  * It offers SIMD-optimized operations for high-performance image processing.
  */
-class PackedBinaryImage {
-  public:
+class PackedBinaryImage
+{
+public:
     /**
      * @brief Construct a new PackedBinaryImage
      *
@@ -36,7 +39,8 @@ class PackedBinaryImage {
      * @param y Row coordinate (0 to height-1)
      * @return true if pixel is set (white), false if clear (black)
      */
-    inline bool getPixel(int x, int y) const {
+    inline bool getPixel(int x, int y) const
+    {
         const size_t byte_index = y * stride_ + (x >> 3);  // x / 8
         const int    bit_index  = x & 7;                   // x % 8 (LSB-first)
         return (data_[byte_index] >> bit_index) & 1;
@@ -49,12 +53,16 @@ class PackedBinaryImage {
      * @param y Row coordinate (0 to height-1)
      * @param value Pixel value (true for white, false for black)
      */
-    inline void setPixel(int x, int y, bool value) {
+    inline void setPixel(int x, int y, bool value)
+    {
         const size_t byte_index = y * stride_ + (x >> 3);  // x / 8
         const int    bit_index  = x & 7;                   // x % 8
-        if (value) {
+        if (value)
+        {
             data_[byte_index] |= (1 << bit_index);  // Set bit
-        } else {
+        }
+        else
+        {
             data_[byte_index] &= ~(1 << bit_index);  // Clear bit
         }
     }
@@ -65,7 +73,8 @@ class PackedBinaryImage {
      * @param linear_index Linear pixel index (0 to width*height-1)
      * @return true if pixel is set (white), false if clear (black)
      */
-    inline bool getPixelLinear(int linear_index) const {
+    inline bool getPixelLinear(int linear_index) const
+    {
         const size_t byte_index = linear_index >> 3;  // linear_index / 8
         const int    bit_index  = linear_index & 7;   // linear_index % 8
         return (data_[byte_index] >> bit_index) & 1;
@@ -85,8 +94,10 @@ class PackedBinaryImage {
      * @param byte_value uint8_t containing 8 packed pixels
      * @param pixel_bits Output array of 8 bool values
      */
-    static inline void unpackByte(uint8_t byte_value, bool pixel_bits[8]) {
-        for (int i = 0; i < 8; ++i) {
+    static inline void unpackByte(uint8_t byte_value, bool pixel_bits[8])
+    {
+        for (int i = 0; i < 8; ++i)
+        {
             pixel_bits[i] = (byte_value >> i) & 1;
         }
     }
@@ -107,7 +118,10 @@ class PackedBinaryImage {
      * @param expected Expected pixel value
      * @return true if pixel matches expected value
      */
-    inline bool pixelEquals(int x, int y, bool expected) const { return getPixel(x, y) == expected; }
+    inline bool pixelEquals(int x, int y, bool expected) const
+    {
+        return getPixel(x, y) == expected;
+    }
 
     /**
      * @brief Check if byte contains any black pixels [FASTEST BULK SCAN]
@@ -115,7 +129,8 @@ class PackedBinaryImage {
      * @param byte_value Packed byte containing 8 pixels
      * @return true if any pixel in byte is black
      */
-    static inline bool hasByteBlackPixel(uint8_t byte_value) {
+    static inline bool hasByteBlackPixel(uint8_t byte_value)
+    {
         return byte_value != 0xFF;  // All bits set means all white pixels
     }
 
@@ -125,7 +140,8 @@ class PackedBinaryImage {
      * @param byte_value Packed byte containing 8 pixels
      * @return bit position (0-7) of first black pixel, or -1 if none
      */
-    static inline int findFirstBlackPixelInByte(uint8_t byte_value) {
+    static inline int findFirstBlackPixelInByte(uint8_t byte_value)
+    {
         if (byte_value == 0)
             return -1;
         return __builtin_ctz(byte_value);  // Count trailing zeros = first set bit
@@ -137,10 +153,13 @@ class PackedBinaryImage {
      * @param positions Output array for pixel positions (0-7)
      * @return count of black pixels found
      */
-    static inline int getAllBlackPixelsInByte(uint8_t byte_value, int positions[8]) {
+    static inline int getAllBlackPixelsInByte(uint8_t byte_value, int positions[8])
+    {
         int count = 0;
-        for (int bit = 0; bit < 8; ++bit) {
-            if (byte_value & (1u << bit)) {
+        for (int bit = 0; bit < 8; ++bit)
+        {
+            if (byte_value & (1u << bit))
+            {
                 positions[count++] = bit;
             }
         }
@@ -188,7 +207,7 @@ class PackedBinaryImage {
     inline const uint8_t* data() const { return data_.data(); }
     inline uint8_t*       data() { return data_.data(); }
 
-  private:
+private:
     aligned_vector<uint8_t> data_;    // Bit-packed image data
     int                     width_;   // Image width in pixels
     int                     height_;  // Image height in pixels

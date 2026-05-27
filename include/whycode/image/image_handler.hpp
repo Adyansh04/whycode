@@ -1,23 +1,25 @@
 #ifndef WHYCON_IMAGE_HANDLER_HPP
 #define WHYCON_IMAGE_HANDLER_HPP
 
-#include <builtin_interfaces/msg/time.hpp>
-#include <sensor_msgs/msg/image.hpp>
 #include <sys/types.h>
 
+#include <builtin_interfaces/msg/time.hpp>
 #include <memory>
 #include <opencv2/opencv.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <string>
 #include <vector>
 
 #include "whycode/image/packed_binary_image.hpp"
 #include "xsimd/xsimd.hpp"
 
-namespace whycon {
+namespace whycon
+{
 
 // Aligned allocator for image data
 template <typename T>
-using aligned_vector = std::vector<T, xsimd::aligned_allocator<T, xsimd::default_arch::alignment()>>;
+using aligned_vector =
+    std::vector<T, xsimd::aligned_allocator<T, xsimd::default_arch::alignment()>>;
 
 // Forward declaration
 class PackedBinaryImage;
@@ -27,8 +29,9 @@ class PackedBinaryImage;
  *
  * Provides direct memory management and format conversion for marker detection.
  */
-class ImageHandler {
-  public:
+class ImageHandler
+{
+public:
     /**
      * @brief Construct ImageHandler with initial dimensions
      *
@@ -78,7 +81,8 @@ class ImageHandler {
      *
      * @param output_mat Output OpenCV Mat (will be created/resized as needed)
      */
-    inline void toOpenCVMat(cv::Mat& output_mat) const {
+    inline void toOpenCVMat(cv::Mat& output_mat) const
+    {
         // Create Mat header pointing to our data (no copy)
         output_mat = cv::Mat(height_, width_, cv_type_, (void*)data_);
     }
@@ -116,7 +120,7 @@ class ImageHandler {
     inline int getBPP() const { return bpp_; }
     inline int getSize() const { return size_; }
 
-  private:
+private:
     int            width_;    // Image width in pixels
     int            height_;   // Image height in pixels
     int            bpp_;      // Bytes per pixel

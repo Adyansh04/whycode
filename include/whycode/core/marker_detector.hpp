@@ -10,22 +10,26 @@
 #include "whycode/image/image_handler.hpp"
 
 template <typename T>
-inline constexpr T wMax(T a, T b) {
+inline constexpr T wMax(T a, T b)
+{
     return (a > b ? a : b);
 }
 
 template <typename T>
-inline constexpr T wMin(T a, T b) {
+inline constexpr T wMin(T a, T b)
+{
     return (a < b ? a : b);
 }
-namespace whycon {
+namespace whycon
+{
 /**
  * @brief Parameters for marker detection and validation
  *
  * These parameters control the minimum/maximum size, roundness, ratio, and other
  * geometric and photometric constraints for valid marker detection.
  */
-struct DetectorParameters {
+struct DetectorParameters
+{
     double center_distance_tolerance_ratio = 0.1;
     double center_distance_tolerance_abs   = 5;
     double roundness_tolerance             = 0.3;
@@ -57,8 +61,9 @@ struct DetectorParameters {
  * based on their size, shape, and color. It uses a queue-based approach to analyze connected
  * components in the image and determine if they meet the criteria for valid markers.
  */
-class MarkerDetector {
-  public:
+class MarkerDetector
+{
+public:
     // static constexpr int PIXEL_BLACK = 0;
     // static constexpr int PIXEL_WHITE = 255;
     static constexpr bool PIXEL_BLACK  = 1;
@@ -76,16 +81,17 @@ class MarkerDetector {
      * @param context Shared detection context (buffer, queue, etc).
      * @param parameters Detection parameters (see DetectorParameters).
      */
-    MarkerDetector(int width, int height, DetectionContext* context,
-                   const DetectorParameters& parameters = DetectorParameters());
+    MarkerDetector(
+        int width, int height, DetectionContext* context,
+        const DetectorParameters& parameters = DetectorParameters());
     ~MarkerDetector();
 
     // Rule of Five: Explicitly define move semantics and delete copy semantics
     // because this class manages unique_ptr members.
-    MarkerDetector(const MarkerDetector&) = delete;
+    MarkerDetector(const MarkerDetector&)            = delete;
     MarkerDetector& operator=(const MarkerDetector&) = delete;
     MarkerDetector(MarkerDetector&&)                 = default;
-    MarkerDetector& operator=(MarkerDetector&&) = default;
+    MarkerDetector& operator=(MarkerDetector&&)      = default;
 
     /**
      * @brief Analyzes a connected component to determine if it's a valid marker.
@@ -95,9 +101,10 @@ class MarkerDetector {
      * @param areaRatio Expected area ratio for the segment.
      * @return True if the segment is a valid marker.
      */
-    bool analyzeMarkerCandidate(const ImageHandler& image_handler, whycon::MarkerDetector::Marker& marker,
-                                int seed_pixel_index, float expected_area_ratio, bool is_outer,
-                                DebugImageManager* debug_manager = nullptr);
+    bool analyzeMarkerCandidate(
+        const ImageHandler& image_handler, whycon::MarkerDetector::Marker& marker,
+        int seed_pixel_index, float expected_area_ratio, bool is_outer,
+        DebugImageManager* debug_manager = nullptr);
 
     /**
      * @brief Covers the last detected marker in the image (for visualization).
@@ -106,10 +113,13 @@ class MarkerDetector {
     void coverLastDetected(cv::Mat& image);
 
     // Debug image generation helpers
-    void generateSegmentDebugImage(const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
-    void generateEllipseDebugImage(const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
-    void generateMParamDebugImage(const ImageHandler& image_handler, DebugImageManager* debug_manager,
-                                  float eccentricity, float circularity) const;
+    void generateSegmentDebugImage(
+        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
+    void generateEllipseDebugImage(
+        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
+    void generateMParamDebugImage(
+        const ImageHandler& image_handler, DebugImageManager* debug_manager, float eccentricity,
+        float circularity) const;
 
     /**
      * @brief Returns the current intensity threshold value.
@@ -119,8 +129,9 @@ class MarkerDetector {
     /**
      * @brief Stores the properties of a detected marker (ellipse).
      */
-    class Marker {
-      public:
+    class Marker
+    {
+    public:
         /**
          * @brief Default constructor. Initializes marker as invalid.
          */
@@ -152,14 +163,16 @@ class MarkerDetector {
          * @param color Color for drawing.
          * @param thickness Line thickness.
          */
-        void draw(cv::Mat& image, const std::string& text = std::string(), cv::Vec3b color = cv::Vec3b(0, 255, 0),
-                  float thickness = 1) const;
+        void draw(
+            cv::Mat& image, const std::string& text = std::string(),
+            cv::Vec3b color = cv::Vec3b(0, 255, 0), float thickness = 1) const;
     };
 
     /**
      * @brief Stores a pair of detected markers (inner and outer ellipses).
      */
-    struct MarkerPair {
+    struct MarkerPair
+    {
         Marker inner;          // Inner ellipse marker
         Marker outer;          // Outer ellipse marker
         bool   valid = false;  // True if detection was successful
@@ -173,16 +186,17 @@ class MarkerDetector {
      * @param previous_circle Optional previous detection for windowed search.
      * @param debug_manager Optional manager for collecting debug images.
      */
-    void detectMarkerPair(const ImageHandler& image_handler, bool& fast_cleanup_possible, MarkerPair& result,
-                          const Marker&      previous_circle = whycon::MarkerDetector::Marker(),
-                          DebugImageManager* debug_manager   = nullptr);
+    void detectMarkerPair(
+        const ImageHandler& image_handler, bool& fast_cleanup_possible, MarkerPair& result,
+        const Marker&      previous_circle = whycon::MarkerDetector::Marker(),
+        DebugImageManager* debug_manager   = nullptr);
 
     /**
      * @brief Returns the last detected outer marker.
      * @return Reference to the last detected outer marker.
      */
 
-  private:
+private:
     /**
      * @brief A cache for temporary variables used during ellipse parameter calculation.
      *
@@ -190,7 +204,8 @@ class MarkerDetector {
      * By making it a class member, we avoid reallocating these variables on the stack
      * for every detected segment, improving performance and cache locality.
      */
-    struct EllipseComputationCache {
+    struct EllipseComputationCache
+    {
         // Accumulators for sums and moments
         float sum_x = 0.0f, sum_y = 0.0f;
         float sum_xx = 0.0f, sum_xy = 0.0f, sum_yy = 0.0f;
@@ -207,7 +222,8 @@ class MarkerDetector {
         /**
          * @brief Resets all cached values to zero before a new computation.
          */
-        void reset() {
+        void reset()
+        {
             sum_x = sum_y = 0.0f;
             sum_xx = sum_xy = sum_yy = 0.0f;
             num_points               = 0;
@@ -227,7 +243,8 @@ class MarkerDetector {
      * By making it a class member, we avoid reallocating these variables on the stack
      * for every candidate segment, improving performance and cache locality.
      */
-    struct CandidateAnalysisCache {
+    struct CandidateAnalysisCache
+    {
         const uchar* gray_data  = nullptr;
         int*         buffer_ptr = nullptr;
         int*         queue_ptr  = nullptr;
@@ -247,7 +264,8 @@ class MarkerDetector {
         /**
          * @brief Resets all cached values to zero before a new computation.
          */
-        void reset() noexcept {
+        void reset() noexcept
+        {
             width_pixels = height_pixels = 0;
             position                     = 0;
             pos                          = 0;
@@ -269,9 +287,10 @@ class MarkerDetector {
     mutable CandidateAnalysisCache  analysis_cache_;
 
     // SIMD batch types for ellipse parameter computation
-    using batch_int                         = xsimd::batch<int>;
-    using batch_float                       = xsimd::batch<float>;
-    static constexpr std::size_t simd_size_ = batch_int::size;  // Number of elements in a SIMD batch
+    using batch_int   = xsimd::batch<int>;
+    using batch_float = xsimd::batch<float>;
+    static constexpr std::size_t simd_size_ =
+        batch_int::size;  // Number of elements in a SIMD batch
 
     // Pre-allocated SIMD vectors (mutable for const functions)
     mutable batch_float sum_x_vec_;
@@ -285,7 +304,8 @@ class MarkerDetector {
     int len = 0;                  // The total number of pixels in the image (width * height)
     int siz = 0;                  // The total data size for the image, len*3 (for 3-channel image).
 
-    float diameter_ratio   = 0.0f;  // The ratio of the inner marker's diameter to the outer marker's diameter.
+    float diameter_ratio =
+        0.0f;  // The ratio of the inner marker's diameter to the outer marker's diameter.
     float outer_area_ratio = 0.0f;  // Expected area ratio of outer marker ring
     float inner_area_ratio = 0.0f;  // Expected area ratio of inner marker disk
     float areas_ratio      = 0.0f;  // Ratio between outer and inner marker areas
@@ -332,10 +352,12 @@ class MarkerDetector {
     void computeEllipseParameters(const int* queue, int start, int end, Marker& marker) const;
 
     // Compute ellipse statistics using SIMD acceleration
-    void computeEllipseStatsSIMD(const int* queue, int start, int end, EllipseComputationCache& cache) const;
+    void computeEllipseStatsSIMD(
+        const int* queue, int start, int end, EllipseComputationCache& cache) const;
 
     // Fall back to scalar computation for small segments or when SIMD is unavailable
-    void computeEllipseStatsScalar(const int* queue, int start, int end, EllipseComputationCache& cache) const;
+    void computeEllipseStatsScalar(
+        const int* queue, int start, int end, EllipseComputationCache& cache) const;
 
     /**
      * @brief Normalizes an angle to the range [-pi, pi].
@@ -344,12 +366,13 @@ class MarkerDetector {
      */
     inline float normalizeAngle(float a);
 
-  public:
+public:
     /**
      * @brief Context for marker detection (shared buffer, queue, etc).
      */
-    class DetectionContext {
-      public:
+    class DetectionContext
+    {
+    public:
         /**
          * @brief Constructs a detection context for a given image size.
          * @param _width Image width.
