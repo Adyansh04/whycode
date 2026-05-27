@@ -1,9 +1,10 @@
 /*
  * whycon_localization.hpp
  * ---------------------------------------------
- * This header defines the LocalizationSystem class and supporting structures for marker detection and 3D pose
- * estimation in the WhyCon/WhyCode system. It provides the interface for detecting circular markers in an image,
- * estimating their 3D pose using camera calibration parameters, and retrieving marker information.
+ * This header defines the LocalizationSystem class and supporting structures for marker detection
+ * and 3D pose estimation in the WhyCon/WhyCode system. It provides the interface for detecting
+ * circular markers in an image, estimating their 3D pose using camera calibration parameters, and
+ * retrieving marker information.
  * ---------------------------------------------
  */
 
@@ -18,7 +19,8 @@
 #include "whycode/image/image_handler.hpp"
 #include "xsimd/xsimd.hpp"
 
-namespace whycon {
+namespace whycon
+{
 
 // Helper types for aligned storage
 template <typename T>
@@ -31,25 +33,33 @@ using aligned_vec = std::vector<T, xsimd::aligned_allocator<T, xsimd::default_ar
  * Handles quaternion mathematics including creation, normalization,
  * multiplication, and conversion to Euler angles.
  */
-class Quaternion {
-  public:
+class Quaternion
+{
+public:
     float x = 0.0f;
     float y = 0.0f;
     float z = 0.0f;
     float w = 1.0f;
 
     Quaternion() = default;
-    Quaternion(float x_, float y_, float z_, float w_) : x(x_), y(y_), z(z_), w(w_) {}
+    Quaternion(float x_, float y_, float z_, float w_)
+      : x(x_)
+      , y(y_)
+      , z(z_)
+      , w(w_)
+    {}
 
     // Create quaternion from axis-angle representation
-    static Quaternion fromAxisAngle(const cv::Vec3f& axis, float angle) {
+    static Quaternion fromAxisAngle(const cv::Vec3f& axis, float angle)
+    {
         float s = std::sin(angle / 2.0f);
         float c = std::cos(angle / 2.0f);
         return Quaternion(axis[0] * s, axis[1] * s, axis[2] * s, c);
     }
 
     // Hamilton product of two quaternions
-    Quaternion operator*(const Quaternion& q) const {
+    Quaternion operator*(const Quaternion& q) const
+    {
         // clang-format off
         return Quaternion(  
             w * q.x + x * q.w + y * q.z - z * q.y,
@@ -61,9 +71,11 @@ class Quaternion {
     }
 
     // Normalize the quaternion to unit length
-    void normalize() {
+    void normalize()
+    {
         float norm = std::sqrt(x * x + y * y + z * z + w * w);
-        if (std::abs(norm - 1.0f) > 1e-8f) {
+        if (std::abs(norm - 1.0f) > 1e-8f)
+        {
             x /= norm;
             y /= norm;
             z /= norm;
@@ -72,7 +84,8 @@ class Quaternion {
     }
 
     // Convert quaternion to Euler angles (roll, pitch, yaw)
-    cv::Vec3f toEulerAngles() const {
+    cv::Vec3f toEulerAngles() const
+    {
         cv::Vec3f euler;
 
         // Roll (x-axis rotation)
@@ -95,23 +108,30 @@ class Quaternion {
 /**
  * @brief Stores the possible ellipse centers and normal/position solutions for a detected marker.
  *
- * The ellipse detected in the image can correspond to two possible 3D orientations (due to ambiguity in projection).
- * This struct stores both possible solutions for the center and normal vector of the marker in camera coordinates.
+ * The ellipse detected in the image can correspond to two possible 3D orientations (due to
+ * ambiguity in projection). This struct stores both possible solutions for the center and normal
+ * vector of the marker in camera coordinates.
  */
-struct EllipseCenters {
-    std::array<float, 2> u;  // x-coordinates of the ellipse center in the undistorted image (2 solutions)
-    std::array<float, 2> v;  // y-coordinates of the ellipse center in the undistorted image (2 solutions)
-    std::array<std::array<float, 3>, 2> n;  // Normal vectors of the marker's plane in camera coordinates (2 solutions)
-    std::array<std::array<float, 3>, 2> t;  // Position vectors of the marker's center in camera coordinates (2 solutions)
+struct EllipseCenters
+{
+    std::array<float, 2>
+        u;  // x-coordinates of the ellipse center in the undistorted image (2 solutions)
+    std::array<float, 2>
+        v;  // y-coordinates of the ellipse center in the undistorted image (2 solutions)
+    std::array<std::array<float, 3>, 2>
+        n;  // Normal vectors of the marker's plane in camera coordinates (2 solutions)
+    std::array<std::array<float, 3>, 2>
+        t;  // Position vectors of the marker's center in camera coordinates (2 solutions)
 };
 
 /**
  * @brief Parameters for segment detection in the WhyCon system.
  *
- * This struct holds parameters for detecting segments in the WhyCon markers, including their position,
- * major and minor axis lengths, and variances.
+ * This struct holds parameters for detecting segments in the WhyCon markers, including their
+ * position, major and minor axis lengths, and variances.
  */
-struct SegmentParameters {
+struct SegmentParameters
+{
     float x, y;    // Center coordinates
     float m0, m1;  // Axes Lengths
     float v0, v1;  // Orientation Vector
@@ -120,18 +140,21 @@ struct SegmentParameters {
 /**
  * @brief Main class for marker localization and 3D pose estimation.
  *
- * This class manages the detection of multiple circular markers in an image, applies camera calibration parameters,
- * and estimates the 3D pose (position and orientation) of each marker. It uses MultiMarkerDetector for image processing
- * and provides methods to retrieve marker information and estimated poses.
+ * This class manages the detection of multiple circular markers in an image, applies camera
+ * calibration parameters, and estimates the 3D pose (position and orientation) of each marker. It
+ * uses MultiMarkerDetector for image processing and provides methods to retrieve marker information
+ * and estimated poses.
  */
-class LocalizationSystem {
-  public:
+class LocalizationSystem
+{
+public:
     /**
      * @brief Stores the estimated 3D pose of a marker.
      *
      * Contains both Euler angles and quaternion representation for orientation.
      */
-    struct MarkerPose {
+    struct MarkerPose
+    {
         cv::Vec3f  pos;  // 3D position of the marker in camera coordinates (x, y, z)
         cv::Vec3f  rot;  // Orientation as Euler angles: pitch, roll, yaw (in radians)
         Quaternion orientation;
@@ -147,7 +170,8 @@ class LocalizationSystem {
     };
 
     // Struct to hold all signal analysis data for a single solution
-    struct SignalAnalysisData {
+    struct SignalAnalysisData
+    {
         aligned_vec<float> x_coords;  // X coordinates along ellipse (aligned)
         aligned_vec<float> y_coords;  // Y coordinates along ellipse (aligned)
         aligned_vec<float> signal;    // Raw signal values from image (aligned)
@@ -162,19 +186,21 @@ class LocalizationSystem {
 
         // Constructor to initialize the code vector with proper size
         SignalAnalysisData(int id_bits)
-            : x_coords(MAX_ID_SAMPLES)
-            , y_coords(MAX_ID_SAMPLES)
-            , signal(MAX_ID_SAMPLES)
-            , smooth(MAX_ID_SAMPLES)
-            , code(id_bits * 4 + 1, '\0') {}
+          : x_coords(MAX_ID_SAMPLES)
+          , y_coords(MAX_ID_SAMPLES)
+          , signal(MAX_ID_SAMPLES)
+          , smooth(MAX_ID_SAMPLES)
+          , code(id_bits * 4 + 1, '\0')
+        {}
 
         // Default constructor for when id_bits is not yet known
         SignalAnalysisData()
-            : x_coords(MAX_ID_SAMPLES)
-            , y_coords(MAX_ID_SAMPLES)
-            , signal(MAX_ID_SAMPLES)
-            , smooth(MAX_ID_SAMPLES)
-            , code(24 + 1, '\0') {}
+          : x_coords(MAX_ID_SAMPLES)
+          , y_coords(MAX_ID_SAMPLES)
+          , signal(MAX_ID_SAMPLES)
+          , smooth(MAX_ID_SAMPLES)
+          , code(24 + 1, '\0')
+        {}
     };
 
     /**
@@ -188,8 +214,9 @@ class LocalizationSystem {
      *
      * Initializes the detector and stores camera calibration for later use in pose estimation.
      */
-    LocalizationSystem(int targets, int width, int height, const cv::Mat& K, const cv::Mat& dist_coeff,
-                       const whycon::DetectorParameters& parameters = DetectorParameters());
+    LocalizationSystem(
+        int targets, int width, int height, const cv::Mat& K, const cv::Mat& dist_coeff,
+        const whycon::DetectorParameters& parameters = DetectorParameters());
 
     ~LocalizationSystem();
     /**
@@ -199,7 +226,8 @@ class LocalizationSystem {
      * @param debug_manager Optional manager for collecting debug images.
      * @return True if all markers were detected and localized.
      */
-    bool localizeMarkers(ImageHandler& image_handler, bool reset, DebugImageManager* debug_manager = nullptr);
+    bool localizeMarkers(
+        ImageHandler& image_handler, bool reset, DebugImageManager* debug_manager = nullptr);
 
     /**
      * @brief Estimates the 3D pose of a marker by index.
@@ -220,9 +248,10 @@ class LocalizationSystem {
      *
      * Resolves ambiguity in orientation using both ellipses.
      */
-    void estimateMarkerPose(const ImageHandler& image_handler, const MarkerDetector::Marker& outer_circle,
-                            const MarkerDetector::Marker& inner_circle, MarkerPose& result,
-                            DebugImageManager* debug_manager = nullptr);
+    void estimateMarkerPose(
+        const ImageHandler& image_handler, const MarkerDetector::Marker& outer_circle,
+        const MarkerDetector::Marker& inner_circle, MarkerPose& result,
+        DebugImageManager* debug_manager = nullptr);
 
     /**
      * @brief Retrieves the detected marker by index.
@@ -242,10 +271,13 @@ class LocalizationSystem {
      * @brief Gets the number of successfully detected markers.
      * @return Number of valid markers detected in the last frame.
      */
-    inline int getDetectedMarkerCount() const noexcept {
+    inline int getDetectedMarkerCount() const noexcept
+    {
         int count = 0;
-        for (int i = 0; i < targets; i++) {
-            if (detector.circles[i].valid) {
+        for (int i = 0; i < targets; i++)
+        {
+            if (detector.circles[i].valid)
+            {
                 count++;
             }
         }
@@ -257,8 +289,10 @@ class LocalizationSystem {
      * @param id Index of the marker to check.
      * @return True if the marker at index id was successfully detected.
      */
-    inline bool isMarkerDetected(int id) const noexcept {
-        if (id < 0 || id >= targets) {
+    inline bool isMarkerDetected(int id) const noexcept
+    {
+        if (id < 0 || id >= targets)
+        {
             return false;  // Invalid id, marker cannot be detected.
         }
 
@@ -267,12 +301,13 @@ class LocalizationSystem {
 
     MultiMarkerDetector detector;  // Detector for multiple circular markers
 
-  private:
+private:
     // Constants
     static constexpr int MAX_ID_SAMPLES = 720;
 
     // LUT structure for fast trig calculations
-    struct TrigLUTAligned {
+    struct TrigLUTAligned
+    {
         aligned_vec<float> cosv;
         aligned_vec<float> sinv;
         int                n = 0;
@@ -284,16 +319,19 @@ class LocalizationSystem {
      * This struct contains the parameters for each solution, including the segment parameters,
      * reprojected center coordinates, and working variables for variance calculation and solution selection.
      */
-    struct EllipseProcessingData {
-        struct Solution {
+    struct EllipseProcessingData
+    {
+        struct Solution
+        {
             SegmentParameters segment;  // x, y, m0, m1, v0, v1
             float             u, v;     // Reprojected center coordinates
         };
 
         std::array<Solution, 2> solutions;
-        int                     selected_idx        = 0;                 // Index of selected solution (0 or 1)
-        float                   variance_difference = 0.0f;              // Difference in variance between solutions
-        std::array<bool, 2>     valid_solutions     = { false, false };  // Which solutions are geometrically valid
+        int                     selected_idx    = 0;     // Index of selected solution (0 or 1)
+        float               variance_difference = 0.0f;  // Difference in variance between solutions
+        std::array<bool, 2> valid_solutions     = { false,
+                                                    false };  // Which solutions are geometrically valid
     };
 
     /**
@@ -303,7 +341,8 @@ class LocalizationSystem {
      * functions. By making it a class member, we avoid reallocating these variables on the stack
      * for every marker, improving performance and cache locality.
      */
-    struct PoseCalculationCache {
+    struct PoseCalculationCache
+    {
         // From calcEllipseCenters
         double x, y, x1, x2, y1, y2, major, minor, v0, v1;
         double sx1, sx2, sy1, sy2;
@@ -324,11 +363,15 @@ class LocalizationSystem {
         std::vector<cv::Point2f> pt2d;
 
         // Constructor to pre-size vectors and avoid reallocation
-        PoseCalculationCache() : pt3d(1), pt2d(1) {}
+        PoseCalculationCache()
+          : pt3d(1)
+          , pt2d(1)
+        {}
     };
 
     // Camera parameters
-    struct CameraParameters {
+    struct CameraParameters
+    {
         double                focal_length_x;     // fx
         double                focal_length_y;     // fy
         double                principal_point_x;  // cx
@@ -398,21 +441,26 @@ class LocalizationSystem {
      *     analysis_data_[solution_idx].x_coords[a] =
      *         ellipse_processing_.solutions[solution_idx].segment.x +
      *         (ellipse_processing_.solutions[solution_idx].segment.m0 * cos_angle *
-     * ellipse_processing_.solutions[solution_idx].segment.v0 + ellipse_processing_.solutions[solution_idx].segment.m1 *
-     * sin_angle * ellipse_processing_.solutions[solution_idx].segment.v1) * 2.0f; analysis_data_[solution_idx].y_coords[a]
-     * = ellipse_processing_.solutions[solution_idx].segment.y + (ellipse_processing_.solutions[solution_idx].segment.m0
-     * * cos_angle * ellipse_processing_.solutions[solution_idx].segment.v1 - ellipse_processing_.solutions[solution_idx].segment.m1
+     * ellipse_processing_.solutions[solution_idx].segment.v0 +
+     * ellipse_processing_.solutions[solution_idx].segment.m1 * sin_angle *
+     * ellipse_processing_.solutions[solution_idx].segment.v1) * 2.0f;
+     * analysis_data_[solution_idx].y_coords[a] =
+     * ellipse_processing_.solutions[solution_idx].segment.y +
+     * (ellipse_processing_.solutions[solution_idx].segment.m0
+     * * cos_angle * ellipse_processing_.solutions[solution_idx].segment.v1 -
+     * ellipse_processing_.solutions[solution_idx].segment.m1
      * * sin_angle * ellipse_processing_.solutions[solution_idx].segment.v0) * 2.0f;
      *
-     *     if (analysis_data_[solution_idx].x_coords[a] < 0 || width <= analysis_data_[solution_idx].x_coords[a] ||
-     *         analysis_data_[solution_idx].y_coords[a] < 0 || height <= analysis_data_[solution_idx].y_coords[a]) {
-     *         return false;
+     *     if (analysis_data_[solution_idx].x_coords[a] < 0 || width <=
+     * analysis_data_[solution_idx].x_coords[a] || analysis_data_[solution_idx].y_coords[a] < 0 ||
+     * height <= analysis_data_[solution_idx].y_coords[a]) { return false;
      *     }
      * }
      * ```
      */
-    bool computeEllipseCoordinates(int width, int height, const SegmentParameters& s, aligned_vec<float>& x_coords,
-                                   aligned_vec<float>& y_coords);
+    bool computeEllipseCoordinates(
+        int width, int height, const SegmentParameters& s, aligned_vec<float>& x_coords,
+        aligned_vec<float>& y_coords);
 
     /**
      * @brief Computes signal values for sample points in an image using bilinear interpolation.
@@ -443,20 +491,21 @@ class LocalizationSystem {
      *     pos = (px + py * width);
      *     // Detection from the image
      *     analysis_data_[solution_idx].signal[a] =
-     *         ptr[(pos + 0) * step + 0] * (1 - gx) * (1 - gy) + ptr[(pos + 1) * step + 0] * gx * (1 - gy) +
-     *         ptr[(pos + width) * step + 0] * (1 - gx) * gy + ptr[step * (pos + width + 1) + 0] * gx * gy;
-     *     analysis_data_[solution_idx].signal[a] +=
-     *         ptr[(pos + 0) * step + 1] * (1 - gx) * (1 - gy) + ptr[(pos + 1) * step + 1] * gx * (1 - gy) +
-     *         ptr[(pos + width) * step + 1] * (1 - gx) * gy + ptr[step * (pos + width + 1) + 1] * gx * gy;
-     *     analysis_data_[solution_idx].signal[a] +=
-     *         ptr[(pos + 0) * step + 2] * (1 - gx) * (1 - gy) + ptr[(pos + 1) * step + 2] * gx * (1 - gy) +
-     *         ptr[(pos + width) * step + 2] * (1 - gx) * gy + ptr[step * (pos + width + 1) + 2] * gx * gy;
+     *         ptr[(pos + 0) * step + 0] * (1 - gx) * (1 - gy) + ptr[(pos + 1) * step + 0] * gx * (1
+     * - gy) + ptr[(pos + width) * step + 0] * (1 - gx) * gy + ptr[step * (pos + width + 1) + 0] *
+     * gx * gy; analysis_data_[solution_idx].signal[a] += ptr[(pos + 0) * step + 1] * (1 - gx) * (1
+     * - gy) + ptr[(pos + 1) * step + 1] * gx * (1 - gy) + ptr[(pos + width) * step + 1] * (1 - gx)
+     * * gy + ptr[step * (pos + width + 1) + 1] * gx * gy; analysis_data_[solution_idx].signal[a] +=
+     *         ptr[(pos + 0) * step + 2] * (1 - gx) * (1 - gy) + ptr[(pos + 1) * step + 2] * gx * (1
+     * - gy) + ptr[(pos + width) * step + 2] * (1 - gx) * gy + ptr[step * (pos + width + 1) + 2] *
+     * gx * gy;
      * }
      * ```
      */
-    void computeSignal(const unsigned char* image_data, int width, int id_samples,
-                       whycon::LocalizationSystem::SignalAnalysisData& analysis_data,
-                       const ImageHandler&                             image_handler);
+    void computeSignal(
+        const unsigned char* image_data, int width, int id_samples,
+        whycon::LocalizationSystem::SignalAnalysisData& analysis_data,
+        const ImageHandler&                             image_handler);
 
     /**
      * @brief Binarizes the input signal by thresholding it against its average value.
@@ -480,16 +529,16 @@ class LocalizationSystem {
      * avg = avg / id_samples_;
      *
      * for (int a = 0; a < id_samples_; a++) {
-     *     analysis_data_[solution_idx].smooth[a] = (analysis_data_[solution_idx].signal[a] > avg) ? 1.0f : 0.0f;
+     *     analysis_data_[solution_idx].smooth[a] = (analysis_data_[solution_idx].signal[a] > avg)
+     * ? 1.0f : 0.0f;
      * }
      * ```
      */
     void binarizeSignal(SignalAnalysisData& data, int n);
 
-    bool processMarkerAmbiguityAndIdentify(const ImageHandler& image_handler, MarkerPose& pose,
-                                           const EllipseCenters&         ellipse_centers,
-                                           const MarkerDetector::Marker& outer_marker,
-                                           DebugImageManager*            debug_manager = nullptr);
+    bool processMarkerAmbiguityAndIdentify(
+        const ImageHandler& image_handler, MarkerPose& pose, const EllipseCenters& ellipse_centers,
+        const MarkerDetector::Marker& outer_marker, DebugImageManager* debug_manager = nullptr);
 
     /**
      * @brief Processes signal analysis for a single solution index.
@@ -500,8 +549,9 @@ class LocalizationSystem {
      * @param image_data Raw image data pointer.
      * @return True if processing was successful, false if coordinates went out of bounds.
      */
-    bool processSingleSolution(int solution_idx, const ImageHandler& image_handler, int width, int height,
-                               unsigned char* image_data);
+    bool processSingleSolution(
+        int solution_idx, const ImageHandler& image_handler, int width, int height,
+        unsigned char* image_data);
 
     /**
      * @brief Selects the best solution based on variance and decodes the marker ID.
@@ -510,15 +560,17 @@ class LocalizationSystem {
      * @param outer_marker The outer marker parameters for ID decoding.
      * @return True if ID decoding was successful, false otherwise.
      */
-    bool selectSolutionAndDecodeID(MarkerPose& pose, const EllipseCenters& ellipse_centers,
-                                   const MarkerDetector::Marker& outer_marker);
+    bool selectSolutionAndDecodeID(
+        MarkerPose& pose, const EllipseCenters& ellipse_centers,
+        const MarkerDetector::Marker& outer_marker);
 
     /**
      * @brief Draws the two possible ellipse solutions for debugging purposes.
      * @param image_handler The image handler containing the frame data.
      * @param debug_manager The debug image manager to add the visualization to.
      */
-    void drawSolutionDebugImage(const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
+    void drawSolutionDebugImage(
+        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
 
     /**
      * @brief Applies camera undistortion to an image point.
@@ -562,7 +614,8 @@ class LocalizationSystem {
      *
      * Compares both solutions and selects the one that best matches the inner marker.
      */
-    void resolveAmbiguity(MarkerPose& pose, const EllipseCenters& centers, const MarkerDetector::Marker& marker);
+    void resolveAmbiguity(
+        MarkerPose& pose, const EllipseCenters& centers, const MarkerDetector::Marker& marker);
 
     // Orientation calculation utilities
     void calculateOrientation(MarkerPose& pose) const;

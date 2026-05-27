@@ -4,22 +4,26 @@
 #include <math.h>
 #include <stdlib.h>
 
-namespace whycon {
+namespace whycon
+{
 
-typedef struct {
+typedef struct
+{
     int id;
     int rotation;
     int hamming;
 } SNecklace;
 
-typedef struct {
+typedef struct
+{
     float angle;      // axis rotation angle
     int   id;         // marker decoded ID
     int   edgeIndex;  // idx of starting edge
 } SDecoded;
 
-class CNecklace {
-  public:
+class CNecklace
+{
+public:
     CNecklace(int bits, int samples, int minimalHamming = 1);
 
     ~CNecklace();
@@ -34,7 +38,7 @@ class CNecklace {
 
     SDecoded decode(char* code, char* realCode, int maxIndex, float segmentV0, float segmentV1);
 
-  private:
+private:
     SNecklace  unknown;  // default unknown ID
     SNecklace* idArray;  // precalculated IDs
 

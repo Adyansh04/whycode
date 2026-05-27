@@ -2,7 +2,8 @@
 
 #include <cstddef>
 
-namespace whycon::lut {
+namespace whycon::lut
+{
 
 aligned_vec<int>   X_OF_IDX;
 aligned_vec<int>   Y_OF_IDX;
@@ -18,8 +19,10 @@ int    WIDTH  = 0;
 int    HEIGHT = 0;
 size_t SIZE   = 0;
 
-void ensure(int width, int height) {
-    if (width == WIDTH && height == HEIGHT && SIZE != 0) {
+void ensure(int width, int height)
+{
+    if (width == WIDTH && height == HEIGHT && SIZE != 0)
+    {
         return;  // No change needed
     }
 
@@ -38,10 +41,12 @@ void ensure(int width, int height) {
     UP_OF.resize(SIZE);
     DOWN_OF.resize(SIZE);
 
-    for (int y = 0; y < HEIGHT; ++y) {
+    for (int y = 0; y < HEIGHT; ++y)
+    {
         const int rs = y * WIDTH;
         ROW_START[y] = rs;
-        for (int x = 0; x < WIDTH; ++x) {
+        for (int x = 0; x < WIDTH; ++x)
+        {
             const int idx  = rs + x;
             X_OF_IDX[idx]  = x;
             Y_OF_IDX[idx]  = y;

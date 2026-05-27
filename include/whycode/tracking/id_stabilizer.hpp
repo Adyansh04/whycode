@@ -4,7 +4,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace whycon {
+namespace whycon
+{
 
 /**
  * @brief Stabilizes flickering WhyCode IDs for tracked markers using a hysteresis filter.
@@ -14,8 +15,9 @@ namespace whycon {
  * overwrite the existing locked-in ID. This prevents transient noise from
  * causing the output ID to flicker.
  */
-class IDStabilizer {
-  public:
+class IDStabilizer
+{
+public:
     /**
      * @brief Constructs the ID stabilizer.
      * @param switch_threshold The number of consecutive mismatches required to switch the locked-in ID.
@@ -36,25 +38,33 @@ class IDStabilizer {
      */
     void removeTracks(const std::vector<int>& tracking_ids);
 
-  private:
+private:
     // A simple struct to hold the state for the hysteresis filter.
 
     static constexpr int    INVALID_ID         = -1;
     static constexpr int    INITIAL_CONFIDENCE = 0;
     static constexpr size_t INITIAL_CAPACITY   = 30;  // Pre-allocate for marker counts
 
-    struct IDHistory {
+    struct IDHistory
+    {
         int locked_id;
         int confidence_counter;
 
-        IDHistory() : locked_id(INVALID_ID), confidence_counter(INITIAL_CONFIDENCE) {}
-        IDHistory(int id, int confidence) : locked_id(id), confidence_counter(confidence) {}
+        IDHistory()
+          : locked_id(INVALID_ID)
+          , confidence_counter(INITIAL_CONFIDENCE)
+        {}
+        IDHistory(int id, int confidence)
+          : locked_id(id)
+          , confidence_counter(confidence)
+        {}
     };
 
     void        removeTrack(int tracking_id);
     inline bool isValidID(int id) const noexcept;
     inline void updateConfidenceForMatch(IDHistory& history) const noexcept;
-    inline void decrementConfidenceForMismatch(IDHistory& history, int tracking_id, int current_decoded_id) const;
+    inline void decrementConfidenceForMismatch(
+        IDHistory& history, int tracking_id, int current_decoded_id) const;
     inline bool shouldSwitchID(const IDHistory& history) const noexcept;
     inline void switchLockedID(IDHistory& history, int new_id, int tracking_id) const;
 

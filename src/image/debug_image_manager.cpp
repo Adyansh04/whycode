@@ -3,16 +3,21 @@
 #include <algorithm>
 #include <cmath>
 
-namespace whycon {
+namespace whycon
+{
 
-DebugImageManager::DebugImageManager(bool enabled) : enabled_(enabled) {
+DebugImageManager::DebugImageManager(bool enabled)
+  : enabled_(enabled)
+{
     // Reserve space for typical debug image count
     debug_images_.reserve(8);
     image_titles_.reserve(8);
 }
 
-void DebugImageManager::addDebugImage(const cv::Mat& image, const std::string& title) {
-    if (!enabled_ || image.empty()) {
+void DebugImageManager::addDebugImage(const cv::Mat& image, const std::string& title)
+{
+    if (!enabled_ || image.empty())
+    {
         return;
     }
 
@@ -21,13 +26,16 @@ void DebugImageManager::addDebugImage(const cv::Mat& image, const std::string& t
     image_titles_.push_back(title);
 }
 
-void DebugImageManager::clearDebugImages() {
+void DebugImageManager::clearDebugImages()
+{
     debug_images_.clear();
     image_titles_.clear();
 }
 
-cv::Mat DebugImageManager::createConsolidatedImage() {
-    if (!enabled_ || debug_images_.empty()) {
+cv::Mat DebugImageManager::createConsolidatedImage()
+{
+    if (!enabled_ || debug_images_.empty())
+    {
         return cv::Mat();
     }
 
@@ -44,10 +52,12 @@ cv::Mat DebugImageManager::createConsolidatedImage() {
     int cell_height = max_total_height / grid_rows;
 
     // Create consolidated image
-    cv::Mat consolidated_image = cv::Mat::zeros(grid_rows * cell_height, grid_cols * cell_width, CV_8UC3);
+    cv::Mat consolidated_image =
+        cv::Mat::zeros(grid_rows * cell_height, grid_cols * cell_width, CV_8UC3);
 
     cv::Mat resized_image;  // Declare reusable Mat
-    for (int i = 0; i < num_images; i++) {
+    for (int i = 0; i < num_images; i++)
+    {
         int row = i / grid_cols;
         int col = i % grid_cols;
 
@@ -67,20 +77,32 @@ cv::Mat DebugImageManager::createConsolidatedImage() {
         resized_image(cv::Rect(0, 0, actual_width, actual_height)).copyTo(consolidated_image(roi));
 
         // Add title text
-        if (!image_titles_[i].empty()) {
-            cv::putText(consolidated_image, image_titles_[i], cv::Point(x_offset + 5, y_offset + 20),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+        if (!image_titles_[i].empty())
+        {
+            cv::putText(
+                consolidated_image,
+                image_titles_[i],
+                cv::Point(x_offset + 5, y_offset + 20),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.5,
+                cv::Scalar(0, 255, 0),
+                1);
         }
 
         // Draw border around each image
-        cv::rectangle(consolidated_image, cv::Point(x_offset, y_offset),
-                      cv::Point(x_offset + cell_width - 1, y_offset + cell_height - 1), cv::Scalar(128, 128, 128), 1);
+        cv::rectangle(
+            consolidated_image,
+            cv::Point(x_offset, y_offset),
+            cv::Point(x_offset + cell_width - 1, y_offset + cell_height - 1),
+            cv::Scalar(128, 128, 128),
+            1);
     }
 
     return consolidated_image;
 }
 
-GridLayout DebugImageManager::calculateGridLayout(int num_images) {
+GridLayout DebugImageManager::calculateGridLayout(int num_images)
+{
     if (num_images <= 0)
         return GridLayout(1, 1);
     if (num_images == 1)
@@ -102,19 +124,27 @@ GridLayout DebugImageManager::calculateGridLayout(int num_images) {
     return GridLayout(rows, cols);
 }
 
-void DebugImageManager::resizeToFit(const cv::Mat& image, cv::Mat& output, int target_width, int target_height) {
-    if (image.empty()) {
+void DebugImageManager::resizeToFit(
+    const cv::Mat& image, cv::Mat& output, int target_width, int target_height)
+{
+    if (image.empty())
+    {
         output = cv::Mat::zeros(target_height, target_width, CV_8UC3);
         return;
     }
 
     // Convert to 3-channel if needed
     cv::Mat color_image;
-    if (image.channels() == 1) {
+    if (image.channels() == 1)
+    {
         cv::cvtColor(image, color_image, cv::COLOR_GRAY2BGR);
-    } else if (image.channels() == 3) {
+    }
+    else if (image.channels() == 3)
+    {
         color_image = image;
-    } else {
+    }
+    else
+    {
         cv::cvtColor(image, color_image, cv::COLOR_RGBA2BGR);
     }
 

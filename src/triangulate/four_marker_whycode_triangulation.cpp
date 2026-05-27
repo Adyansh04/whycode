@@ -8,21 +8,32 @@
 
 #include "whycode_vision/msg/why_code_pose_array.hpp"
 
-FourMarkerWhyCodeTriangulationNode::FourMarkerWhyCodeTriangulationNode(const rclcpp::NodeOptions& options)
-    : rclcpp::Node("four_marker_whycode_triangulation_node", options) {
+FourMarkerWhyCodeTriangulationNode::FourMarkerWhyCodeTriangulationNode(
+    const rclcpp::NodeOptions& options)
+  : rclcpp::Node("four_marker_whycode_triangulation_node", options)
+{
     loadParameters();
     setupRosCommunication();
 
     last_successful_estimation_ = std::chrono::steady_clock::now();
 
     RCLCPP_INFO(get_logger(), "WhyCode 4-Marker Triangulation Node initialized");
-    RCLCPP_INFO(get_logger(), "Tracking markers: TL=%d, BL=%d, TR=%d, BR=%d", config_.marker_id_top_left,
-                config_.marker_id_bottom_left, config_.marker_id_top_right, config_.marker_id_bottom_right);
-    RCLCPP_INFO(get_logger(), "Known distances: Vertical=%.3f m, Horizontal=%.3f m",
-                config_.known_distance_vertical, config_.known_distance_horizontal);
+    RCLCPP_INFO(
+        get_logger(),
+        "Tracking markers: TL=%d, BL=%d, TR=%d, BR=%d",
+        config_.marker_id_top_left,
+        config_.marker_id_bottom_left,
+        config_.marker_id_top_right,
+        config_.marker_id_bottom_right);
+    RCLCPP_INFO(
+        get_logger(),
+        "Known distances: Vertical=%.3f m, Horizontal=%.3f m",
+        config_.known_distance_vertical,
+        config_.known_distance_horizontal);
 }
 
-void FourMarkerWhyCodeTriangulationNode::loadParameters() {
+void FourMarkerWhyCodeTriangulationNode::loadParameters()
+{
     declare_parameter<int>("marker_id_top_left", config_.marker_id_top_left);
     declare_parameter<int>("marker_id_bottom_left", config_.marker_id_bottom_left);
     declare_parameter<int>("marker_id_top_right", config_.marker_id_top_right);
@@ -39,7 +50,9 @@ void FourMarkerWhyCodeTriangulationNode::loadParameters() {
     declare_parameter<bool>("publish_camera_odom", config_.publish_camera_odom);
     declare_parameter<std::string>("odom_frame", config_.odom_frame);
     declare_parameter<std::string>("base_link_frame", config_.base_link_frame);
-    declare_parameter<bool>("enable_ground_truth_comparison", config_.enable_ground_truth_comparison);
+    declare_parameter<bool>(
+        "enable_ground_truth_comparison",
+        config_.enable_ground_truth_comparison);
     declare_parameter<bool>("publish_camera_odom_tf", config_.publish_camera_odom_tf);
     declare_parameter<bool>("align_first_measurement", config_.align_first_measurement);
     declare_parameter<std::string>("camera_odom_child_frame", config_.camera_odom_child_frame);
@@ -68,59 +81,80 @@ void FourMarkerWhyCodeTriangulationNode::loadParameters() {
     get_parameter("camera_odom_parent_frame", config_.camera_odom_parent_frame);
 
     // Validation
-    std::vector<int> marker_ids = { config_.marker_id_top_left, config_.marker_id_bottom_left,
-                                    config_.marker_id_top_right, config_.marker_id_bottom_right };
+    std::vector<int> marker_ids = { config_.marker_id_top_left,
+                                    config_.marker_id_bottom_left,
+                                    config_.marker_id_top_right,
+                                    config_.marker_id_bottom_right };
     std::sort(marker_ids.begin(), marker_ids.end());
-    for (size_t i = 1; i < marker_ids.size(); ++i) {
-        if (marker_ids[i] == marker_ids[i - 1]) {
-            RCLCPP_ERROR(get_logger(), "Duplicate marker IDs detected! All 4 markers must have unique IDs.");
+    for (size_t i = 1; i < marker_ids.size(); ++i)
+    {
+        if (marker_ids[i] == marker_ids[i - 1])
+        {
+            RCLCPP_ERROR(
+                get_logger(),
+                "Duplicate marker IDs detected! All 4 markers must have unique IDs.");
             rclcpp::shutdown();
             return;
         }
     }
 
     if (config_.known_distance_vertical <= MIN_KNOWN_DISTANCE ||
-        config_.known_distance_horizontal <= MIN_KNOWN_DISTANCE) {
+        config_.known_distance_horizontal <= MIN_KNOWN_DISTANCE)
+    {
         RCLCPP_ERROR(get_logger(), "Known distances must be positive and > %.2e", MIN_KNOWN_DISTANCE);
         rclcpp::shutdown();
     }
 }
 
-void FourMarkerWhyCodeTriangulationNode::setupRosCommunication() {
+void FourMarkerWhyCodeTriangulationNode::setupRosCommunication()
+{
     // Subscriber
     poses_subscriber_ = create_subscription<whycode_vision::msg::WhyCodePoseArray>(
-            "whycon/poses", rclcpp::QoS(10),
-            std::bind(&FourMarkerWhyCodeTriangulationNode::posesCallback, this, std::placeholders::_1));
+        "whycon/poses",
+        rclcpp::QoS(10),
+        std::bind(&FourMarkerWhyCodeTriangulationNode::posesCallback, this, std::placeholders::_1));
 
     // Publishers
-    if (config_.publish_pose) {
-        pose_publisher_ = create_publisher<geometry_msgs::msg::PoseStamped>("triangulation/pose", rclcpp::QoS(10));
+    if (config_.publish_pose)
+    {
+        pose_publisher_ =
+            create_publisher<geometry_msgs::msg::PoseStamped>("triangulation/pose", rclcpp::QoS(10));
     }
 
-    if (config_.publish_tf || config_.publish_intermediate_tf) {
+    if (config_.publish_tf || config_.publish_intermediate_tf)
+    {
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     }
 
     // Ground truth subscriber
-    if (config_.enable_ground_truth_comparison) {
+    if (config_.enable_ground_truth_comparison)
+    {
         ground_truth_subscriber_ = create_subscription<nav_msgs::msg::Odometry>(
-            "/odom_ground_truth", rclcpp::QoS(10),
-            std::bind(&FourMarkerWhyCodeTriangulationNode::groundTruthCallback, this, std::placeholders::_1));
+            "/odom_ground_truth",
+            rclcpp::QoS(10),
+            std::bind(
+                &FourMarkerWhyCodeTriangulationNode::groundTruthCallback,
+                this,
+                std::placeholders::_1));
     }
 
     // Camera odometry publisher
-    if (config_.publish_camera_odom) {
-        camera_odom_publisher_ = create_publisher<nav_msgs::msg::Odometry>("triangulation/camera_odom", rclcpp::QoS(10));
+    if (config_.publish_camera_odom)
+    {
+        camera_odom_publisher_ =
+            create_publisher<nav_msgs::msg::Odometry>("triangulation/camera_odom", rclcpp::QoS(10));
     }
 
     // Processing timer
     const auto period = std::chrono::duration<double>(1.0 / PROCESSING_RATE);
-    processing_timer_ = create_wall_timer(std::chrono::duration_cast<std::chrono::nanoseconds>(period),
-                                          std::bind(&FourMarkerWhyCodeTriangulationNode::processingTimerCallback, this));
+    processing_timer_ = create_wall_timer(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(period),
+        std::bind(&FourMarkerWhyCodeTriangulationNode::processingTimerCallback, this));
 }
 
 void FourMarkerWhyCodeTriangulationNode::posesCallback(
-        const whycode_vision::msg::WhyCodePoseArray::ConstSharedPtr& msg) {
+    const whycode_vision::msg::WhyCodePoseArray::ConstSharedPtr& msg)
+{
     // Reset all found flags
     marker_top_left_.reset();
     marker_bottom_left_.reset();
@@ -130,29 +164,37 @@ void FourMarkerWhyCodeTriangulationNode::posesCallback(
     const auto current_time = std::chrono::steady_clock::now();
 
     // Process incoming markers
-    for (const auto& marker : msg->poses) {
-        if (marker.whycode_id == config_.marker_id_top_left) {
+    for (const auto& marker : msg->poses)
+    {
+        if (marker.whycode_id == config_.marker_id_top_left)
+        {
             marker_top_left_.whycode_id  = marker.whycode_id;
             marker_top_left_.tracking_id = marker.tracking_id;
             marker_top_left_.id_valid    = marker.id_valid;
             marker_top_left_.pose        = marker.pose;
             marker_top_left_.found       = true;
             marker_top_left_.last_seen   = current_time;
-        } else if (marker.whycode_id == config_.marker_id_bottom_left) {
+        }
+        else if (marker.whycode_id == config_.marker_id_bottom_left)
+        {
             marker_bottom_left_.whycode_id  = marker.whycode_id;
             marker_bottom_left_.tracking_id = marker.tracking_id;
             marker_bottom_left_.id_valid    = marker.id_valid;
             marker_bottom_left_.pose        = marker.pose;
             marker_bottom_left_.found       = true;
             marker_bottom_left_.last_seen   = current_time;
-        } else if (marker.whycode_id == config_.marker_id_top_right) {
+        }
+        else if (marker.whycode_id == config_.marker_id_top_right)
+        {
             marker_top_right_.whycode_id  = marker.whycode_id;
             marker_top_right_.tracking_id = marker.tracking_id;
             marker_top_right_.id_valid    = marker.id_valid;
             marker_top_right_.pose        = marker.pose;
             marker_top_right_.found       = true;
             marker_top_right_.last_seen   = current_time;
-        } else if (marker.whycode_id == config_.marker_id_bottom_right) {
+        }
+        else if (marker.whycode_id == config_.marker_id_bottom_right)
+        {
             marker_bottom_right_.whycode_id  = marker.whycode_id;
             marker_bottom_right_.tracking_id = marker.tracking_id;
             marker_bottom_right_.id_valid    = marker.id_valid;
@@ -163,68 +205,98 @@ void FourMarkerWhyCodeTriangulationNode::posesCallback(
     }
 }
 
-void FourMarkerWhyCodeTriangulationNode::processingTimerCallback() {
-    if (!areAllMarkersValid()) {
+void FourMarkerWhyCodeTriangulationNode::processingTimerCallback()
+{
+    if (!areAllMarkersValid())
+    {
         return;
     }
 
     // Perform hierarchical triangulation
-    if (performHierarchicalTriangulation()) {
+    if (performHierarchicalTriangulation())
+    {
         last_successful_estimation_ = std::chrono::steady_clock::now();
-        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Hierarchical pose estimation successful");
-    } else {
+        RCLCPP_INFO_THROTTLE(
+            get_logger(),
+            *get_clock(),
+            1000,
+            "Hierarchical pose estimation successful");
+    }
+    else
+    {
         RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Hierarchical pose estimation failed");
     }
 }
 
-bool FourMarkerWhyCodeTriangulationNode::performHierarchicalTriangulation() {
+bool FourMarkerWhyCodeTriangulationNode::performHierarchicalTriangulation()
+{
     // Step 1: Estimate left center pose (top_left + bottom_left)
     auto left_result = estimateLeftCenterPose();
-    if (!left_result.is_valid) {
-        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Left center estimation failed: %s",
-                             left_result.error_message.c_str());
+    if (!left_result.is_valid)
+    {
+        RCLCPP_WARN_THROTTLE(
+            get_logger(),
+            *get_clock(),
+            1000,
+            "Left center estimation failed: %s",
+            left_result.error_message.c_str());
         return false;
     }
 
     // Step 2: Estimate right center pose (top_right + bottom_right)
     auto right_result = estimateRightCenterPose();
-    if (!right_result.is_valid) {
-        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Right center estimation failed: %s",
-                             right_result.error_message.c_str());
+    if (!right_result.is_valid)
+    {
+        RCLCPP_WARN_THROTTLE(
+            get_logger(),
+            *get_clock(),
+            1000,
+            "Right center estimation failed: %s",
+            right_result.error_message.c_str());
         return false;
     }
 
     // Step 3: Estimate final center pose (left_center + right_center)
     auto final_result = estimateFinalCenterPose(left_result, right_result);
-    if (!final_result.is_valid) {
-        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Final center estimation failed: %s",
-                             final_result.error_message.c_str());
+    if (!final_result.is_valid)
+    {
+        RCLCPP_WARN_THROTTLE(
+            get_logger(),
+            *get_clock(),
+            1000,
+            "Final center estimation failed: %s",
+            final_result.error_message.c_str());
         return false;
     }
 
     // Publish intermediate TFs
-    if (config_.publish_intermediate_tf && tf_broadcaster_) {
+    if (config_.publish_intermediate_tf && tf_broadcaster_)
+    {
         publishTransform(left_result, "marker_center_left");
         publishTransform(right_result, "marker_center_right");
     }
 
     // Publish final results
-    if (config_.publish_tf && tf_broadcaster_) {
+    if (config_.publish_tf && tf_broadcaster_)
+    {
         publishTransform(final_result, config_.target_frame);
     }
 
-    if (config_.publish_pose) {
+    if (config_.publish_pose)
+    {
         publishPose(final_result);
     }
 
     // Calculate and publish camera odometry using final result
-    if (config_.publish_camera_odom) {
+    if (config_.publish_camera_odom)
+    {
         CameraOdometry camera_odom = calculateCameraOdometry(final_result);
         latest_camera_odom_        = camera_odom;
         publishCameraOdometry(camera_odom);
 
-        if (config_.publish_camera_odom_tf) {
-                geometry_msgs::msg::TransformStamped ts;
+        if (config_.publish_camera_odom_tf)
+        {
+            geometry_msgs::msg::TransformStamped ts;
             ts.header.stamp            = camera_odom.timestamp;
             ts.header.frame_id         = config_.camera_odom_parent_frame;
             ts.child_frame_id          = config_.camera_odom_child_frame;
@@ -238,7 +310,8 @@ bool FourMarkerWhyCodeTriangulationNode::performHierarchicalTriangulation() {
         }
 
         // Compare with ground truth if available
-        if (config_.enable_ground_truth_comparison && ground_truth_received_) {
+        if (config_.enable_ground_truth_comparison && ground_truth_received_)
+        {
             compareWithGroundTruth(camera_odom);
         }
     }
@@ -250,14 +323,18 @@ bool FourMarkerWhyCodeTriangulationNode::performHierarchicalTriangulation() {
     return true;
 }
 
-FourMarkerWhyCodeTriangulationNode::PoseEstimationResult FourMarkerWhyCodeTriangulationNode::estimateLeftCenterPose() {
+FourMarkerWhyCodeTriangulationNode::PoseEstimationResult
+FourMarkerWhyCodeTriangulationNode::estimateLeftCenterPose()
+{
     const Eigen::Vector3d P_top_left    = marker_top_left_.getPosition();
     const Eigen::Vector3d P_bottom_left = marker_bottom_left_.getPosition();
 
     return estimatePose(P_top_left, P_bottom_left, config_.known_distance_vertical);
 }
 
-FourMarkerWhyCodeTriangulationNode::PoseEstimationResult FourMarkerWhyCodeTriangulationNode::estimateRightCenterPose() {
+FourMarkerWhyCodeTriangulationNode::PoseEstimationResult
+FourMarkerWhyCodeTriangulationNode::estimateRightCenterPose()
+{
     const Eigen::Vector3d P_top_right    = marker_top_right_.getPosition();
     const Eigen::Vector3d P_bottom_right = marker_bottom_right_.getPosition();
 
@@ -265,8 +342,9 @@ FourMarkerWhyCodeTriangulationNode::PoseEstimationResult FourMarkerWhyCodeTriang
 }
 
 FourMarkerWhyCodeTriangulationNode::PoseEstimationResult
-FourMarkerWhyCodeTriangulationNode::estimateFinalCenterPose(const PoseEstimationResult& left_result,
-                                                            const PoseEstimationResult& right_result) {
+FourMarkerWhyCodeTriangulationNode::estimateFinalCenterPose(
+    const PoseEstimationResult& left_result, const PoseEstimationResult& right_result)
+{
     // Use the center positions from left and right results
     const Eigen::Vector3d P_left_center  = left_result.position;
     const Eigen::Vector3d P_right_center = right_result.position;
@@ -275,14 +353,16 @@ FourMarkerWhyCodeTriangulationNode::estimateFinalCenterPose(const PoseEstimation
 }
 
 FourMarkerWhyCodeTriangulationNode::PoseEstimationResult
-FourMarkerWhyCodeTriangulationNode::estimatePose(const Eigen::Vector3d& P1, const Eigen::Vector3d& P2,
-                                                 double known_distance) const {
+FourMarkerWhyCodeTriangulationNode::estimatePose(
+    const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, double known_distance) const
+{
     PoseEstimationResult result;
     result.is_valid  = false;
     result.timestamp = std::chrono::steady_clock::now();
 
     // Input validation
-    if (!validateInputs(P1, P2, known_distance)) {
+    if (!validateInputs(P1, P2, known_distance))
+    {
         result.error_message = "Invalid inputs for pose estimation.";
         return result;
     }
@@ -292,7 +372,8 @@ FourMarkerWhyCodeTriangulationNode::estimatePose(const Eigen::Vector3d& P1, cons
     const double          observed_distance = marker_vector.norm();
 
     // Check for degenerate case
-    if (observed_distance < MIN_DISTANCE) {
+    if (observed_distance < MIN_DISTANCE)
+    {
         result.error_message = "Markers too close or coincident";
         return result;
     }
@@ -309,7 +390,8 @@ FourMarkerWhyCodeTriangulationNode::estimatePose(const Eigen::Vector3d& P1, cons
     const double    cross_product_norm = z_axis.norm();
 
     // Check for collinear case
-    if (cross_product_norm < MIN_DISTANCE) {
+    if (cross_product_norm < MIN_DISTANCE)
+    {
         result.error_message = "Markers and camera are collinear";
         return result;
     }
@@ -343,14 +425,17 @@ FourMarkerWhyCodeTriangulationNode::estimatePose(const Eigen::Vector3d& P1, cons
     return result;
 }
 
-bool FourMarkerWhyCodeTriangulationNode::areAllMarkersValid() const {
+bool FourMarkerWhyCodeTriangulationNode::areAllMarkersValid() const
+{
     const auto current_time     = std::chrono::steady_clock::now();
     const auto timeout_duration = std::chrono::duration<double>(config_.marker_timeout);
 
     // Check if all 4 markers are found and have valid IDs
     if (!marker_top_left_.found || !marker_bottom_left_.found || !marker_top_right_.found ||
-        !marker_bottom_right_.found || !marker_top_left_.id_valid || !marker_bottom_left_.id_valid ||
-        !marker_top_right_.id_valid || !marker_bottom_right_.id_valid) {
+        !marker_bottom_right_.found || !marker_top_left_.id_valid ||
+        !marker_bottom_left_.id_valid || !marker_top_right_.id_valid ||
+        !marker_bottom_right_.id_valid)
+    {
         return false;
     }
 
@@ -358,20 +443,24 @@ bool FourMarkerWhyCodeTriangulationNode::areAllMarkersValid() const {
     if (current_time - marker_top_left_.last_seen > timeout_duration ||
         current_time - marker_bottom_left_.last_seen > timeout_duration ||
         current_time - marker_top_right_.last_seen > timeout_duration ||
-        current_time - marker_bottom_right_.last_seen > timeout_duration) {
+        current_time - marker_bottom_right_.last_seen > timeout_duration)
+    {
         return false;
     }
 
     return true;
 }
 
-void FourMarkerWhyCodeTriangulationNode::groundTruthCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& msg) {
+void FourMarkerWhyCodeTriangulationNode::groundTruthCallback(
+    const nav_msgs::msg::Odometry::ConstSharedPtr& msg)
+{
     latest_ground_truth_   = *msg;
     ground_truth_received_ = true;
 }
 
 FourMarkerWhyCodeTriangulationNode::CameraOdometry
-FourMarkerWhyCodeTriangulationNode::calculateCameraOdometry(const PoseEstimationResult& result) {
+FourMarkerWhyCodeTriangulationNode::calculateCameraOdometry(const PoseEstimationResult& result)
+{
     CameraOdometry odom;
     odom.timestamp = now();
 
@@ -386,7 +475,8 @@ FourMarkerWhyCodeTriangulationNode::calculateCameraOdometry(const PoseEstimation
     // Optional alignment so first odom = (0,0,0)
     Eigen::Matrix3d R_use = R_mc;
     Eigen::Vector3d t_use = t_mc;
-    if (config_.align_first_measurement) {
+    if (config_.align_first_measurement)
+    {
         maybeInitAlignment(R_mc, t_mc);
         R_use = R_align_ * R_mc;
         t_use = R_align_ * t_mc + t_align_;
@@ -404,7 +494,9 @@ FourMarkerWhyCodeTriangulationNode::calculateCameraOdometry(const PoseEstimation
     return odom;
 }
 
-void FourMarkerWhyCodeTriangulationNode::maybeInitAlignment(const Eigen::Matrix3d& R_mc, const Eigen::Vector3d& t_mc) {
+void FourMarkerWhyCodeTriangulationNode::maybeInitAlignment(
+    const Eigen::Matrix3d& R_mc, const Eigen::Vector3d& t_mc)
+{
     if (have_alignment_)
         return;
 
@@ -417,7 +509,8 @@ void FourMarkerWhyCodeTriangulationNode::maybeInitAlignment(const Eigen::Matrix3
     RCLCPP_INFO(get_logger(), "Initialized camera odom alignment: start at x=0,y=0,theta=0");
 }
 
-void FourMarkerWhyCodeTriangulationNode::publishCameraOdometry(const CameraOdometry& odom) {
+void FourMarkerWhyCodeTriangulationNode::publishCameraOdometry(const CameraOdometry& odom)
+{
     nav_msgs::msg::Odometry odom_msg;
 
     odom_msg.header.stamp    = odom.timestamp;
@@ -443,8 +536,10 @@ void FourMarkerWhyCodeTriangulationNode::publishCameraOdometry(const CameraOdome
     camera_odom_publisher_->publish(odom_msg);
 }
 
-void FourMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdometry& calculated_odom) {
-    if (!ground_truth_received_) {
+void FourMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdometry& calculated_odom)
+{
+    if (!ground_truth_received_)
+    {
         return;
     }
 
@@ -453,7 +548,8 @@ void FourMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdom
     double gt_y     = latest_ground_truth_.pose.pose.position.y;
     double gt_theta = tf2::getYaw(latest_ground_truth_.pose.pose.orientation);
 
-    if (!gt_aligned_) {
+    if (!gt_aligned_)
+    {
         gt_x0_      = gt_x;
         gt_y0_      = gt_y;
         gt_theta0_  = gt_theta;
@@ -474,36 +570,64 @@ void FourMarkerWhyCodeTriangulationNode::compareWithGroundTruth(const CameraOdom
 
     // Log comparison (throttled to avoid spam)
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500, "Odometry Comparison:");
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
-                         "  Calculated: x=%.3f, y=%.3f, theta=%.3f°", calculated_odom.x, calculated_odom.y,
-                         calculated_odom.theta * 180.0 / M_PI);
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
-                         "  Ground Truth: x=%.3f, y=%.3f, theta=%.3f°", gt_x, gt_y, gt_theta * 180.0 / M_PI);
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
-                         "  Errors: dx=%.3f, dy=%.3f, dtheta=%.3f°, distance=%.3f", error_x, error_y,
-                         error_theta * 180.0 / M_PI, distance_error);
+    RCLCPP_INFO_THROTTLE(
+        get_logger(),
+        *get_clock(),
+        500,
+        "  Calculated: x=%.3f, y=%.3f, theta=%.3f°",
+        calculated_odom.x,
+        calculated_odom.y,
+        calculated_odom.theta * 180.0 / M_PI);
+    RCLCPP_INFO_THROTTLE(
+        get_logger(),
+        *get_clock(),
+        500,
+        "  Ground Truth: x=%.3f, y=%.3f, theta=%.3f°",
+        gt_x,
+        gt_y,
+        gt_theta * 180.0 / M_PI);
+    RCLCPP_INFO_THROTTLE(
+        get_logger(),
+        *get_clock(),
+        500,
+        "  Errors: dx=%.3f, dy=%.3f, dtheta=%.3f°, distance=%.3f",
+        error_x,
+        error_y,
+        error_theta * 180.0 / M_PI,
+        distance_error);
 
     // Log warnings for large errors (red), success for small errors (green)
-    if (distance_error > 0.1) {  // 10cm threshold
-        RCLCPP_ERROR_STREAM(get_logger(),
-                            "\033[1;31mLarge position error detected: " << distance_error << " m\033[0m");
-    } else {
-        RCLCPP_INFO_STREAM(get_logger(),
-                           "\033[1;32mPosition error within threshold: " << distance_error << " m\033[0m");
+    if (distance_error > 0.1)
+    {  // 10cm threshold
+        RCLCPP_ERROR_STREAM(
+            get_logger(),
+            "\033[1;31mLarge position error detected: " << distance_error << " m\033[0m");
+    }
+    else
+    {
+        RCLCPP_INFO_STREAM(
+            get_logger(),
+            "\033[1;32mPosition error within threshold: " << distance_error << " m\033[0m");
     }
 
-    if (std::abs(error_theta) > 0.175) {  // ~10 degree threshold
-        RCLCPP_ERROR_STREAM(get_logger(),
-                    "\033[1;31mLarge orientation error detected: "
-                        << std::abs(error_theta) * 180.0 / M_PI << " degrees\033[0m");
-    } else {
-        RCLCPP_INFO_STREAM(get_logger(),
-                   "\033[1;32mOrientation error within threshold: "
-                       << std::abs(error_theta) * 180.0 / M_PI << " degrees\033[0m");
+    if (std::abs(error_theta) > 0.175)
+    {  // ~10 degree threshold
+        RCLCPP_ERROR_STREAM(
+            get_logger(),
+            "\033[1;31mLarge orientation error detected: " << std::abs(error_theta) * 180.0 / M_PI
+                                                           << " degrees\033[0m");
+    }
+    else
+    {
+        RCLCPP_INFO_STREAM(
+            get_logger(),
+            "\033[1;32mOrientation error within threshold: " << std::abs(error_theta) * 180.0 / M_PI
+                                                             << " degrees\033[0m");
     }
 }
 
-double FourMarkerWhyCodeTriangulationNode::normalizeAngle(double angle) const {
+double FourMarkerWhyCodeTriangulationNode::normalizeAngle(double angle) const
+{
     while (angle > M_PI)
         angle -= 2.0 * M_PI;
     while (angle < -M_PI)
@@ -511,31 +635,43 @@ double FourMarkerWhyCodeTriangulationNode::normalizeAngle(double angle) const {
     return angle;
 }
 
-bool FourMarkerWhyCodeTriangulationNode::validateInputs(const Eigen::Vector3d& P1, const Eigen::Vector3d& P2,
-                                                        double known_distance) const {
+bool FourMarkerWhyCodeTriangulationNode::validateInputs(
+    const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, double known_distance) const
+{
     // Check for NaN or inf
-    if (!P1.allFinite() || !P2.allFinite()) {
+    if (!P1.allFinite() || !P2.allFinite())
+    {
         RCLCPP_ERROR(get_logger(), "Invalid input: P1 or P2 contains NaN or inf.");
         return false;
     }
 
     // Check known distance
-    if (known_distance <= MIN_KNOWN_DISTANCE) {
-        RCLCPP_ERROR(get_logger(), "Invalid input: known_distance must be positive and > %.2e", MIN_KNOWN_DISTANCE);
+    if (known_distance <= MIN_KNOWN_DISTANCE)
+    {
+        RCLCPP_ERROR(
+            get_logger(),
+            "Invalid input: known_distance must be positive and > %.2e",
+            MIN_KNOWN_DISTANCE);
         return false;
     }
 
     // Check if markers are too close
     const double observed_distance = (P2 - P1).norm();
-    if (observed_distance < MIN_DISTANCE) {
-        RCLCPP_ERROR(get_logger(), "Invalid input: Markers are too close to each other: %.3f m", observed_distance);
+    if (observed_distance < MIN_DISTANCE)
+    {
+        RCLCPP_ERROR(
+            get_logger(),
+            "Invalid input: Markers are too close to each other: %.3f m",
+            observed_distance);
         return false;
     }
     return true;
 }
 
 FourMarkerWhyCodeTriangulationNode::CameraPlaneAngles
-FourMarkerWhyCodeTriangulationNode::calculateCameraPlaneAngles(const Eigen::Vector3d& plane_normal) const {
+FourMarkerWhyCodeTriangulationNode::calculateCameraPlaneAngles(
+    const Eigen::Vector3d& plane_normal) const
+{
     CameraPlaneAngles angles;
 
     // Normalize the plane normal vector
@@ -549,35 +685,45 @@ FourMarkerWhyCodeTriangulationNode::calculateCameraPlaneAngles(const Eigen::Vect
     // Calculate roll (rotation around X-axis)
     // Project normal onto YZ plane and measure angle from Z-axis
     Eigen::Vector2d yz_projection(n.y(), n.z());
-    if (yz_projection.norm() > 1e-6) {
+    if (yz_projection.norm() > 1e-6)
+    {
         angles.roll = std::atan2(yz_projection.x(), yz_projection.y());  // atan2(ny, nz)
-    } else {
+    }
+    else
+    {
         angles.roll = 0.0;
     }
 
     // Calculate pitch (rotation around Y-axis)
     // Project normal onto XZ plane and measure angle from Z-axis
     Eigen::Vector2d xz_projection(n.x(), n.z());
-    if (xz_projection.norm() > 1e-6) {
+    if (xz_projection.norm() > 1e-6)
+    {
         angles.pitch = -std::atan2(xz_projection.x(), xz_projection.y());  // -atan2(nx, nz)
-    } else {
+    }
+    else
+    {
         angles.pitch = 0.0;
     }
 
     // Calculate yaw (rotation around Z-axis)
     // Project normal onto XY plane and measure angle from X-axis
     Eigen::Vector2d xy_projection(n.x(), n.y());
-    if (xy_projection.norm() > 1e-6) {
+    if (xy_projection.norm() > 1e-6)
+    {
         angles.yaw = std::atan2(xy_projection.y(), xy_projection.x());  // atan2(ny, nx)
-    } else {
+    }
+    else
+    {
         angles.yaw = 0.0;
     }
 
     return angles;
 }
 
-void FourMarkerWhyCodeTriangulationNode::publishTransform(const PoseEstimationResult& result,
-                                                          const std::string&          frame_name) {
+void FourMarkerWhyCodeTriangulationNode::publishTransform(
+    const PoseEstimationResult& result, const std::string& frame_name)
+{
     geometry_msgs::msg::TransformStamped transform_stamped;
 
     transform_stamped.header.stamp    = now();
@@ -599,13 +745,15 @@ void FourMarkerWhyCodeTriangulationNode::publishTransform(const PoseEstimationRe
     tf_broadcaster_->sendTransform(transform_stamped);
 }
 
-void FourMarkerWhyCodeTriangulationNode::publishPose(const PoseEstimationResult& result) {
+void FourMarkerWhyCodeTriangulationNode::publishPose(const PoseEstimationResult& result)
+{
     geometry_msgs::msg::PoseStamped pose_msg = eigenToRosPose(result.position, result.rotation);
     pose_publisher_->publish(pose_msg);
 }
 
 geometry_msgs::msg::PoseStamped FourMarkerWhyCodeTriangulationNode::eigenToRosPose(
-        const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation) const {
+    const Eigen::Vector3d& position, const Eigen::Matrix3d& rotation) const
+{
     geometry_msgs::msg::PoseStamped pose;
 
     pose.header.stamp    = now();

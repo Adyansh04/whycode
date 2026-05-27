@@ -5,13 +5,18 @@
 #include <string>
 #include <vector>
 
-namespace whycon {
+namespace whycon
+{
 
-struct GridLayout {
+struct GridLayout
+{
     int rows;
     int cols;
 
-    GridLayout(int r = 1, int c = 1) : rows(r), cols(c) {}
+    GridLayout(int r = 1, int c = 1)
+      : rows(r)
+      , cols(c)
+    {}
 };
 
 /**
@@ -20,8 +25,9 @@ struct GridLayout {
  * Efficiently collects debug images during processing and creates
  * a consolidated view for debugging purposes when enabled.
  */
-class DebugImageManager {
-  public:
+class DebugImageManager
+{
+public:
     /**
      * @brief Constructor
      * @param enabled Whether debug image collection is enabled
@@ -54,13 +60,14 @@ class DebugImageManager {
     /**
      * @brief Enable/disable debug image collection
      */
-    void setEnabled(bool enabled) {
+    void setEnabled(bool enabled)
+    {
         enabled_ = enabled;
         if (!enabled_)
             clearDebugImages();
     }
 
-  private:
+private:
     bool                     enabled_;
     std::vector<cv::Mat>     debug_images_;
     std::vector<std::string> image_titles_;

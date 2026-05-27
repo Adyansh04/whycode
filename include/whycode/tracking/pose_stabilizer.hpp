@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace whycon {
+namespace whycon
+{
 
 /**
  * @brief Stabilizes noisy 3D pose data using an Exponential Moving Average (EMA) filter.
@@ -14,8 +15,9 @@ namespace whycon {
  * tracked marker. It smooths out high-frequency noise (jitter) from the raw
  * pose estimations.
  */
-class PoseStabilizer {
-  public:
+class PoseStabilizer
+{
+public:
     /**
      * @brief Constructs the pose stabilizer.
      * @param alpha The smoothing factor for the EMA filter (0.0 to 1.0).
@@ -38,7 +40,7 @@ class PoseStabilizer {
      */
     void removeTracks(const std::vector<int>& tracking_ids);
 
-  private:
+private:
     static constexpr float  MIN_ALPHA        = 0.0f;
     static constexpr float  MAX_ALPHA        = 1.0f;
     static constexpr size_t POSE_DIMENSIONS  = 3;

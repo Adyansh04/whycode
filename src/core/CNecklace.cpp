@@ -2,9 +2,11 @@
 
 #include <cstdio>
 
-namespace whycon {
+namespace whycon
+{
 
-CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
+CNecklace::CNecklace(int bits, int samples, int minimalHamming)
+{
     debug     = false;
     length    = bits;
     maxID     = 0;
@@ -19,7 +21,8 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
     int ham      = 1000;
 
     /*for every possible id*/
-    for (int id = 0; id < idLength; id++) {
+    for (int id = 0; id < idLength; id++)
+    {
         /*check if there is a lower number that could be created by bitshifting it*/
         tempID    = id;
         rotations = 0;
@@ -28,12 +31,15 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
         minHam             = 1000;
         if (debug)
             printf("Testing %i\n", tempID);
-        do {
+        do
+        {
             hamindex = getMinimalHamming(tempID, id);
             ham      = getHamming(tempID, hamindex);
-            if (minHam > ham) {
+            if (minHam > ham)
+            {
                 minHam = ham;
-                if (minHam == 0) {
+                if (minHam == 0)
+                {
                     idArray[id].id       = idArray[hamindex].id;
                     idArray[id].rotation = idArray[hamindex].rotation + rotations;
                     if (debug)
@@ -43,10 +49,13 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
             bit    = tempID % 2;
             tempID = tempID / 2 + bit * pow(2, length - 1);
 
-            if (bit || id == 0) {
-                for (int i = 0; i < rotations && !isSymmetrical; i++) {
+            if (bit || id == 0)
+            {
+                for (int i = 0; i < rotations && !isSymmetrical; i++)
+                {
                     // check for symmetry
-                    if (cached[i] == tempID) {
+                    if (cached[i] == tempID)
+                    {
                         isSymmetrical = true;
                     }
                 }
@@ -56,18 +65,22 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
             // if (minHam > ham) minHam = ham;
         } while (rotations++ < length - 1 && !isSymmetrical);
 
-        if (minHam >= minimalHamming && !isSymmetrical) {
+        if (minHam >= minimalHamming && !isSymmetrical)
+        {
             if (debug)
                 printf("Adding %i %i\n", currentID, id);
             idArray[id].id       = currentID++;
             idArray[id].rotation = 0;
             idArray[id].hamming  = minHam;
-        } else if (minHam > 0) {
+        }
+        else if (minHam > 0)
+        {
             idArray[id].id       = -1;
             idArray[id].rotation = -1;
             idArray[id].hamming  = minHam;
         }
-        if (isSymmetrical) {
+        if (isSymmetrical)
+        {
             idArray[id].id       = -1;
             idArray[id].rotation = -1;
         }
@@ -78,7 +91,8 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
     unknown.id       = -1;
     unknown.rotation = -1;
 
-    for (int i = 0; i < idLength; i++) {
+    for (int i = 0; i < idLength; i++)
+    {
         if (maxID < idArray[i].id)
             maxID = idArray[i].id;
     }
@@ -88,16 +102,19 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming) {
         probArray[id] = 1. / (float)maxID;
 }
 
-CNecklace::~CNecklace() {
+CNecklace::~CNecklace()
+{
     free(idArray);
     free(probArray);
 }
 
-int CNecklace::getHamming(int a, int b) {
+int CNecklace::getHamming(int a, int b)
+{
     int aa  = a;
     int bb  = b;
     int ham = 0;
-    do {
+    do
+    {
         if (a % 2 != b % 2)
             ham++;
         a = a / 2;
@@ -108,13 +125,17 @@ int CNecklace::getHamming(int a, int b) {
     return ham;
 }
 
-int CNecklace::getMinimalHamming(int a, int len) {
+int CNecklace::getMinimalHamming(int a, int len)
+{
     int minDist = 10000;
     int mindex  = 10000;
-    for (int i = 1; i < len; i++) {
-        if (get(i, false).rotation == 0) {
+    for (int i = 1; i < len; i++)
+    {
+        if (get(i, false).rotation == 0)
+        {
             int m = getHamming(a, i);
-            if (minDist > m) {
+            if (minDist > m)
+            {
                 minDist = m;
                 mindex  = i;
                 // if (minDist < 3) printf("%i is same as %i\n",a,i);
@@ -127,18 +148,23 @@ int CNecklace::getMinimalHamming(int a, int len) {
     // return minDist;
 }
 
-int CNecklace::verifyHamming(int a[], int bits, int len) {
+int CNecklace::verifyHamming(int a[], int bits, int len)
+{
     int overAll = 10000;
-    for (int i = 0; i < len; i++) {
-        for (int j = 0; j < len; j++) {
+    for (int i = 0; i < len; i++)
+    {
+        for (int j = 0; j < len; j++)
+        {
             int minimal = 10000;
-            if (i != j) {
+            if (i != j)
+            {
                 int bit;
                 int tempID = a[j];
                 int distance;
                 if (debug)
                     printf("Testing %i vs %i\n", a[i], a[j]);
-                for (int r = 0; r < bits; r++) {
+                for (int r = 0; r < bits; r++)
+                {
                     distance = getHamming(a[i], tempID);
                     if (debug)
                         printf("Test %i %i %i\n", a[i], tempID, distance);
@@ -157,7 +183,8 @@ int CNecklace::verifyHamming(int a[], int bits, int len) {
     return overAll;
 }
 
-SNecklace CNecklace::get(int sequence, bool probabilistic, float confidence) {
+SNecklace CNecklace::get(int sequence, bool probabilistic, float confidence)
+{
     if (sequence <= 0 || sequence >= idLength)
         return unknown;
     if (!probabilistic)
@@ -166,28 +193,38 @@ SNecklace CNecklace::get(int sequence, bool probabilistic, float confidence) {
     float oe = observationEstimation(confidence);
     float o  = .0;
 
-    for (int i = 0; i < maxID; i++) {
+    for (int i = 0; i < maxID; i++)
+    {
         if (idArray[sequence].id == i)
             o += (oe * probArray[i]);
         else
             o += ((1.0 - oe) / (float)(maxID - 1) * probArray[i]);
     }
 
-    for (int i = 0; i < maxID; i++) {
+    for (int i = 0; i < maxID; i++)
+    {
         if (idArray[sequence].id == i)
             probArray[i] = (oe / o) * probArray[i];
         else
             probArray[i] = (1.0 - oe) / (float)(maxID - 1) / o * probArray[i];
 
-        if (probArray[i] <= 1. / maxID) {
+        if (probArray[i] <= 1. / maxID)
+        {
             if (debug)
-                printf("Confidence value too small, changing %.9f to %.9f\n", probArray[i], 1. / maxID);
+                printf(
+                    "Confidence value too small, changing %.9f to %.9f\n",
+                    probArray[i],
+                    1. / maxID);
             probArray[i] = 1. / maxID;
         }
 
-        if (probArray[i] > 1. - (1. / maxID)) {
+        if (probArray[i] > 1. - (1. / maxID))
+        {
             if (debug)
-                printf("Confidence value too big, changing %.9f to %.9f\n", probArray[i], 1. - (1. / maxID));
+                printf(
+                    "Confidence value too big, changing %.9f to %.9f\n",
+                    probArray[i],
+                    1. - (1. / maxID));
             probArray[i] = 1. - (1. / maxID);
         }
     }
@@ -196,16 +233,19 @@ SNecklace CNecklace::get(int sequence, bool probabilistic, float confidence) {
     return toReturn;
 }
 
-float CNecklace::observationEstimation(float confidence) {
+float CNecklace::observationEstimation(float confidence)
+{
     float a = 400.;
     float s = 80.;
     return atan2((confidence - a), s) * ((1. - (1. / (float)maxID)) / M_PI) +
            (((float)maxID + 1.) / (2. * (float)maxID));
 }
 
-int CNecklace::getEstimatedID() {
+int CNecklace::getEstimatedID()
+{
     int hp = 0;
-    for (int id = 0; id < maxID; id++) {
+    for (int id = 0; id < maxID; id++)
+    {
         if (debug)
             printf("%i %f\n", id, probArray[id]);
         if (probArray[id] > probArray[hp])
@@ -215,10 +255,13 @@ int CNecklace::getEstimatedID() {
     return hp;
 }
 
-SDecoded CNecklace::decode(char* code, char* realCode, int maxIndex, float segmentV0, float segmentV1) {
+SDecoded
+CNecklace::decode(char* code, char* realCode, int maxIndex, float segmentV0, float segmentV1)
+{
     // determine the control edges' positions
     int edgeIndex = 0;
-    for (int a = 0; a < length * 2; a++) {
+    for (int a = 0; a < length * 2; a++)
+    {
         int p = (a + 1) % (length * 2);
         if (code[a] == '0' && code[p] == '0')
             edgeIndex = a;
@@ -226,7 +269,8 @@ SDecoded CNecklace::decode(char* code, char* realCode, int maxIndex, float segme
     edgeIndex = 1 - (edgeIndex % 2);
 
     int ID = 0;
-    for (int a = 0; a < length; a++) {
+    for (int a = 0; a < length; a++)
+    {
         realCode[a] = code[edgeIndex + 2 * a];
 
         // if (realCode[a] == 'X') ID = -1; /*TODO note #01*/
@@ -241,11 +285,12 @@ SDecoded CNecklace::decode(char* code, char* realCode, int maxIndex, float segme
     SNecklace result = get(ID);
 
     // float segmentAngle;
-    // segmentAngle = 2*M_PI*(-(float)maxIndex/idSamples+(float)result.rotation/length)+atan2(segmentV1,segmentV0)+1.5*M_PI/length;
-    float segmentAngle =
-            2 * M_PI *
-                    (-(float)maxIndex / idSamples - (float)edgeIndex / length / 2.0 + (float)result.rotation / length) +
-            atan2(segmentV1, segmentV0);  //+1.5*M_PI/length;
+    // segmentAngle =
+    // 2*M_PI*(-(float)maxIndex/idSamples+(float)result.rotation/length)+atan2(segmentV1,segmentV0)+1.5*M_PI/length;
+    float segmentAngle = 2 * M_PI *
+                             (-(float)maxIndex / idSamples - (float)edgeIndex / length / 2.0 +
+                              (float)result.rotation / length) +
+                         atan2(segmentV1, segmentV0);  //+1.5*M_PI/length;
 
     // compensation of the segmentWidth / 2 addition to maxIndex
     segmentAngle += 2 * M_PI * (idSamples / length / 2.0) / 2.0 / idSamples;
@@ -262,10 +307,13 @@ SDecoded CNecklace::decode(char* code, char* realCode, int maxIndex, float segme
     return out;
 }
 
-int CNecklace::printAll(int a[]) {
+int CNecklace::printAll(int a[])
+{
     int count = 0;
-    for (int i = 0; i <= idLength; i++) {
-        if (get(i).rotation == 0) {
+    for (int i = 0; i <= idLength; i++)
+    {
+        if (get(i).rotation == 0)
+        {
             a[count++] = i;
             // printf("%i %i\n", get(i).id, i);
         }

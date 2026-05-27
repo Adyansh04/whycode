@@ -2,10 +2,12 @@
 
 #include <rclcpp_components/register_node_macro.hpp>
 
-namespace whycon {
+namespace whycon
+{
 
 WhyconComponent::WhyconComponent(const rclcpp::NodeOptions& options)
-    : rclcpp::Node("whycon", options) {
+  : rclcpp::Node("whycon", options)
+{
     whycon_ros_ = std::make_shared<WhyconRosInterface>(this);
 }
 

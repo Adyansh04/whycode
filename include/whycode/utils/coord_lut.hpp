@@ -6,7 +6,8 @@
 
 #include "xsimd/xsimd.hpp"
 
-namespace whycon::lut {
+namespace whycon::lut
+{
 template <typename T>
 using aligned_vec = std::vector<T, xsimd::aligned_allocator<T, xsimd::default_arch::alignment()>>;
 
@@ -29,35 +30,17 @@ extern size_t SIZE;
 void ensure(int width, int height);
 
 // Fast inline helpers
-inline int x_of(int idx) noexcept {
-    return X_OF_IDX[idx];
-}
-inline int y_of(int idx) noexcept {
-    return Y_OF_IDX[idx];
-}
-inline float xf_of(int idx) noexcept {
-    return XF_OF_IDX[idx];
-}
-inline float yf_of(int idx) noexcept {
-    return YF_OF_IDX[idx];
-}
-inline int index_of(int x, int y) noexcept {
-    return (y * WIDTH + x);
-}
+inline int   x_of(int idx) noexcept { return X_OF_IDX[idx]; }
+inline int   y_of(int idx) noexcept { return Y_OF_IDX[idx]; }
+inline float xf_of(int idx) noexcept { return XF_OF_IDX[idx]; }
+inline float yf_of(int idx) noexcept { return YF_OF_IDX[idx]; }
+inline int   index_of(int x, int y) noexcept { return (y * WIDTH + x); }
 
 // Neighbor access
-inline int left_of(int idx) noexcept {
-    return LEFT_OF[idx];
-}
-inline int right_of(int idx) noexcept {
-    return RIGHT_OF[idx];
-}
-inline int up_of(int idx) noexcept {
-    return UP_OF[idx];
-}
-inline int down_of(int idx) noexcept {
-    return DOWN_OF[idx];
-}
+inline int left_of(int idx) noexcept { return LEFT_OF[idx]; }
+inline int right_of(int idx) noexcept { return RIGHT_OF[idx]; }
+inline int up_of(int idx) noexcept { return UP_OF[idx]; }
+inline int down_of(int idx) noexcept { return DOWN_OF[idx]; }
 
 }  // namespace whycon::lut
 
