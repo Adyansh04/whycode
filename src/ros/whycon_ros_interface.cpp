@@ -177,9 +177,6 @@ void whycon::WhyconRosInterface::setupROSTopics() {
                                                           std::bind(&WhyconRosInterface::detectionControlCallback, this,
                                                                     std::placeholders::_1, std::placeholders::_2));
 
-    const auto period = std::chrono::duration<double>(1.0 / process_rate_hz_);
-    process_timer_    = node_->create_wall_timer(std::chrono::duration_cast<std::chrono::nanoseconds>(period),
-                                               std::bind(&WhyconRosInterface::processTimerCallback, this));
 
     rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
     image_qos.depth             = static_cast<size_t>(input_queue_size);
@@ -219,25 +216,12 @@ void whycon::WhyconRosInterface::onRosImageReceived(const sensor_msgs::msg::Imag
         return;
     }
 
-    // Store latest header and signal new frame
+    // Store latest header
     latest_header_        = image_msg->header;
     latest_ros_timestamp_ = rclcpp::Time(image_msg->header.stamp);
 
-    // Signal new frame available
-    new_frame_available_ = true;
-}
-
-void whycon::WhyconRosInterface::processTimerCallback() {
-    // Check new frame
-    if (!new_frame_available_) {
-        return;
-    }
-
-    // Process immediately
+    // Process immediately in subscription callback to avoid polling/timer latency
     processLatestFrame();
-
-    // Reset flag
-    new_frame_available_ = false;
 }
 
 void whycon::WhyconRosInterface::processLatestFrame() {

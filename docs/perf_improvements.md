@@ -1,57 +1,127 @@
-# Performance Improvement Ideas (Private)
+# Performance Improvement Ideas (Detailed, Code-Referenced)
 
-This file is for internal reference only. Do not link it from other docs.
+This file lists concrete optimization opportunities with exact source anchors.
 
-## Image input and preprocessing
+## Ground Rules
 
-* Reduce per-frame allocations in the ROS image callback; reuse buffers where possible.
-* Avoid repeated color conversions when the input encoding already matches the detector expectations.
-* Consider using a fixed thread pool for image handling if camera rates are high and CPU cores are available.
+- Verify every change with profiler data (`perf`, VTune, callgrind, or tracy).
+- Preserve algorithmic behavior and detection accuracy.
+- Prioritize hot path improvements before micro-optimizing cold code.
 
-## Binarization and packed binary image
+## 1) Image Ingest and Preprocessing
 
-* Fuse preprocessing + binarization passes to reduce memory bandwidth.
-* Use SIMD-friendly memory alignment for packed bit buffers.
-* Add explicit prefetching on large images when scanning rows.
+### Current Hotspots
 
-## Marker detection and ellipse fitting
+- `src/image/image_handler.cpp:94` `ImageHandler::updateFromROS`
+  - Performs full-frame `memcpy` every callback.
+  - Runs `SimdRgbToGray` over entire frame each time.
 
-* Vectorize geometric checks (center distance, circularity, ratio) for candidate ellipses.
-* Minimize branching in the candidate validation loop; prefer branchless comparisons.
-* Cache intermediate ellipse stats to avoid recomputation across filters.
+### Potential Improvements
 
-## WhyCode decoding (CNecklace)
+- Add fast path for encodings that already match grayscale pipeline to skip unnecessary conversion.
+- Reuse incoming buffer view when safe for zero-copy read-only operations (if lifecycle permits).
+- Evaluate row-stride aware conversion if incoming data alignment differs from expected `width_ * bpp_`.
 
-* Replace scalar Hamming distance loops with SIMD popcount or LUT-based popcount.
-* Batch ring samples and evaluate multiple hypotheses per loop iteration.
-* Cache ring sampling offsets for common radii to reduce trig calls.
+## 2) Candidate Detection and Ellipse Analysis
 
-## Tracking and stabilization
+### Current Hotspots
 
-* Vectorize the association distance computations when tracking multiple markers.
-* Reuse Kalman filter state buffers and avoid per-frame object creation.
-* Consider a faster association strategy for large marker counts (early pruning by gating).
+- `src/core/marker_detector.cpp:221` `analyzeMarkerCandidate`
+- `src/core/marker_detector.cpp:416` `detectMarkerPair`
+- `src/core/marker_detector.cpp:97` `computeEllipseStatsSIMD`
 
-## Pose computation and TF publishing
+### Potential Improvements
 
-* Avoid repeated matrix inversions when values are unchanged across frames.
-* Cache common transforms (camera frame to marker frame) when possible.
-* Consider using small fixed-size math types with SIMD for 3x3 operations.
+- Reduce branch density in candidate rejection checks by grouping cheap rejects first.
+- Avoid recomputing geometric invariants when a candidate survives multiple checks.
+- Add explicit likely/unlikely branch hints for dominant rejection paths.
+- Benchmark replacing some scalar post-processing with wider SIMD batches.
 
-## Memory layout and allocations
+## 3) WhyCode Sampling and Decode
 
-* Consolidate per-frame temporary buffers into a single scratch arena.
-* Prefer contiguous storage for marker candidates and tracking state.
-* Use small-vector or fixed-capacity containers to avoid heap churn.
+### Current Hotspots
 
-## Parallelization
+- `src/core/whycon_localization.cpp:194` `computeSignal`
+- `src/core/whycon_localization.cpp:225` `binarizeSignal`
+- `src/core/whycon_localization.cpp:278` `processSingleSolution`
+- `src/core/CNecklace.cpp:218` `CNecklace::decode`
 
-* Partition image processing by rows or tiles (OpenMP or std::execution) for high-res inputs.
-* Keep the per-frame critical path single-threaded if latency matters more than throughput.
-* Guard shared structures with minimal locking; consider lock-free queues for image handoff.
+### Potential Improvements
 
-## Build and compiler tuning
+- `computeSignal`: cache-friendly access by precomputing row pointers for sampled Y values.
+- `binarizeSignal`: test unroll depth and alignment assumptions per target architecture.
+- `processSingleSolution`: reduce repeated modulo operations inside tight loops.
+- `CNecklace::decode`: optional LUT/popcount acceleration for Hamming comparisons.
 
-* Verify vectorization reports for hot loops (binarization, ellipse scoring).
-* Profile with perf or VTune to confirm hot spots before refactoring.
-* Use link-time optimization (already enabled) and consider profile-guided optimization.
+## 4) Tracking and Association
+
+### Current Hotspots
+
+- `src/tracking/marker_tracker.cpp:74` `MarkerTracker::update`
+  - O(track × detection) distance matrix and sort of potential matches.
+
+### Potential Improvements
+
+- Early gating by coarse cell bins before exact squared-distance checks.
+- Reuse `potential_matches_` capacity aggressively for higher marker counts.
+- Benchmark partial selection (min-heap or bucketed gating) vs full sort.
+
+## 5) Pose and Publish Path
+
+### Current Hotspots
+
+- `src/ros/whycon_ros_interface.cpp:299` `publishResults`
+- `src/ros/whycon_ros_interface.cpp:441` `publishSingleTF`
+
+### Potential Improvements
+
+- Build output messages only when subscribers are present on each topic.
+- Avoid repeated string formatting for overlays when image publishing is disabled.
+- Batch TF sends when marker count is large.
+
+## 6) Triangulation Nodes
+
+### Current Hotspots
+
+- `src/triangulate/two_marker_whycode_triangulation.cpp:154` `estimatePose`
+- `src/triangulate/four_marker_whycode_triangulation.cpp:167` `performHierarchicalTriangulation`
+
+### Potential Improvements
+
+- Reuse temporary Eigen matrices/vectors across timer iterations.
+- Short-circuit intermediate computations when marker timeout state is stale.
+- For 4-marker path, avoid duplicate quaternion conversions in publish branches.
+
+## 7) YAML and Config Access
+
+### Current Hotspots
+
+- `src/utils/param_loader.cpp:74` template `getParams`
+
+### Potential Improvements
+
+- Keep this out of frame path (already mostly true).
+- If runtime reconfigure is added later, cache parsed numeric values and avoid repeated YAML node traversal.
+
+## 8) Build and Toolchain
+
+### Current Anchors
+
+- `CMakeLists.txt:18` optimization flags
+- `CMakeLists.txt:22` AVX2 feature check
+
+### Potential Improvements
+
+- Profile-guided optimization for deployment build.
+- Validate `-march=native` portability requirements for target hosts.
+- Use vectorization reports to confirm hot loops are actually autovectorized.
+
+## Suggested Benchmark Order
+
+1. `ImageHandler::updateFromROS`
+2. `MarkerDetector::detectMarkerPair`
+3. `LocalizationSystem::computeSignal`
+4. `MarkerTracker::update`
+5. `WhyconRosInterface::publishResults`
+
+This order usually captures the largest latency contributors first.

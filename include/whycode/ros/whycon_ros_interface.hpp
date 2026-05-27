@@ -43,7 +43,6 @@ class WhyconRosInterface {
 
     // Processing
     void onRosImageReceived(const sensor_msgs::msg::Image::ConstSharedPtr image_msg);
-    void processTimerCallback();
     void processLatestFrame();
     void detectionControlCallback(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
                                   std::shared_ptr<std_srvs::srv::SetBool::Response>      res);
@@ -66,7 +65,6 @@ class WhyconRosInterface {
     rclcpp::Publisher<whycode_vision::msg::WhyCodePoseArray>::SharedPtr whycode_pose_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualization_markers_pub_;
     std::unique_ptr<tf2_ros::TransformBroadcaster>                 tf_broadcaster_;
-    rclcpp::TimerBase::SharedPtr                                   process_timer_;
 
     // TF parameters
     std::string tf_frame_prefix_{};
@@ -106,9 +104,6 @@ class WhyconRosInterface {
     bool publish_debug_images_          = false;
     bool publish_tf_                    = false;
     bool publish_visualization_markers_ = false;
-
-    // var
-    bool new_frame_available_ = false;
 
     // Latest frame state
     std_msgs::msg::Header latest_header_;
