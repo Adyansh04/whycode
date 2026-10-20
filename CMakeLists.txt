@@ -74,6 +74,7 @@ rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typ
 add_library(whycon_core SHARED
   src/core/CNecklace.cpp
   src/image/debug_image_manager.cpp
+  src/tracking/ambiguity_resolver.cpp
   src/tracking/id_stabilizer.cpp
   src/image/image_handler.cpp
   src/image/packed_binary_image.cpp

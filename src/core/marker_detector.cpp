@@ -3,24 +3,51 @@
 
 #include <algorithm>
 #include <ctime>
-#include <map>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <string>
-#include <xsimd/types/xsimd_api.hpp>
 
+#include "whycode/image/free_pixels.hpp"
 #include "whycode/utils/whycon_config.h"
 
 #undef ENABLE_RANDOMIZED_THRESHOLD
 // #define ENABLE_RANDOMIZED_THRESHOLD
 
+namespace
+{
+// Mean grey level of a segment's runs, rounded down as the per-pixel sum was
+int meanGrey(
+    const uchar* gray, int width, const whycon::MarkerDetector::DetectionContext::Span* runs,
+    size_t begin, size_t end, int size) noexcept
+{
+    int sum = 0;
+    for (size_t i = begin; i < end; i++)
+    {
+        const uchar* row = gray + runs[i].y * width;
+        for (int x = runs[i].x0; x <= runs[i].x1; x++)
+        {
+            sum += row[x];
+        }
+    }
+    return sum / size;
+}
+
+// The unvisited pixels of one colour in the current binary image
+whycon::FreePixels freePixels(
+    const whycon::ImageHandler&                     image_handler,
+    const whycon::MarkerDetector::DetectionContext& context, bool black) noexcept
+{
+    return { image_handler.getBinaryPacked().data(),
+             context.visited.data(),
+             context.width,
+             static_cast<size_t>(context.stride),
+             black };
+}
+}  // namespace
+
 whycon::MarkerDetector::MarkerDetector(
-    int _width, int _height, DetectionContext* _context, const DetectorParameters& _parameters)
+    DetectionContext* _context, const DetectorParameters& _parameters)
   : parameters(_parameters)
   , context(_context)
-  , width_(_width)
-  , height_(_height)
-  , len(_width * _height)
-  , siz(_width * _height * 3)
   , diameter_ratio(parameters.inner_diameter / parameters.outer_diameter)
   , outer_area_ratio(M_PI * (1.0 - (diameter_ratio * diameter_ratio)) / 4)
   , inner_area_ratio(M_PI / 4.0)
@@ -28,7 +55,6 @@ whycon::MarkerDetector::MarkerDetector(
   , inv_areas_ratio(1.0f / areas_ratio)
   , threshold(256 / 2)
   , threshold_counter(0)
-  , width_vec_(batch_int(_width))
 {
     // Initialize the marker buffers
     inner_marker_ = std::make_unique<Marker>();
@@ -75,160 +101,66 @@ inline float whycon::MarkerDetector::normalizeAngle(float a)
     return a;
 }
 
-void whycon::MarkerDetector::computeEllipseStatsScalar(
-    const int* queue, int start, int end, EllipseComputationCache& cache) const
+void whycon::MarkerDetector::computeEllipseParameters(size_t begin, size_t end, Marker& m) const
 {
-    int        idx;
-    std::div_t div_result;
-    float      px, py;
-    for (int p = start; p < end; p++)
+    // Exact sums over the runs, about the segment's first pixel; a run's sums of x and x^2 have
+    // closed forms
+    const auto* spans    = context->spans.get();
+    const int   origin_x = spans[begin].x0;
+    const int   origin_y = spans[begin].y;
+    int64_t     n = 0, sum_x = 0, sum_y = 0, sum_xx = 0, sum_xy = 0, sum_yy = 0;
+    for (size_t i = begin; i < end; i++)
     {
-        idx        = queue[p];
-        div_result = std::div(idx, width_);
-        px         = static_cast<float>(div_result.rem);   // x-coordinate
-        py         = static_cast<float>(div_result.quot);  // y-coordinate
-
-        // Update cache with pixel coordinates
-        cache.sum_x += px;
-        cache.sum_y += py;
-        cache.sum_xx += px * px;
-        cache.sum_xy += px * py;
-        cache.sum_yy += py * py;
-    }
-}
-
-void whycon::MarkerDetector::computeEllipseStatsSIMD(
-    const int* queue, int start, int end, EllipseComputationCache& cache) const
-{
-    // Reset pre-allocated SIMD vectors (much faster than construction)
-    sum_x_vec_  = batch_float(0.0f);
-    sum_y_vec_  = batch_float(0.0f);
-    sum_xx_vec_ = batch_float(0.0f);
-    sum_xy_vec_ = batch_float(0.0f);
-    sum_yy_vec_ = batch_float(0.0f);
-
-    // Width Vector
-    const batch_int width_vec(width_);
-
-    // Process SIMD-sized chunks
-    int       p        = start;
-    const int simd_end = start + ((end - start) / simd_size_) * simd_size_;
-
-    for (; p < simd_end; p += simd_size_)
-    {
-        // Load indices directly as integers
-        auto idx_vec = xsimd::load_unaligned(&queue[p]);
-
-        // Compute coordinates using division and modulo
-        auto py_vec = idx_vec / width_vec;  // y-coordinates
-        auto px_vec = idx_vec % width_vec;  // x-coordinates
-
-        // Convert to float for accumulation
-        auto px_f = xsimd::batch_cast<float>(px_vec);
-        auto py_f = xsimd::batch_cast<float>(py_vec);
-
-        // Accumulate statistics
-        sum_x_vec_ += px_f;
-        sum_y_vec_ += py_f;
-        sum_xx_vec_ += px_f * px_f;
-        sum_xy_vec_ += px_f * py_f;
-        sum_yy_vec_ += py_f * py_f;
+        const int64_t a = spans[i].x0 - origin_x, b = spans[i].x1 - origin_x;
+        const int64_t y = spans[i].y - origin_y, k = b - a + 1;
+        const int64_t run_x = (a + b) * k / 2;
+        n += k;
+        sum_x += run_x;
+        sum_y += k * y;
+        sum_xx += (b * (b + 1) * (2 * b + 1) - (a - 1) * a * (2 * a - 1)) / 6;
+        sum_xy += run_x * y;
+        sum_yy += k * y * y;
     }
 
-    // Reduce SIMD accumulators to scalars
-    cache.sum_x  = xsimd::reduce_add(sum_x_vec_);
-    cache.sum_y  = xsimd::reduce_add(sum_y_vec_);
-    cache.sum_xx = xsimd::reduce_add(sum_xx_vec_);
-    cache.sum_xy = xsimd::reduce_add(sum_xy_vec_);
-    cache.sum_yy = xsimd::reduce_add(sum_yy_vec_);
+    // Centroid and central moments, each from an exact integer numerator: the result does not
+    // depend on the origin or the pixel order. Exact while n * width stays below 3e9.
+    const double count  = static_cast<double>(n);
+    const double mean_x = static_cast<double>(origin_x * n + sum_x) / count;
+    const double mean_y = static_cast<double>(origin_y * n + sum_y) / count;
+    const double cov_xx = static_cast<double>(n * sum_xx - sum_x * sum_x) / (count * count);
+    const double cov_xy = static_cast<double>(n * sum_xy - sum_x * sum_y) / (count * count);
+    const double cov_yy = static_cast<double>(n * sum_yy - sum_y * sum_y) / (count * count);
 
-    //_ Process remaining elements
-    int        idx;
-    std::div_t div_result;
-    float      px, py;
-    for (; p < end; p++)
-    {
-        idx        = queue[p];
-        div_result = std::div(idx, width_);
-        px         = static_cast<float>(div_result.rem);   // x-coordinate
-        py         = static_cast<float>(div_result.quot);  // y-coordinate
-
-        // Update cache with pixel coordinates
-        cache.sum_x += px;
-        cache.sum_y += py;
-        cache.sum_xx += px * px;
-        cache.sum_xy += px * py;
-        cache.sum_yy += py * py;
-    }
-}
-
-void whycon::MarkerDetector::computeEllipseParameters(
-    const int* queue, int start, int end, Marker& m) const
-{
-    // Use the pre-allocated cache and reset it for the new computation
-    auto& cache = ellipse_cache_;
-    cache.reset();
-
-    cache.num_points = end - start;
-
-    // Calculate sums and second moments for all points in the segment
-    if (cache.num_points >= 4 * simd_size_)
-    {
-        computeEllipseStatsSIMD(queue, start, end, cache);
-    }
-    else
-    {
-        computeEllipseStatsScalar(queue, start, end, cache);
-    }
-
-    // Compute centroid (mean position)
-    cache.mean_x = cache.sum_x / cache.num_points;
-    cache.mean_y = cache.sum_y / cache.num_points;
-
-    // Compute central moments (covariance matrix elements)
-    cache.cov_xx =
-        (cache.sum_xx - cache.mean_x * cache.mean_x * cache.num_points) / cache.num_points;
-    cache.cov_xy =
-        (cache.sum_xy - cache.mean_x * cache.mean_y * cache.num_points) / cache.num_points;
-    cache.cov_yy =
-        (cache.sum_yy - cache.mean_y * cache.mean_y * cache.num_points) / cache.num_points;
-
-    // The covariance matrix is:
-    // | cov_xx  cov_xy |
-    // | cov_xy  cov_yy |
-
-    // Compute trace and determinant for eigenvalue calculation
-    cache.trace = cache.cov_xx + cache.cov_yy;
-    cache.det   = cache.cov_xx * cache.cov_yy - cache.cov_xy * cache.cov_xy;
-
-    // Compute eigenvalues (squared axes lengths)
-    cache.temp      = cache.trace * cache.trace - 4 * cache.det;
-    cache.sqrt_term = (cache.temp > 0) ? sqrtf(cache.temp) : 0.0f;
-    cache.lambda1   = (cache.trace + cache.sqrt_term) / 2.0f;  // major axis squared
-    cache.lambda2   = (cache.trace - cache.sqrt_term) / 2.0f;  // minor axis squared
+    // Compute eigenvalues (squared axes lengths) from the trace and determinant
+    const double trace     = cov_xx + cov_yy;
+    const double det       = cov_xx * cov_yy - cov_xy * cov_xy;
+    const double temp      = trace * trace - 4 * det;
+    const double sqrt_term = (temp > 0) ? std::sqrt(temp) : 0.0;
+    const double lambda1   = (trace + sqrt_term) / 2.0;  // major axis squared
+    const double lambda2   = (trace - sqrt_term) / 2.0;  // minor axis squared
 
     // Assign outputs: center
-    m.x = cache.mean_x;
-    m.y = cache.mean_y;
+    m.x = static_cast<float>(mean_x);
+    m.y = static_cast<float>(mean_y);
 
-    // Assign outputs: axes lengths (take sqrt to get actual axis length)
-    m.m0 = sqrtf(cache.lambda1);  // major axis
-    m.m1 = sqrtf(cache.lambda2);  // minor axis
+    // Assign outputs: axes lengths (take sqrt to get actual axis length). Rounding can leave a
+    // line-like segment's eigenvalue just below zero, and a NaN axis gets past the -ffast-math
+    // circularity check; clamped, the zero axis fails it.
+    m.m0 = static_cast<float>(std::sqrt(std::max(lambda1, 0.0)));  // major axis
+    m.m1 = static_cast<float>(std::sqrt(std::max(lambda2, 0.0)));  // minor axis
 
     // Compute orientation vector (eigenvector for major axis)
-    if (cache.cov_xy != 0.0f)
+    if (cov_xy != 0.0)
     {
-        cache.norm = sqrtf(
-            cache.cov_xy * cache.cov_xy +
-            (cache.cov_xx - cache.lambda1) * (cache.cov_xx - cache.lambda1));
-        m.v0 = -cache.cov_xy / cache.norm;
-        m.v1 = (cache.cov_xx - cache.lambda1) / cache.norm;
+        const double norm = std::sqrt(cov_xy * cov_xy + (cov_xx - lambda1) * (cov_xx - lambda1));
+        m.v0              = static_cast<float>(-cov_xy / norm);
+        m.v1              = static_cast<float>((cov_xx - lambda1) / norm);
     }
     else
     {
         // If the ellipse is axis-aligned, set orientation accordingly
         m.v0 = m.v1 = 0.0f;
-        if (cache.cov_xx > cache.cov_yy)
+        if (cov_xx > cov_yy)
         {
             m.v0 = 1.0f;
         }
@@ -241,206 +173,94 @@ void whycon::MarkerDetector::computeEllipseParameters(
 
 bool whycon::MarkerDetector::analyzeMarkerCandidate(
     const ImageHandler& image_handler, whycon::MarkerDetector::Marker& marker, int seed_pixel_index,
-    float expected_area_ratio, bool is_outer, DebugImageManager* debug_manager)
+    float expected_area_ratio, bool is_outer)
 {
-    // Use the pre-allocated cache and reset it for the new computation
-    auto& cache = analysis_cache_;
-    cache.reset();
+    const int  width  = image_handler.getWidth();
+    const int  height = image_handler.getHeight();
+    const int  seed_x = seed_pixel_index % width;
+    const int  seed_y = seed_pixel_index / width;
+    const bool type   = image_handler.getBinaryPacked().getPixel(seed_x, seed_y);
 
-    // Cache frequently accessed pointers
-    cache.buffer_ptr = context->buffer.get();
-    cache.queue_ptr  = context->queue.get();
+    context->total_segments++;
+    marker.x     = static_cast<float>(seed_x);
+    marker.y     = static_cast<float>(seed_pixel_index) / static_cast<float>(width);
+    marker.valid = false;
+    marker.round = false;
 
-    const int    width     = image_handler.getWidth();
-    const int    height    = image_handler.getHeight();
-    const uchar* gray_data = image_handler.getGray().data;
-    // const uchar* binary_data = image_handler.getBinary().data;
-    const auto& binary_packed = image_handler.getBinaryPacked();
-
-    queue_old_start = queue_start;
-    cache.type      = binary_packed.getPixelLinear(seed_pixel_index);
-
-    // WHYCON_DEBUG("examine (type " << cache.type << ") at " << seed_pixel_index / width << ","
-    //                               << seed_pixel_index % width << " (numseg " <<
-    //                               context->total_segments << ")");
-
-    cache.segment_id                   = context->total_segments++;
-    cache.buffer_ptr[seed_pixel_index] = cache.segment_id;
-    marker.x                           = static_cast<float>(seed_pixel_index % width);
-    marker.y = static_cast<float>(seed_pixel_index) / static_cast<float>(width);
-
-    cache.minx = cache.maxx = marker.x;
-    cache.miny = cache.maxy = marker.y;
-    marker.valid            = false;
-    marker.round            = false;
-
-    // push segment coords to the queue
-    cache.queue_ptr[queue_end++] = seed_pixel_index;
-
-    // Pre-compute width inverse for faster division
-    cache.width_inv = 1.0f / static_cast<float>(width);
-
-    // Flood fill algorithm
-    while (queue_end > queue_start)
+    // Scanline flood fill: each run of free pixels is taken whole, and the rows above and below it
+    // are searched 64 pixels at a time. 4-connected, so the segment is the per-pixel fill's.
+    const FreePixels free   = freePixels(image_handler, *context, type);
+    auto*            spans  = context->spans.get();
+    const size_t     stride = context->stride;
+    int              size = 0, minx = seed_x, maxx = seed_x, miny = seed_y, maxy = seed_y;
+    const auto       take = [&](int y, int x0, int x1) {
+        bits::set(context->visited.data() + y * stride, x0, x1, true);
+        spans[span_end_++] = { y, x0, x1 };
+        size += x1 - x0 + 1;
+        minx = std::min(minx, x0);
+        maxx = std::max(maxx, x1);
+        miny = std::min(miny, y);
+        maxy = std::max(maxy, y);
+    };
+    span_start_ = span_end_;
+    take(seed_y, free.runStart(seed_y, seed_x), free.runEnd(seed_y, seed_x));
+    for (size_t read = span_start_; read < span_end_; read++)
     {
-        // pull the coord from the queue
-        cache.position = cache.queue_ptr[queue_start++];
-
-        cache.position_x = cache.position % width;
-        cache.position_y = static_cast<int>(cache.position * cache.width_inv);
-
-        // Check right neighbor
-        if (cache.position_x + 1 < width)
+        const auto run = spans[read];
+        for (const int y : { run.y - 1, run.y + 1 })
         {
-            cache.pos = cache.position + 1;
-            if (cache.buffer_ptr[cache.pos] == UNVISITED &&
-                binary_packed.getPixelLinear(cache.pos) == cache.type)
+            if (y < 0 || y >= height)
             {
-                cache.queue_ptr[queue_end++] = cache.pos;
-                cache.buffer_ptr[cache.pos]  = cache.segment_id;
-                cache.maxx                   = wMax(cache.maxx, cache.position_x + 1);
+                continue;
             }
-        }
-
-        // Check left neighbor
-        if (cache.position_x - 1 >= 0)
-        {
-            cache.pos = cache.position - 1;
-            if (cache.buffer_ptr[cache.pos] == UNVISITED &&
-                binary_packed.getPixelLinear(cache.pos) == cache.type)
-            {
-                cache.queue_ptr[queue_end++] = cache.pos;
-                cache.buffer_ptr[cache.pos]  = cache.segment_id;
-                cache.minx                   = wMin(cache.minx, cache.position_x - 1);
-            }
-        }
-
-        // Check bottom neighbor
-        if (cache.position_y + 1 < height)
-        {
-            cache.pos = cache.position + width;
-            if (cache.buffer_ptr[cache.pos] == UNVISITED &&
-                binary_packed.getPixelLinear(cache.pos) == cache.type)
-            {
-                cache.queue_ptr[queue_end++] = cache.pos;
-                cache.buffer_ptr[cache.pos]  = cache.segment_id;
-                cache.maxy                   = wMax(cache.maxy, cache.position_y + 1);
-            }
-        }
-
-        // Check top neighbor
-        if (cache.position_y - 1 >= 0)
-        {
-            cache.pos = cache.position - width;
-            if (cache.buffer_ptr[cache.pos] == UNVISITED &&
-                binary_packed.getPixelLinear(cache.pos) == cache.type)
-            {
-                cache.queue_ptr[queue_end++] = cache.pos;
-                cache.buffer_ptr[cache.pos]  = cache.segment_id;
-                cache.miny                   = wMin(cache.miny, cache.position_y - 1);
-            }
+            free.forEachRun(y, run.x0, run.x1, [&](int first, int last) { take(y, first, last); });
         }
     }
 
-    // once the queue is empty, i.e. segment is complete, we compute its size
-    marker.size = queue_end - queue_old_start;
-    // WHYCON_DEBUG("segment size " << marker.size << " (queue_end " << queue_end << ", queue_old_start "
-    //                              << queue_old_start << ")");
-
-    // WHYCON_DEBUG("size " << marker.size << " (minx,maxx,miny,maxy) " << cache.minx << "," <<
-    // cache.maxx << ","
-    //                      << cache.miny << "," << cache.maxy);
+    // once the segment is complete, we have its size
+    marker.size = size;
 
     // Check if segment is within valid size range
     if (marker.size > parameters.min_size && marker.size < parameters.max_size)
     {
         // Store segment properties
-        marker.maxx = cache.maxx;
-        marker.maxy = cache.maxy;
-        marker.minx = cache.minx;
-        marker.miny = cache.miny;
-        marker.type = -cache.type;
+        marker.maxx = maxx;
+        marker.maxy = maxy;
+        marker.minx = minx;
+        marker.miny = miny;
+        marker.type = -static_cast<int>(type);
 
-        cache.width_pixels  = (marker.maxx - marker.minx + 1);
-        cache.height_pixels = (marker.maxy - marker.miny + 1);
+        const int width_pixels  = (marker.maxx - marker.minx + 1);
+        const int height_pixels = (marker.maxy - marker.miny + 1);
 
         marker.x = (marker.maxx + marker.minx) / 2;
         marker.y = (marker.maxy + marker.miny) / 2;
 
-        marker.roundness =
-            cache.width_pixels * cache.height_pixels * expected_area_ratio / marker.size;
+        marker.roundness = width_pixels * height_pixels * expected_area_ratio / marker.size;
 
         WHYCON_DEBUG(
-            "width_pixels,height_pixels " << cache.width_pixels << "," << cache.height_pixels
-                                          << " roundness " << marker.roundness);
+            "width_pixels,height_pixels " << width_pixels << "," << height_pixels << " roundness "
+                                          << marker.roundness);
         // Check if segment is round enough
         if (fabsf(marker.roundness - 1.0f) < parameters.roundness_tolerance || !is_outer)
         {
+            // The mean grey level waits for a whole marker: most candidates are not one
             marker.round = true;
 
-            // Calculate segment mean intensity
-            marker.mean = 0;
-            for (int p = queue_old_start; p < queue_end; p++)
-            {
-                cache.pos = cache.queue_ptr[p];
-                marker.mean += gray_data[cache.pos];
-            }
-            marker.mean  = marker.mean / marker.size;
-            cache.result = true;
-
             WHYCON_INFO(
-                "valid segment found: " << marker.size << " pixels, with size "
-                                        << cache.width_pixels << " x " << cache.height_pixels
-                                        << " with mean " << marker.mean);
+                "valid segment found: " << marker.size << " pixels, with size " << width_pixels
+                                        << " x " << height_pixels);
         }
         else
         {
             WHYCON_ERROR(
                 "Segment not round enough (" << marker.roundness << ") width_pixels/height_pixels "
-                                             << cache.width_pixels << " x " << cache.height_pixels
-                                             << " ctr " << marker.x << " " << marker.y << " "
-                                             << marker.size << " " << expected_area_ratio);
+                                             << width_pixels << " x " << height_pixels << " ctr "
+                                             << marker.x << " " << marker.y << " " << marker.size
+                                             << " " << expected_area_ratio);
         }
     }
-    else
-    {
-        // WHYCON_ERROR("Segment too small (" << marker.size << "/" << parameters.min_size << ") at
-        // seed_pixel_index "
-        //                                    << seed_pixel_index << " with type " << cache.type);
-    }
-#if FLOODFILL_DEBUG_IMAGE
-    // Flood Fill Debug image
-    //    Add debug visualization at the end of the function before return:
-    if (debug_manager && debug_manager->isEnabled() && cache.result)
-    {
-        cv::Mat flood_debug = cv::Mat::zeros(height, width, CV_8UC3);
-
-        // Visualize flood-filled region
-        for (int i = queue_old_start; i < queue_end; i++)
-        {
-            int pos = context->queue[i];
-            int y   = pos / width;
-            int x   = pos % width;
-            if (x >= 0 && x < width && y >= 0 && y < height)
-            {
-                flood_debug.at<cv::Vec3b>(y, x) =
-                    cv::Vec3b(0, 255, 255);  // Yellow for filled pixels
-            }
-        }
-
-        // Draw bounding boxs
-        cv::rectangle(
-            flood_debug,
-            cv::Point(marker.minx, marker.miny),
-            cv::Point(marker.maxx, marker.maxy),
-            cv::Scalar(255, 0, 0),
-            1);
-        cv::circle(flood_debug, cv::Point(marker.x, marker.y), 2, cv::Scalar(0, 0, 255), -1);
-
-        debug_manager->addDebugImage(flood_debug, "Flood Fill Analysis");
-    }
-#endif
-    return cache.result;
+    return marker.round;
 }
 
 inline bool
@@ -479,34 +299,109 @@ whycon::MarkerDetector::validateMarkerPair(const Marker& inner, const Marker& ou
     return true;
 }
 
+bool whycon::MarkerDetector::examineSeed(
+    const ImageHandler& image_handler, int seed_pixel_index, DebugImageManager* debug_manager)
+{
+    const int  width = image_handler.getWidth();
+    const bool debug = debug_manager && debug_manager->isEnabled();
+
+    // The outer ring: a round black segment
+    span_end_ = 0;
+    if (!analyzeMarkerCandidate(
+            image_handler,
+            *outer_marker_,
+            seed_pixel_index,
+            outer_area_ratio,
+            true))
+    {
+        return false;
+    }
+
+    // The inner disc: the white segment at the ring's centre, if no segment has taken it yet
+    const int centre_x = static_cast<int>(outer_marker_->x);
+    const int centre_y = static_cast<int>(outer_marker_->y);
+    WHYCON_DEBUG(
+        "found valid outer, looking for white at (" << centre_x << "," << centre_y
+                                                    << ") id: " << context->total_segments - 1);
+    if (!freePixels(image_handler, *context, PIXEL_WHITE).isFree(centre_y, centre_x) ||
+        !analyzeMarkerCandidate(
+            image_handler,
+            *inner_marker_,
+            centre_y * width + centre_x,
+            inner_area_ratio,
+            false) ||
+        !validateMarkerPair(*inner_marker_, *outer_marker_))
+    {
+        return false;
+    }
+    if (debug)
+    {
+        generateSegmentDebugImage(image_handler, debug_manager);
+    }
+
+    computeEllipseParameters(span_start_, span_end_, *inner_marker_);
+    // The outline is the ring and its centre together, as in the original WhyCon: the ring's
+    // moments alone overstate the radius by 11-17% and pull the centre towards the code's teeth.
+    computeEllipseParameters(0, span_end_, *outer_marker_);
+    if (debug)
+    {
+        generateEllipseDebugImage(image_handler, debug_manager);
+    }
+    WHYCON_DEBUG(
+        "Outer ellipse params: center=("
+        << outer_marker_->x << "," << outer_marker_->y << ")"
+        << " m0=" << outer_marker_->m0 << " m1=" << outer_marker_->m1 << " v0=" << outer_marker_->v0
+        << " v1=" << outer_marker_->v1);
+
+    inner_marker_->bwRatio = static_cast<float>(outer_marker_->size) / inner_marker_->size;
+
+    // Calculate ellipse quality metrics
+    const float circularity = static_cast<float>(
+        M_PI * 4 * (outer_marker_->m0) * (outer_marker_->m1) /
+        (outer_marker_->size + inner_marker_->size));
+    const float eccentricity = sqrtf(
+        1.0f - (outer_marker_->m1 * outer_marker_->m1) / (outer_marker_->m0 * outer_marker_->m0));
+    if (debug)
+    {
+        generateMParamDebugImage(image_handler, debug_manager, eccentricity, circularity);
+    }
+    if (!(fabsf(circularity - 1.0f) < parameters.circularity_tolerance &&
+          eccentricity < parameters.max_eccentricity))
+    {
+        return false;
+    }
+
+    outer_marker_->valid = inner_marker_->valid = true;
+    const uchar* gray                           = image_handler.getGray().data;
+    const auto*  spans                          = context->spans.get();
+    outer_marker_->mean = meanGrey(gray, width, spans, 0, span_start_, outer_marker_->size);
+    inner_marker_->mean = meanGrey(gray, width, spans, span_start_, span_end_, inner_marker_->size);
+
+    // use a new threshold estimate based on current detection
+    threshold = edgeThreshold(outer_marker_->mean, inner_marker_->mean, parameters.image_gamma);
+    WHYCON_DEBUG("found inner segment " << context->total_segments - 1);
+    return true;
+}
+
 void whycon::MarkerDetector::detectMarkerPair(
-    const ImageHandler& image_handler, bool& fast_cleanup_possible, MarkerPair& result,
-    const Marker& previous_circle, DebugImageManager* debug_manager)
+    const ImageHandler& image_handler, MarkerPair& result, const Marker& previous_circle,
+    DebugImageManager* debug_manager, const SearchWindow* window)
 {
     // Reset the member buffers to ensure a clean state for this detection run
     *inner_marker_ = Marker{};
     *outer_marker_ = Marker{};
 
-    const int   width         = image_handler.getWidth();
-    const int   height        = image_handler.getHeight();
-    const auto& binary_packed = image_handler.getBinaryPacked();
-
-    const int* buffer_ptr = context->buffer.get();
-    const int* queue_ptr  = context->queue.get();
+    const int width = image_handler.getWidth();
 
     // this allows to differentiate segments found by this detector from others, and know how many
     // segments where found in this call
     initial_segment_id = context->total_segments;
 
-    WHYCON_DEBUG(
-        "detector id " << detector_id << " B/W/U " << PIXEL_BLACK << "/" << PIXEL_WHITE << "/"
-                       << UNVISITED);
+    WHYCON_DEBUG("detector id " << detector_id << " B/W " << PIXEL_BLACK << "/" << PIXEL_WHITE);
     WHYCON_DEBUG("threshold " << threshold);
     WHYCON_DEBUG("initial segment id " << initial_segment_id);
 
-    int pos              = 0;
     int seed_pixel_index = 0;
-    int start            = 0;
 
     if (previous_circle.valid)
     {
@@ -515,147 +410,54 @@ void whycon::MarkerDetector::detectMarkerPair(
                                                         << previous_circle.y);
         seed_pixel_index =
             (static_cast<int>(previous_circle.y)) * width + static_cast<int>(previous_circle.x);
-        start = seed_pixel_index;
     }
 
-    // Main Detection Loop
-    do
-    {
-        if ((context->total_segments - initial_segment_id) > MAX_SEGMENTS)
+    // Seeds are the unvisited black pixels, in row-major order; true once the search is over
+    const FreePixels seeds      = freePixels(image_handler, *context, PIXEL_BLACK);
+    const auto       search_row = [&](int y, int x_first, int x_last) {
+        for (int x = seeds.next(y, x_first, x_last); x >= 0;
+             x     = x < x_last ? seeds.next(y, x + 1, x_last) : -1)
         {
-            WHYCON_DEBUG("reached maximum number of segments");
-            break;
-        }
-
-        // Check if the pixel has been visited. If not, check its type from the pre-binarized image.
-        if (buffer_ptr[seed_pixel_index] == UNVISITED &&
-            binary_packed.getPixelLinear(seed_pixel_index) == PIXEL_BLACK)
-        {
-            queue_end   = 0;
-            queue_start = 0;
-
-            // check if looks like the outer portion of the ring
-            if (analyzeMarkerCandidate(
-                    image_handler,
-                    *outer_marker_,
-                    seed_pixel_index,
-                    outer_area_ratio,
-                    true,
-                    debug_manager))
+            if ((context->total_segments - initial_segment_id) > MAX_SEGMENTS)
             {
-                pos =
-                    outer_marker_->y * width + outer_marker_->x;  // jump to the middle of the ring
-
-                WHYCON_DEBUG(
-                    "found valid outer, looking for white at "
-                    << pos << " id: " << context->total_segments - 1);
-
-                // Check the center of the ring from the pre-binarized image
-                if (buffer_ptr[pos] == UNVISITED && binary_packed.getPixelLinear(pos) == PIXEL_WHITE)
-                {
-                    // check if it looks like the inner portion
-                    if (analyzeMarkerCandidate(
-                            image_handler,
-                            *inner_marker_,
-                            pos,
-                            inner_area_ratio,
-                            false,
-                            debug_manager))
-                    {
-                        // it does, now actually check specific properties to see if it is a valid target
-                        if (validateMarkerPair(*inner_marker_, *outer_marker_))
-                        {
-                            // DEBUG: View Segments
-                            if (debug_manager && debug_manager->isEnabled())
-                            {
-                                generateSegmentDebugImage(image_handler, debug_manager);
-                            }
-                            WHYCON_DEBUG("This is a valid marker candidate, computing ellipse "
-                                         "parameters...");
-                            WHYCON_DEBUG(
-                                "queue_old_start: " << queue_old_start
-                                                    << ", queue_end: " << queue_end);
-
-                            //* --- Compute  ellipse parameters ---
-                            computeEllipseParameters(
-                                queue_ptr,
-                                queue_old_start,
-                                queue_end,
-                                *inner_marker_);
-                            computeEllipseParameters(queue_ptr, 0, queue_old_start, *outer_marker_);
-
-                            // DEBUG: Draw Ellipse parameters
-                            if (debug_manager && debug_manager->isEnabled())
-                            {
-                                generateEllipseDebugImage(image_handler, debug_manager);
-                            }
-
-                            // Log final ellipse parameters
-                            WHYCON_DEBUG(
-                                "Outer ellipse params: center=("
-                                << outer_marker_->x << "," << outer_marker_->y << ")"
-                                << " m0=" << outer_marker_->m0 << " m1=" << outer_marker_->m1
-                                << " v0=" << outer_marker_->v0 << " v1=" << outer_marker_->v1);
-                            // outer.size = size_outer;
-
-                            inner_marker_->bwRatio =
-                                static_cast<float>(outer_marker_->size) / inner_marker_->size;
-                            WHYCON_DEBUG(
-                                "inner size " << inner_marker_->size << " outer size "
-                                              << outer_marker_->size << " ratio "
-                                              << inner_marker_->bwRatio);
-
-                            // Calculate ellipse quality metrics
-                            const float circularity = static_cast<float>(
-                                M_PI * 4 * (outer_marker_->m0) * (outer_marker_->m1) / queue_end);
-                            const float eccentricity = sqrtf(
-                                1.0f - (outer_marker_->m1 * outer_marker_->m1) /
-                                           (outer_marker_->m0 * outer_marker_->m0));
-
-                            // Generate debug visualization for marker parameters
-                            if (debug_manager && debug_manager->isEnabled())
-                            {
-                                generateMParamDebugImage(
-                                    image_handler,
-                                    debug_manager,
-                                    eccentricity,
-                                    circularity);
-                            }
-
-                            // Final validation for circularity and eccentricity
-                            if (fabsf(circularity - 1.0f) < parameters.circularity_tolerance &&
-                                eccentricity < parameters.max_eccentricity)
-                            {
-                                outer_marker_->valid = inner_marker_->valid = true;
-
-                                // use a new threshold estimate based on current detection
-                                threshold = (outer_marker_->mean + inner_marker_->mean) / 2;
-
-                                WHYCON_DEBUG("found inner segment " << context->total_segments - 1);
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        WHYCON_DEBUG("inner segment not valid");
-                        inner_marker_->valid = false;
-                    }
-                }
-                else
-                {
-                    WHYCON_DEBUG("outer segment not valid");
-                    outer_marker_->valid = false;
-                }
+                WHYCON_DEBUG("reached maximum number of segments");
+                return true;
+            }
+            if (examineSeed(image_handler, y * width + x, debug_manager))
+            {
+                return true;
             }
         }
+        return false;
+    };
 
-        // Update search position
-        seed_pixel_index++;
-        if (seed_pixel_index >= len)
-            seed_pixel_index = 0;
-
-    } while (seed_pixel_index != start);
+    // From the previous centre, row by row with wrap-around, over the window or the whole image
+    int x0 = 0, y0 = 0, x1 = width, y1 = image_handler.getHeight();
+    if (window != nullptr)
+    {
+        x0 = window->x0;
+        y0 = window->y0;
+        x1 = window->x1;
+        y1 = window->y1;
+    }
+    const int cols = x1 - x0, rows = y1 - y0;
+    if (cols > 0 && rows > 0)
+    {
+        const int first = std::clamp(
+            (seed_pixel_index / width - y0) * cols + seed_pixel_index % width - x0,
+            0,
+            cols * rows - 1);
+        const int first_y = y0 + first / cols, first_x = x0 + first % cols;
+        bool      done = search_row(first_y, first_x, x1 - 1);
+        for (int k = 1; k < rows && !done; k++)
+        {
+            done = search_row(y0 + (first_y - y0 + k) % rows, x0, x1 - 1);
+        }
+        if (!done && first_x > x0)
+        {
+            search_row(first_y, x0, first_x - 1);
+        }
+    }
 
     // Pose-processing: angle and threshold logic
     if (inner_marker_->valid)
@@ -692,25 +494,10 @@ void whycon::MarkerDetector::detectMarkerPair(
     result.valid = (inner_marker_->valid && outer_marker_->valid);
 }
 
-void whycon::MarkerDetector::coverLastDetected(cv::Mat& image)
-{
-    int* queue = context->queue.get();
-    for (int i = queue_old_start; i < queue_end; i++)
-    {
-        int    pos = queue[i];
-        uchar* ptr = image.data + 3 * pos;
-        *ptr       = 255;
-        ptr++;
-        *ptr = 255;
-        ptr++;
-        *ptr = 255;
-    }
-}
-
 whycon::MarkerDetector::Marker::Marker() {}
 
 void whycon::MarkerDetector::Marker::draw(
-    cv::Mat& image, const std::string& text, cv::Vec3b color, float thickness) const
+    cv::Mat& image, std::string_view text, cv::Vec3b color, float thickness) const
 {
     for (float e = 0; e < 2 * M_PI; e += 0.01)
     {
@@ -722,18 +509,53 @@ void whycon::MarkerDetector::Marker::draw(
             image.at<cv::Vec3b>(fyi, fxi) = color;
     }
 
-    float scale = image.size().width / 1800.0f;
-    // float thickness = scale * 3.0;
-    // if (thickness < 1) thickness = 1;
-    cv::putText(
-        image,
-        text.c_str(),
-        cv::Point(x + 2 * m0 - 100, y + 2 * m1 + 5),
-        cv::FONT_HERSHEY_SIMPLEX,
-        scale,
-        cv::Scalar(color),
-        thickness,
-        cv::LINE_AA);
+    if (!text.empty())
+    {
+        // putText ignores '\n', so each line is its own call, outlined to read on any background
+        const float scale      = image.size().width / 2560.0f;
+        const int   line_count = static_cast<int>(std::count(text.begin(), text.end(), '\n')) + 1;
+        int         baseline   = 0;
+        const int   line_height =
+            cv::getTextSize("Ag", cv::FONT_HERSHEY_SIMPLEX, scale, thickness, &baseline).height +
+            baseline + 2;
+        const float radius = 2 * std::max(m0, m1);
+        int         text_x = static_cast<int>(x - radius);
+        int         text_y = static_cast<int>(y + radius) + line_height;
+        if (text_y + (line_count - 1) * line_height >= image.rows)
+        {
+            text_y = static_cast<int>(y - radius) - (line_count - 1) * line_height - baseline;
+        }
+
+        size_t start = 0;
+        while (start <= text.size())
+        {
+            const size_t      end = std::min(text.find('\n', start), text.size());
+            const std::string line(text.substr(start, end - start));
+            const int         width =
+                cv::getTextSize(line, cv::FONT_HERSHEY_SIMPLEX, scale, thickness, &baseline).width;
+            const cv::Point origin(std::clamp(text_x, 0, std::max(image.cols - width, 0)), text_y);
+            cv::putText(
+                image,
+                line,
+                origin,
+                cv::FONT_HERSHEY_SIMPLEX,
+                scale,
+                cv::Scalar(0, 0, 0),
+                thickness + 2,
+                cv::LINE_AA);
+            cv::putText(
+                image,
+                line,
+                origin,
+                cv::FONT_HERSHEY_SIMPLEX,
+                scale,
+                cv::Scalar(color),
+                thickness,
+                cv::LINE_AA);
+            text_y += line_height;
+            start = end + 1;
+        }
+    }
     cv::line(
         image,
         cv::Point(x + v0 * m0 * 2, y + v1 * m0 * 2),
@@ -752,11 +574,12 @@ void whycon::MarkerDetector::Marker::draw(
 
 whycon::MarkerDetector::DetectionContext::DetectionContext(int _width, int _height)
 {
-    width   = _width;
-    height  = _height;
-    int len = width * height;
-    buffer  = std::unique_ptr<int[]>(new int[len]);
-    queue   = std::unique_ptr<int[]>(new int[len]);
+    width  = _width;
+    height = _height;
+    stride = static_cast<int>(PackedBinaryImage::strideFor(width));
+    visited.resize(static_cast<size_t>(stride) * height);
+    // A run takes at least one pixel
+    spans = std::make_unique_for_overwrite<Span[]>(static_cast<size_t>(width) * height);
 
     cleanupBuffer();
     reset();
@@ -765,108 +588,36 @@ whycon::MarkerDetector::DetectionContext::DetectionContext(int _width, int _heig
 void whycon::MarkerDetector::DetectionContext::reset(void)
 {
     next_detector_id = 0;
-    valid_segment_ids.clear();
-    total_segments = 0;
+    total_segments   = 0;
 }
 
 void whycon::MarkerDetector::DetectionContext::cleanupBuffer(void)
 {
     WHYCON_INFO("Cleaning the entire buffer.");
-    int len = width * height;
-    std::memset(buffer.get(), -1, sizeof(int) * len);
-}
-
-void whycon::MarkerDetector::DetectionContext::cleanupBuffer(const Marker& c)
-{
-    if (c.valid)
+    std::fill(visited.begin(), visited.end(), 0);
+    // The bits past the image stay visited: no segment runs into them
+    for (int y = 0; y < height && width < stride * 8; y++)
     {
-        WHYCON_INFO("Cleaning buffer region for marker at (" << c.x << "," << c.y << ")");
-
-        // zero only parts modified when detecting 'c'
-        int ix = std::max(c.minx - 2, 1);
-        int ax = std::min(c.maxx + 2, width - 2);
-        int iy = std::max(c.miny - 2, 1);
-        int ay = std::min(c.maxy + 2, height - 2);
-        for (int y = iy; y < ay; y++)
-        {
-            int pos = y * width;
-            for (int x = ix; x < ax; x++)
-                buffer[pos + x] = UNVISITED;
-        }
-    }
-}
-
-// Function to generate debug images, not used in runtime but useful for debugging
-void whycon::MarkerDetector::DetectionContext::debugBuffer(const cv::Mat& image, cv::Mat& out)
-{
-    std::map<int, cv::Vec3b> colors;
-    for (int i = 0; i < total_segments; i++)
-        colors[i] = cv::Vec3b(
-            rand() / static_cast<float>(RAND_MAX) * 255.0,
-            rand() / static_cast<float>(RAND_MAX) * 255.0,
-            rand() / static_cast<float>(RAND_MAX) * 255.0);
-
-    out.create(height, width, CV_8UC3);
-    cv::Vec3b*       out_ptr = out.ptr<cv::Vec3b>(0);
-    const cv::Vec3b* im_ptr  = image.ptr<cv::Vec3b>(0);
-    out                      = cv::Scalar(128, 128, 128);
-    for (uint i = 0; i < out.total(); i++, ++out_ptr, ++im_ptr)
-    {
-        if (buffer[i] >= 0)
-        {
-            *out_ptr = colors[buffer[i]];
-        }
-        else
-        {
-            int pixel_class = (-(buffer[i] + 1) % 3);
-            if (pixel_class == 0)
-                *out_ptr = cv::Vec3b(0, 255, 0);  // UNKNOWN
-            else if (pixel_class == 1)
-                *out_ptr = cv::Vec3b(255, 0, 0);  // WHITE
-            else
-                *out_ptr = cv::Vec3b(0, 0, 255);  // BLACK
-        }
+        bits::set(visited.data() + static_cast<size_t>(y) * stride, width, stride * 8 - 1, true);
     }
 }
 
 void whycon::MarkerDetector::generateSegmentDebugImage(
     const ImageHandler& image_handler, DebugImageManager* debug_manager) const
 {
-    int width  = image_handler.getWidth();
-    int height = image_handler.getHeight();
-    int bpp    = image_handler.getBPP();
-
     // Make a copy of the input image for visualization
-    cv::Mat segment_debug = cv::Mat::zeros(height, width, CV_8UC3);
-    // Convert raw image for visualization
-    cv::Mat temp_image(height, width, (bpp == 3) ? CV_8UC3 : CV_8UC1, image_handler.getData());
-    if (bpp == 3)
-    {
-        temp_image.copyTo(segment_debug);
-    }
-    else
-    {
-        cv::cvtColor(temp_image, segment_debug, cv::COLOR_GRAY2BGR);
-    }
+    cv::Mat segment_debug;
+    image_handler.copyColour(segment_debug);
 
-    // Draw outer segment pixels (queue[0] to queue_old_start)
-    for (int p = 0; p < queue_old_start; p++)
+    // Draw the segments' runs: yellow for outer, magenta for inner
+    for (size_t i = 0; i < span_end_; i++)
     {
-        int pos = context->queue.get()[p];
-        int x   = pos % width;
-        int y   = pos / width;
-        if (x >= 0 && x < segment_debug.cols && y >= 0 && y < segment_debug.rows)
-            segment_debug.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 255, 255);  // Yellow for outer
-    }
-
-    // Draw inner segment pixels (queue_old_start to queue_end)
-    for (int p = queue_old_start; p < queue_end; p++)
-    {
-        int pos = context->queue.get()[p];
-        int x   = pos % width;
-        int y   = pos / width;
-        if (x >= 0 && x < segment_debug.cols && y >= 0 && y < segment_debug.rows)
-            segment_debug.at<cv::Vec3b>(y, x) = cv::Vec3b(255, 0, 255);  // Magenta for inner
+        const auto& run = context->spans[i];
+        cv::line(
+            segment_debug,
+            cv::Point(run.x0, run.y),
+            cv::Point(run.x1, run.y),
+            i < span_start_ ? cv::Scalar(0, 255, 255) : cv::Scalar(255, 0, 255));
     }
     // Draw/ Plot all points of outer and inner
     cv::circle(
@@ -900,22 +651,9 @@ void whycon::MarkerDetector::generateSegmentDebugImage(
 void whycon::MarkerDetector::generateEllipseDebugImage(
     const ImageHandler& image_handler, DebugImageManager* debug_manager) const
 {
-    int width  = image_handler.getWidth();
-    int height = image_handler.getHeight();
-    int bpp    = image_handler.getBPP();
-
     // Make a copy of the input image for visualization
-    cv::Mat ellipse_debug = cv::Mat::zeros(height, width, CV_8UC3);
-    // Convert raw image for visualization
-    cv::Mat temp_image(height, width, (bpp == 3) ? CV_8UC3 : CV_8UC1, image_handler.getData());
-    if (bpp == 3)
-    {
-        temp_image.copyTo(ellipse_debug);
-    }
-    else
-    {
-        cv::cvtColor(temp_image, ellipse_debug, cv::COLOR_GRAY2BGR);
-    }
+    cv::Mat ellipse_debug;
+    image_handler.copyColour(ellipse_debug);
 
     // Draw outer and ellipse in a new opencv imshow window
     cv::ellipse(
@@ -975,17 +713,8 @@ void whycon::MarkerDetector::generateMParamDebugImage(
     float circularity) const
 {
     // Make a copy of the input image for visualization
-    int     bpp            = image_handler.getBPP();
-    cv::Mat annotate_debug = cv::Mat::zeros(height_, width_, CV_8UC3);
-    cv::Mat temp_image(height_, width_, (bpp == 3) ? CV_8UC3 : CV_8UC1, image_handler.getData());
-    if (bpp == 3)
-    {
-        temp_image.copyTo(annotate_debug);
-    }
-    else
-    {
-        cv::cvtColor(temp_image, annotate_debug, cv::COLOR_GRAY2BGR);
-    }
+    cv::Mat annotate_debug;
+    image_handler.copyColour(annotate_debug);
 
     // Draw ellipse and center
     cv::ellipse(
@@ -1030,12 +759,7 @@ void whycon::MarkerDetector::generateMParamDebugImage(
         center_distance,
         toleranceX,
         toleranceY);
-    snprintf(
-        text4 + strlen(text4),
-        sizeof(text4) - strlen(text4),
-        "  CtrX: %.1f  CtrY: %.1f",
-        center_x_diff,
-        center_y_diff);
+    snprintf(text4, sizeof(text4), "  CtrX: %.1f  CtrY: %.1f", center_x_diff, center_y_diff);
     snprintf(text3, sizeof(text3), "Circ: %.3f  Size: %d", circularity, outer_marker_->size);
 
     // Draw text near the marker with vertical offsets

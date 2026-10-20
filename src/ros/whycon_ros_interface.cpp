@@ -5,11 +5,10 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <chrono>
+#include <cstdio>
 #include <functional>
 #include <geometry_msgs/msg/transform_stamped.hpp>
-#include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -98,22 +97,20 @@ void whycon::WhyconRosInterface::loadParameters()
     parameters_.roundness_tolerance = params.getParams<double>("detector", "roundness_tolerance");
     parameters_.circularity_tolerance =
         params.getParams<double>("detector", "circularity_tolerance");
-    parameters_.ratio_tolerance  = params.getParams<double>("detector", "ratio_tolerance");
-    parameters_.max_eccentricity = params.getParams<double>("detector", "max_eccentricity");
-    parameters_.inner_diameter   = params.getParams<double>("detector", "inner_diameter");
-    parameters_.outer_diameter   = params.getParams<double>("detector", "outer_diameter");
-
-    double outer_diameter_multiplier =
-        params.getParams<double>("detector", "outer_diameter_multiplier");
-    parameters_.outer_diameter *= outer_diameter_multiplier;
+    parameters_.ratio_tolerance    = params.getParams<double>("detector", "ratio_tolerance");
+    parameters_.max_eccentricity   = params.getParams<double>("detector", "max_eccentricity");
+    parameters_.inner_diameter     = params.getParams<double>("detector", "inner_diameter");
+    parameters_.outer_diameter     = params.getParams<double>("detector", "outer_diameter");
+    parameters_.image_gamma        = params.getParams<double>("detector", "image_gamma");
+    parameters_.full_scan_interval = params.getParams<int>("detector", "full_scan_interval");
 
     // Identification parameters
     parameters_.identify         = params.getParams<bool>("identification", "enabled");
     parameters_.id_bits          = params.getParams<int>("identification", "id_bits");
     parameters_.id_samples       = params.getParams<int>("identification", "id_samples");
     parameters_.hamming_distance = params.getParams<int>("identification", "hamming_distance");
-    parameters_.variance_threshold =
-        params.getParams<float>("identification", "variance_threshold");
+    parameters_.ambiguity_noise_px =
+        params.getParams<float>("identification", "ambiguity_noise_px");
     parameters_.min_marker_pixels = params.getParams<int>("identification", "min_marker_pixels");
     parameters_.diameter_ratio_correction =
         params.getParams<float>("identification", "diameter_ratio_correction");
@@ -186,9 +183,10 @@ void whycon::WhyconRosInterface::initializeWhyConModules()
     debug_manager_ = std::make_unique<DebugImageManager>(publish_debug_images_);
     tracker_ =
         std::make_unique<MarkerTracker>(max_unseen_frames, max_association_dist, min_track_age_);
-    id_stabilizer_   = std::make_unique<IDStabilizer>(id_switch_threshold);
-    pose_stabilizer_ = std::make_unique<PoseStabilizer>(pose_alpha);
-    system_          = std::make_unique<whycon::LocalizationSystem>(
+    id_stabilizer_      = std::make_unique<IDStabilizer>(id_switch_threshold);
+    pose_stabilizer_    = std::make_unique<PoseStabilizer>(pose_alpha);
+    ambiguity_resolver_ = std::make_unique<AmbiguityResolver>();
+    system_             = std::make_unique<whycon::LocalizationSystem>(
         targets_,
         cam_width_,
         cam_height_,
@@ -208,6 +206,7 @@ void whycon::WhyconRosInterface::setupROSTopics()
 {
     const auto& params           = whycon::WhyConConfig::getParamLoader();
     int         input_queue_size = params.getParams<int>("ros_interface", "input_queue_size");
+    bool        input_reliable   = params.getParams<bool>("ros_interface", "input_reliable");
     std::string image_topic = params.getParams<std::string>("ros_interface", "image_input_topic");
     std::string poses_topic = params.getParams<std::string>("ros_interface", "poses_output_topic");
     std::string image_out_topic =
@@ -228,9 +227,14 @@ void whycon::WhyconRosInterface::setupROSTopics()
             std::placeholders::_1,
             std::placeholders::_2));
 
+    // Best effort matches every camera driver but loses most large frames from a reliable
+    // publisher (bag playback, Isaac); a reliable subscription cannot match a best-effort one.
     rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
     image_qos.depth             = static_cast<size_t>(input_queue_size);
-    image_sub_                  = image_transport::create_subscription(
+    image_qos.reliability       = input_reliable ? RMW_QOS_POLICY_RELIABILITY_RELIABLE :
+                                                   RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
+
+    image_sub_ = image_transport::create_subscription(
         node_,
         image_topic,
         std::bind(&WhyconRosInterface::onRosImageReceived, this, std::placeholders::_1),
@@ -273,9 +277,20 @@ void whycon::WhyconRosInterface::onRosImageReceived(
     }
 
     // Update image handler
-    if (!image_handler_->updateFromROS(image_msg))
+    if (!image_handler_->updateFromROS(*image_msg))
     {
-        RCLCPP_ERROR(node_->get_logger(), "Failed to update image from ROS message");
+        RCLCPP_ERROR_THROTTLE(
+            node_->get_logger(),
+            *node_->get_clock(),
+            5000,
+            "Dropping %ux%u %s frame (step %u): the detector is configured for %dx%d %s",
+            image_msg->width,
+            image_msg->height,
+            image_msg->encoding.c_str(),
+            image_msg->step,
+            cam_width_,
+            cam_height_,
+            image_handler_->getEncoding().c_str());
         return;
     }
 
@@ -292,6 +307,10 @@ void whycon::WhyconRosInterface::processLatestFrame()
     if (debug_manager_)
     {
         debug_manager_->clearDebugImages();
+        // Debug images cost several full-frame copies each: only build them for a subscriber
+        debug_manager_->setEnabled(
+            publish_debug_images_ && debug_images_pub_ &&
+            debug_images_pub_->get_subscription_count() > 0U);
     }
 
     is_tracking_  = system_->localizeMarkers(*image_handler_, should_reset_, debug_manager_.get());
@@ -311,6 +330,7 @@ void whycon::WhyconRosInterface::processLatestFrame()
     tracker_->update(valid_detections_buffer_, *image_handler_, removed_ids_buffer_);
     id_stabilizer_->removeTracks(removed_ids_buffer_);
     pose_stabilizer_->removeTracks(removed_ids_buffer_);
+    ambiguity_resolver_->removeTracks(removed_ids_buffer_);
 
     // Publish results
     publishResults(latest_header_);
@@ -343,10 +363,21 @@ void whycon::WhyconRosInterface::detectionControlCallback(
 
 void whycon::WhyconRosInterface::publishResults(const std_msgs::msg::Header& header)
 {
-    // Prepare image output
-    if (publish_images_)
+    // Converting and drawing the frame costs time on every frame: only for a subscriber. The
+    // frame is copied once, into the reused outgoing message, and drawn on there.
+    const bool draw_image =
+        publish_images_ && image_pub_ && image_pub_->get_subscription_count() > 0U;
+    cv::Mat output_image;
+    if (draw_image)
     {
-        image_handler_->toOpenCVMat(output_image_buffer_);
+        output_image_msg_.header   = header;
+        output_image_msg_.height   = cam_height_;
+        output_image_msg_.width    = cam_width_;
+        output_image_msg_.encoding = image_handler_->colourEncoding();
+        output_image_msg_.step     = cam_width_ * 3;
+        output_image_msg_.data.resize(static_cast<size_t>(cam_height_) * cam_width_ * 3);
+        output_image = cv::Mat(cam_height_, cam_width_, CV_8UC3, output_image_msg_.data.data());
+        image_handler_->copyColour(output_image);
     }
 
     int marker_count = 0;
@@ -383,43 +414,48 @@ void whycon::WhyconRosInterface::publishResults(const std_msgs::msg::Header& hea
             pose_buffer_,
             debug_manager_.get());
 
-        // Stabilize WhyCode ID and pose
+        // Choose between the pose's two solutions over the whole track, then stabilize ID and pose
+        ambiguity_resolver_->resolve(pose_buffer_);
         pose_buffer_.ID = id_stabilizer_->stabilize(pose_buffer_.tracking_id, pose_buffer_.ID);
         pose_buffer_.id_valid = (pose_buffer_.ID != -1);
         pose_buffer_.pos = pose_stabilizer_->stabilize(pose_buffer_.tracking_id, pose_buffer_.pos);
 
         // draw each target
-        if (publish_images_)
+        if (draw_image)
         {
-            string_stream_buffer_.str("");
-            string_stream_buffer_.clear();
-            string_stream_buffer_ << std::fixed << std::setprecision(2);
-            string_stream_buffer_ << "TID: " << pose_buffer_.tracking_id << ","
-                                  << tracker_->getTrackAge(outer_circle.tracking_id).value_or(-1)
-                                  << " WID: " << pose_buffer_.ID << '\n'
-                                  << pose_buffer_.pos << " " << pose_buffer_.roll << " "
-                                  << pose_buffer_.pitch << " " << pose_buffer_.yaw << '\n';
+            std::snprintf(
+                label_buffer_.data(),
+                label_buffer_.size(),
+                "id %d  track %d  age %d\nxyz %.2f %.2f %.2f m\nrpy %.0f %.0f %.0f deg  p %.2f",
+                pose_buffer_.ID,
+                pose_buffer_.tracking_id,
+                tracker_->getTrackAge(outer_circle.tracking_id).value_or(-1),
+                pose_buffer_.pos(0),
+                pose_buffer_.pos(1),
+                pose_buffer_.pos(2),
+                pose_buffer_.roll * RAD_TO_DEG,
+                pose_buffer_.pitch * RAD_TO_DEG,
+                pose_buffer_.yaw * RAD_TO_DEG,
+                pose_buffer_.orientation_confidence);
 
-            outer_circle.draw(
-                output_image_buffer_,
-                string_stream_buffer_.str(),
-                cv::Vec3b(0, 255, 0));
-            inner_circle.draw(output_image_buffer_, " ", cv::Vec3b(255, 0, 255));
+            outer_circle.draw(output_image, label_buffer_.data(), cv::Vec3b(0, 255, 0));
+            inner_circle.draw(output_image, {}, cv::Vec3b(255, 0, 255));
         }
 
         if (publish_poses_)
         {
             // Fill custom message
-            whycode_pose_msg_buffer_.whycode_id         = pose_buffer_.ID;
-            whycode_pose_msg_buffer_.tracking_id        = pose_buffer_.tracking_id;
-            whycode_pose_msg_buffer_.id_valid           = pose_buffer_.id_valid;
-            whycode_pose_msg_buffer_.pose.position.x    = pose_buffer_.pos(0);
-            whycode_pose_msg_buffer_.pose.position.y    = pose_buffer_.pos(1);
-            whycode_pose_msg_buffer_.pose.position.z    = pose_buffer_.pos(2);
-            whycode_pose_msg_buffer_.pose.orientation.x = pose_buffer_.orientation.x;
-            whycode_pose_msg_buffer_.pose.orientation.y = pose_buffer_.orientation.y;
-            whycode_pose_msg_buffer_.pose.orientation.z = pose_buffer_.orientation.z;
-            whycode_pose_msg_buffer_.pose.orientation.w = pose_buffer_.orientation.w;
+            whycode_pose_msg_buffer_.whycode_id             = pose_buffer_.ID;
+            whycode_pose_msg_buffer_.tracking_id            = pose_buffer_.tracking_id;
+            whycode_pose_msg_buffer_.id_valid               = pose_buffer_.id_valid;
+            whycode_pose_msg_buffer_.orientation_confidence = pose_buffer_.orientation_confidence;
+            whycode_pose_msg_buffer_.pose.position.x        = pose_buffer_.pos(0);
+            whycode_pose_msg_buffer_.pose.position.y        = pose_buffer_.pos(1);
+            whycode_pose_msg_buffer_.pose.position.z        = pose_buffer_.pos(2);
+            whycode_pose_msg_buffer_.pose.orientation.x     = pose_buffer_.orientation.x;
+            whycode_pose_msg_buffer_.pose.orientation.y     = pose_buffer_.orientation.y;
+            whycode_pose_msg_buffer_.pose.orientation.z     = pose_buffer_.orientation.z;
+            whycode_pose_msg_buffer_.pose.orientation.w     = pose_buffer_.orientation.w;
 
             whycode_pose_array.poses.push_back(whycode_pose_msg_buffer_);
         }
@@ -439,10 +475,9 @@ void whycon::WhyconRosInterface::publishResults(const std_msgs::msg::Header& hea
         }
     }
 
-    if (publish_images_ && image_pub_ && image_pub_->get_subscription_count() > 0U)
+    if (draw_image)
     {
-        cv_bridge::CvImage cv_image(header, "rgb8", output_image_buffer_);
-        image_pub_->publish(*cv_image.toImageMsg());
+        image_pub_->publish(output_image_msg_);
     }
 
     // Publish RViz markers (delete stale ones to avoid leftovers)

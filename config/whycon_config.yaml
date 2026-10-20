@@ -9,6 +9,7 @@ system:
   max_refine: 1                # Maximum refinement iterations
   frame_id: "whycon"           # Frame ID for published poses
   world_frame_id: "world"      # World frame ID
+  process_rate_hz: 30.0        # Processing rate in Hz (unused: frames are processed as they arrive)
   
 # ==============================================================================
 # DETECTOR PARAMETERS
@@ -29,6 +30,8 @@ detector:
   # Marker physical dimensions (meters)
   inner_diameter: 0.092         # Inner diameter of marker
   outer_diameter: 0.153         # Outer diameter of marker
+  image_gamma: 1.0            # Encoding gamma of the image (sRGB ~2.2, linear 1.0); the edge threshold sits halfway in linear light
+  full_scan_interval: 1       # Frames between whole-image searches (1 = every frame); between them only known markers are searched, near their last position
 
 # ==============================================================================
 # IDENTIFICATION PARAMETERS
@@ -40,7 +43,19 @@ identification:
   hamming_distance: 1          # Hamming distance for error correction
   
   # Variance threshold for ambiguity resolution
-  variance_threshold: 0.35     # Minimum variance difference for reliable ID
+  ambiguity_noise_px: 0.3           # Edge noise of the code (px): weighs the two pose solutions; 0.3 fits the sim
+  diameter_ratio_correction: 0.52   # ID sampling radius / outer radius; the teeth span 0.34-0.60
+  min_marker_pixels: 75             # Min outer segment pixels to decode an id (~9 px marker)
+
+# ==============================================================================
+# TRACKING PARAMETERS
+# ==============================================================================
+tracking:
+  max_association_dist: 40.0  # Max distance (px) for a new track's first match. Established tracks use the Kalman gate
+  max_unseen_frames: 10       # Number of frames a track can be lost before being removed
+  id_switch_threshold: 5      # Num of consecutive different ID detections needed to switch the locked ID.
+  pose_alpha: 1.0             # Smoothing factor for pose (XYZ). Smaller is smoother but has more lag. Range: 0.0-1.0. 1.0 = off
+  min_track_age: 2            # Frames a track must exist before it is published
 
 # ==============================================================================
 # IMAGE PROCESSING PARAMETERS
@@ -75,7 +90,7 @@ ros_interface:
   publish_poses: true          # Publish pose array
   publish_images: true         # Publish processed images
   publish_tf: true            # Publish TF transforms
-  publish_visual: false        # Publish visualization markers
+  publish_visualization_markers: false  # Publish visualization markers for RViz
   publish_debug_images: true  # Publish consolidated debug images
 
   # TF Parameters
@@ -84,6 +99,8 @@ ros_interface:
 
   # Input parameters
   input_queue_size: 1         # Input image queue size
+  input_reliable: false       # Reliable image QoS: true for bags and Isaac, false for best-effort cameras
+  image_encoding: "rgb8"      # Expected image encoding (rgb8, bgr8, rgba8, bgra8 or mono8). MUST match the camera stream.
   
   # Topic names
   image_input_topic: "/usb_cam1/image_raw"
@@ -91,6 +108,10 @@ ros_interface:
   poses_output_topic: "/whycon/poses"
   image_output_topic: "/whycon/image_out"
   debug_images_topic: "/whycon/debug_images"
+  visualization_markers_topic: "/whycon/visualization_markers"
+
+  # Service names
+  detection_enabled_service_name:  "set_detection_enabled"  # Service name to enable/disable detection
 
 # ==============================================================================
 # CAMERA PARAMETERS (can be overridden by camera_info topic)

@@ -3,12 +3,13 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 
+#include <array>
 #include <cv_bridge/cv_bridge.hpp>
 #include <image_transport/image_transport.hpp>
 #include <memory>
+#include <numbers>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <sstream>
 #include <std_msgs/msg/header.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 #include <string>
@@ -21,6 +22,7 @@
 #include "whycode/core/whycon_localization.hpp"
 #include "whycode/image/debug_image_manager.hpp"
 #include "whycode/image/image_handler.hpp"
+#include "whycode/tracking/ambiguity_resolver.hpp"
 #include "whycode/tracking/id_stabilizer.hpp"
 #include "whycode/tracking/marker_tracker.hpp"
 #include "whycode/tracking/pose_stabilizer.hpp"
@@ -55,12 +57,13 @@ private:
 
     // Core WhyCon components
     whycon::DetectorParameters                  parameters_;
-    std::unique_ptr<whycon::LocalizationSystem> system_          = nullptr;
-    std::unique_ptr<whycon::MarkerTracker>      tracker_         = nullptr;
-    std::unique_ptr<whycon::IDStabilizer>       id_stabilizer_   = nullptr;
-    std::unique_ptr<whycon::PoseStabilizer>     pose_stabilizer_ = nullptr;
-    std::unique_ptr<ImageHandler>               image_handler_   = nullptr;
-    std::unique_ptr<DebugImageManager>          debug_manager_   = nullptr;
+    std::unique_ptr<whycon::LocalizationSystem> system_             = nullptr;
+    std::unique_ptr<whycon::MarkerTracker>      tracker_            = nullptr;
+    std::unique_ptr<whycon::IDStabilizer>       id_stabilizer_      = nullptr;
+    std::unique_ptr<whycon::PoseStabilizer>     pose_stabilizer_    = nullptr;
+    std::unique_ptr<whycon::AmbiguityResolver>  ambiguity_resolver_ = nullptr;
+    std::unique_ptr<ImageHandler>               image_handler_      = nullptr;
+    std::unique_ptr<DebugImageManager>          debug_manager_      = nullptr;
 
     // ROS-specific members
     image_transport::Subscriber                           image_sub_;
@@ -74,14 +77,16 @@ private:
     std::string tf_frame_prefix_{};
     std::string parent_frame_id_{};
 
+    static constexpr float RAD_TO_DEG = 180.0f / std::numbers::pi_v<float>;  // For image labels
+
     // Reusable buffers
-    cv::Mat                                output_image_buffer_;
-    whycode_vision::msg::WhyCodePoseArray  whycode_pose_array;
+    sensor_msgs::msg::Image               output_image_msg_;  // The annotated frame, drawn in place
+    whycode_vision::msg::WhyCodePoseArray whycode_pose_array;
     whycon::LocalizationSystem::MarkerPose pose_buffer_;
     whycode_vision::msg::WhyCodePose       whycode_pose_msg_buffer_;
     visualization_msgs::msg::Marker        marker_buffer_;
 
-    std::ostringstream                           string_stream_buffer_;
+    std::array<char, 128>                        label_buffer_{};
     std::vector<whycon::MarkerDetector::Marker*> valid_detections_buffer_;
     std::vector<int>                             removed_ids_buffer_;
     visualization_msgs::msg::MarkerArray         marker_array_buffer_;
