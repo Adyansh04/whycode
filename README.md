@@ -39,7 +39,7 @@ The maximum detection range of WhyCon markers depends on both the **physical siz
 
 * CPU usage was measured using `top` in a Docker container with specified CPU cores, ensuring no other process runs on the same core.
 * CPU usage values can fluctuate by approximately +/- 5% depending on system load and runtime conditions.
-* Tests used the standard ROS image input path via `image_transport`.
+* Tests used the standard ROS image input path (a subscription in a separate process).
 
 ## Tools
 
@@ -91,6 +91,11 @@ Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs
 * `cv_simd`: Sanity test for SIMD-accelerated OpenCV/xsimd integration.
 * `branch_pred`: Micro-benchmark to see impact of branch prediction on tight loops.
 * `class_test`: Evaluates class/object overhead patterns relevant to hot paths.
+* `detector_bench`: Times `MultiMarkerDetector` on frames saved from a bag; its checksum changes with any detection output, bit for bit.
+* `floodfill_bench`: Checks the detector's flood fill against a per-pixel fill on saved frames and on random frames of odd widths, and times both.
+* `binarize_packed_bench`: Checks the bit-packed binarisation pixel by pixel for every threshold and odd widths, and times it against the former version.
+* `rgb_to_gray_bench`: Times `SimdRgbToGray` against a plain loop, with the frame in and out of cache.
+* `eigen_vs_xsimd_bench`: Compares Eigen and xsimd on the code-ring kernels.
 
 ## Architecture
 
@@ -98,10 +103,7 @@ Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs
 
 ## Documentation
 
-* [docs/README.md](docs/README.md) - Documentation index
 * [docs/architecture.md](docs/architecture.md) - System architecture and module overview
-* [docs/pipeline.md](docs/pipeline.md) - Detection and tracking pipeline details
-* [docs/configuration/README.md](docs/configuration/README.md) - Full parameter reference
 
 ## Dependencies
 
@@ -116,7 +118,7 @@ Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs
 
 * `rclcpp`, `rclcpp_components`
 * `std_msgs`, `sensor_msgs`, `geometry_msgs`, `nav_msgs`, `visualization_msgs`
-* `image_transport`, `cv_bridge`
+* `cv_bridge`
 * `tf2`, `tf2_ros`, `tf2_geometry_msgs`
 * `std_srvs`, `rosidl_default_runtime`
 
@@ -225,6 +227,10 @@ The primary way to run the package is through the `whycon.launch.py` file, which
 ros2 launch whycode_vision whycon.launch.py use_composition:=true
 ```
 
+The image subscription accepts intra-process messages. It pays off when the camera driver is loaded
+into the same container (`whycon_container`) with `use_intra_process_comms` on the driver: frames
+then arrive without DDS serialisation, fragmentation or copies.
+
 ### Running as a standalone node
 
 ```bash
@@ -242,24 +248,23 @@ ros2 launch whycode_vision whycon.launch.py use_composition:=false
 * **`config/whycon_config_*.yaml`**: Main configuration for the detector, including number of targets, marker dimensions, and tracking parameters.
 * **`config/camera_intrinsics_*.yaml`**: Camera calibration parameters, including the camera matrix and distortion coefficients.
 
-Full parameter reference: see [docs/configuration/README.md](docs/configuration/README.md).
+Every parameter is described next to its value in the YAML files. The loader has no defaults: a
+configuration must set every key.
 
 ## Subscribed Topics
 
-* The node subscribes to the camera image topic (via `image_transport`). The name of this topic is specified in the YAML configuration file.
+* The node subscribes to the camera image topic (raw `sensor_msgs/msg/Image`, in the encoding `ros_interface.image_encoding` names; frames of another size or encoding are dropped). The name of this topic is specified in the YAML configuration file.
 * Camera calibration parameters are loaded from a dedicated YAML file specified in the main configuration file (see the `camera.config_path` parameter).
 
 ## Published Topics
 
-* `/whycon/poses` (`whycode_vision/msg/WhyCodePoseArray`): Poses for all detected markers.
+* `/whycon/poses` (`whycode_vision/msg/WhyCodePoseArray`): Poses for all detected markers. A tilted
+  circle fits two orientations, mirror images about the line of sight; `orientation_confidence` is the
+  probability that the published one is right (0.5: undecided, typical below ~20 px).
 * `/whycon/image_out` (`sensor_msgs/msg/Image`): Annotated image showing detected WhyCode/WhyCon markers.
 * `/whycon/debug_images` (`sensor_msgs/msg/Image`): Consolidated debug image with ellipses, marker IDs, and geometric overlays.
 * `/tf` (`tf2_msgs/msg/TFMessage`): Broadcasts TF transforms.
 * `/whycon/visualization_markers` (`visualization_msgs/msg/MarkerArray`): RViz markers for visualizing detections and poses.
-
-## Configuration and Tuning
-
-Full configuration and tuning details are documented in [docs/configuration/README.md](docs/configuration/README.md).
 
 ## Further docs and test assets
 
