@@ -243,6 +243,23 @@ ros2 launch whycode_vision whycon.launch.py use_composition:=false
 * `config_file` (string, default: `.../config/whycon_config_sim.yaml`): Path to the main configuration file.
 * `image_view` (bool, default: `false`): If true, launches an `image_view` node to display the annotated image output.
 
+### Debugging and tuning
+
+```bash
+ros2 launch whycode_vision whycon_debug.launch.py bag:=/root/data/whycode_1lap
+```
+
+The same detector with every output switched on (poses, annotated image, TF, RViz markers and the
+debug panels; the YAML file itself is not changed), and RViz laid out for a full-screen 3840x1600
+window: the detected markers next to the bag's ground truth in 3D, the annotated image and the
+three debug panels described under Published Topics. `bag:=` plays a bag on its own clock, in a
+loop; without it, the detector reads the configured camera topic. The ground truth needs
+`whycode_sim`, whose `ground_truth_viz_node` renders `/marker_ground_truth`.
+
+Arguments: those of `whycon.launch.py` (here `config_file` defaults to
+`whycon_config_isaac.yaml`), plus `bag`, `rate`, `loop`, `use_sim_time` (`auto`: true when a bag is
+played), `ground_truth`, `marker_size_m` and `rviz`.
+
 ## Configuration
 
 * **`config/whycon_config_*.yaml`**: Main configuration for the detector, including number of targets, marker dimensions, and tracking parameters.
