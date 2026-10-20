@@ -273,7 +273,9 @@ configuration must set every key.
   * `markers`: a zoomed tile per marker with its outline, the code ring's samples by the bit each
     reads, every segment's bit, both pose solutions' centres (the favoured one green), and the ID,
     the code, the log-odds between the solutions and every ID check that failed.
-* `/tf` (`tf2_msgs/msg/TFMessage`): Broadcasts TF transforms.
+* `/tf` (`tf2_msgs/msg/TFMessage`): A frame per marker under `ros_interface.parent_frame_id`, stamped
+  with its image: `<tf_frame_prefix><ID>` (e.g. `whycode_3`), or `<tf_frame_prefix>track_<track id>`
+  while the marker has no ID.
 * `/whycon/visualization_markers` (`visualization_msgs/msg/MarkerArray`): RViz markers for visualizing detections and poses.
 
 ## Further docs and test assets

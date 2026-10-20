@@ -41,7 +41,8 @@ private:
     void setupROSTopics();
     void initializeWhyConModules();
     void publishResults(const std_msgs::msg::Header& header, DebugImageManager* debug);
-    void publishSingleTF(const whycon::LocalizationSystem::MarkerPose& pose, const int marker_index);
+    void publishSingleTF(
+        const whycon::LocalizationSystem::MarkerPose& pose, const std_msgs::msg::Header& header);
     void createMarkerVisualization(
         const whycon::LocalizationSystem::MarkerPose& pose, int marker_index,
         const std_msgs::msg::Header& header, visualization_msgs::msg::Marker& marker,

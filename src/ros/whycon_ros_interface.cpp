@@ -508,7 +508,7 @@ void whycon::WhyconRosInterface::publishResults(
         // PUBLISH TF IMMEDIATELY using the same pose data
         if (publish_tf_)
         {
-            publishSingleTF(pose_buffer_, pose_buffer_.ID);
+            publishSingleTF(pose_buffer_, header);
         }
     }
 
@@ -531,12 +531,17 @@ void whycon::WhyconRosInterface::publishResults(
 }
 
 void whycon::WhyconRosInterface::publishSingleTF(
-    const whycon::LocalizationSystem::MarkerPose& pose, int track_id)
+    const whycon::LocalizationSystem::MarkerPose& pose, const std_msgs::msg::Header& header)
 {
+    // Stamped with the frame's capture time, as the pose array is: the processing time is later,
+    // and a lookup at the image's stamp would extrapolate. A marker without an ID (or WhyCon mode)
+    // gets its track's frame, rather than every such marker sharing <prefix>-1.
     geometry_msgs::msg::TransformStamped transform_stamped;
-    transform_stamped.header.stamp    = node_->now();
+    transform_stamped.header.stamp    = header.stamp;
     transform_stamped.header.frame_id = parent_frame_id_;
-    transform_stamped.child_frame_id  = tf_frame_prefix_ + std::to_string(track_id);
+    transform_stamped.child_frame_id =
+        pose.id_valid ? tf_frame_prefix_ + std::to_string(pose.ID) :
+                        tf_frame_prefix_ + "track_" + std::to_string(pose.tracking_id);
 
     transform_stamped.transform.translation.x = pose.pos(0);
     transform_stamped.transform.translation.y = pose.pos(1);
