@@ -61,6 +61,41 @@ add_executable(binarize_loop_bench
 target_compile_options(binarize_loop_bench PRIVATE ${BENCHMARK_COMPILE_OPTIONS})
 target_link_libraries(binarize_loop_bench ${BENCHMARK_LIBRARIES})
 
+# Flood fill benchmark and check
+add_executable(floodfill_bench
+  floodfill_bench.cpp
+)
+target_compile_options(floodfill_bench PRIVATE ${BENCHMARK_COMPILE_OPTIONS})
+target_link_libraries(floodfill_bench ${BENCHMARK_LIBRARIES})
+
+# Bit-packed binarisation benchmark
+add_executable(binarize_packed_bench
+  binarize_packed_bench.cpp
+)
+target_compile_options(binarize_packed_bench PRIVATE ${BENCHMARK_COMPILE_OPTIONS})
+target_link_libraries(binarize_packed_bench ${BENCHMARK_LIBRARIES})
+
+# Eigen against xsimd on the localisation's float kernels
+add_executable(eigen_vs_xsimd_bench
+  eigen_vs_xsimd_bench.cpp
+)
+target_compile_options(eigen_vs_xsimd_bench PRIVATE ${BENCHMARK_COMPILE_OPTIONS})
+target_link_libraries(eigen_vs_xsimd_bench ${BENCHMARK_LIBRARIES})
+
+# Whole-detector benchmark on real frames
+add_executable(detector_bench
+  detector_bench.cpp
+)
+target_compile_options(detector_bench PRIVATE ${BENCHMARK_COMPILE_OPTIONS})
+target_link_libraries(detector_bench ${BENCHMARK_LIBRARIES})
+
+# RGB to grey conversion benchmark
+add_executable(rgb_to_gray_bench
+  rgb_to_gray_bench.cpp
+)
+target_compile_options(rgb_to_gray_bench PRIVATE ${BENCHMARK_COMPILE_OPTIONS})
+target_link_libraries(rgb_to_gray_bench ${BENCHMARK_LIBRARIES})
+
 # Bilinear interpolation benchmark
 add_executable(bilinear_bench
   bilinear_bench.cpp
