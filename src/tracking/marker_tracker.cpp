@@ -1,9 +1,8 @@
 #include "whycode/tracking/marker_tracker.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/video/tracking.hpp>
 #include <optional>
 #include <vector>
 
@@ -23,69 +22,70 @@ MarkerTracker::MarkerTracker(
 {
     // Pre-allocate memory for all vectors to avoid reallocations during tracking
     tracks_.reserve(max_tracks_);
-    track_id_to_index_.reserve(max_tracks_);
     predicted_positions_.reserve(max_tracks_);
+    innovation_inverse_.reserve(max_tracks_);
     potential_matches_.reserve(max_tracks_ * 5);  // Assuming max 5 candidates per track
     detection_matched_.reserve(max_tracks_);
     track_assigned_.reserve(max_tracks_);
 }
 
-void MarkerTracker::initializeKalmanFilter(cv::KalmanFilter& kf, const cv::Point2f& initial_pos)
+void MarkerTracker::addTrack(whycon::MarkerDetector::Marker& detection)
+{
+    tracks_.emplace_back(
+        next_id_++,
+        cv::Point2f(detection.x, detection.y),
+        detection.m0,
+        INITIAL_VARIANCE);
+    detection.tracking_id = tracks_.back().tracking_id;
+    WHYCON_INFO("[Tracker] Created new track with ID " << detection.tracking_id);
+}
+
+void MarkerTracker::predict(ActiveTrack& track) noexcept
 {
     // clang-format off
-    // State: [x,y,vx,vy] - position and velocity
-    // Measurement: [x,y] - only position is observed
-    kf.init(4, 2, 0, CV_32F);
-
-    // Transition matrix (constant velocity model)
-    // [1 0 dt  0]
-    // [0 1  0 dt]
-    // [0 0  1  0]
-    // [0 0  0  1]
-    kf.transitionMatrix = (cv::Mat_<float>(4, 4) <<
+    // Constant velocity over one frame; the process noise is a random acceleration
+    static const cv::Matx44f transition(
         1, 0, 1, 0,
         0, 1, 0, 1,
         0, 0, 1, 0,
         0, 0, 0, 1);
-
-    // Measurement matrix - we only observe position
-    // [1 0 0 0]
-    // [0 1 0 0]
-    kf.measurementMatrix = (cv::Mat_<float>(2, 4) <<
-        1, 0, 0, 0,
-        0, 1, 0, 0);
-    
-    // Process noise covariance
-    kf.processNoiseCov = (cv::Mat_<float>(4, 4) <<
-        PROCESS_NOISE_POS, 0, 0, 0,
-        0, PROCESS_NOISE_POS, 0, 0,
-        0, 0, PROCESS_NOISE_VEL, 0,
-        0, 0, 0, PROCESS_NOISE_VEL);
-    
-    // Measurement noise covariance
-    kf.measurementNoiseCov = (cv::Mat_<float>(2, 2) <<
-        MEASUREMENT_NOISE, 0,
-        0, MEASUREMENT_NOISE);
-    
-    // Initial state covariance
-    kf.errorCovPost = cv::Mat::eye(4, 4, CV_32F) * 1000;
-    
-    // Set initial state [x, y, vx=0, vy=0]
-    kf.statePost = (cv::Mat_<float>(4, 1) << initial_pos.x, initial_pos.y, 0, 0);
+    static const cv::Matx44f process_noise = ACCELERATION_NOISE * ACCELERATION_NOISE * cv::Matx44f(
+        0.25f, 0,     0.5f, 0,
+        0,     0.25f, 0,    0.5f,
+        0.5f,  0,     1,    0,
+        0,     0.5f,  0,    1);
     // clang-format on
+    track.state      = transition * track.state;
+    track.covariance = transition * track.covariance * transition.t() + process_noise;
+}
+
+void MarkerTracker::correct(ActiveTrack& track, const cv::Point2f& measurement) noexcept
+{
+    // Only the position is measured, so P H^T is P's first two columns
+    const cv::Matx<float, 4, 2> cross = track.covariance.get_minor<4, 2>(0, 0);
+    const cv::Matx22f           innovation =
+        track.covariance.get_minor<2, 2>(0, 0) + cv::Matx22f::eye() * MEASUREMENT_NOISE;
+    const cv::Matx<float, 4, 2> gain = cross * innovation.inv();
+    const cv::Vec2f residual(measurement.x - track.state[0], measurement.y - track.state[1]);
+
+    track.state += cv::Vec4f(gain * residual);
+    track.covariance -= gain * cross.t();
+    track.covariance =
+        0.5f * (track.covariance + track.covariance.t());  // Rounding breaks symmetry
 }
 
 void MarkerTracker::update(
     std::vector<whycon::MarkerDetector::Marker*>& current_detections,
     const ImageHandler& image_handler, std::vector<int>& removed_ids)
 {
+    removed_ids.clear();
+
     // Validate inputs to avoid crashes
     for (const auto* detection : current_detections)
     {
         if (detection == nullptr)
         {
             WHYCON_ERROR("[Tracker] Null detection pointer received");
-            removed_ids.clear();  // Clear removed_ids to avoid confusion
             return;
         }
     }
@@ -111,15 +111,7 @@ void MarkerTracker::update(
         WHYCON_INFO("[Tracker] Initializing tracker with first set of detections.");
         for (auto* detection : current_detections)
         {
-            tracks_.emplace_back(next_id_++, cv::Point2f(detection->x, detection->y));
-            ActiveTrack& new_track = tracks_.back();
-
-            // Initialize Kalman filter for new track
-            initializeKalmanFilter(new_track.kf, new_track.last_position);
-
-            const int new_track_id           = new_track.tracking_id;
-            track_id_to_index_[new_track_id] = tracks_.size() - 1;
-            detection->tracking_id           = new_track_id;
+            addTrack(*detection);
         }
         initialized_ = true;
         return;  // No tracks to remove on first frame
@@ -127,29 +119,13 @@ void MarkerTracker::update(
 
     // --- Stage 1: Predict new positions using Kalman Filter ---
     predicted_positions_.clear();
-
-    if (tracks_.empty())
+    innovation_inverse_.clear();
+    for (auto& track : tracks_)
     {
-        WHYCON_DEBUG("[Tracker] No active tracks to predict.");
-    }
-    else
-    {
-        // Collect points from active tracks
-        predicted_positions_.reserve(tracks_.size());
-
-        for (auto& track : tracks_)
-        {
-            // Predict next state
-            cv::Mat prediction = track.kf.predict();
-
-            // Extract predicted position
-            cv::Point2f predicted_pos(prediction.at<float>(0), prediction.at<float>(1));
-            predicted_positions_.push_back(predicted_pos);
-
-            WHYCON_DEBUG(
-                "[Tracker] Track " << track.tracking_id << " predicted at (" << predicted_pos.x
-                                   << ", " << predicted_pos.y << ")");
-        }
+        predict(track);
+        predicted_positions_.emplace_back(track.state[0], track.state[1]);
+        innovation_inverse_.push_back(
+            (track.covariance.get_minor<2, 2>(0, 0) + cv::Matx22f::eye() * MEASUREMENT_NOISE).inv());
     }
 
     // --- Stage 2: Data Association (Greedy Assignment) ---
@@ -159,18 +135,21 @@ void MarkerTracker::update(
     for (size_t track_idx = 0; track_idx < tracks_.size(); ++track_idx)
     {
         const cv::Point2f& predicted_pos = predicted_positions_[track_idx];
+        const cv::Matx22f& inverse       = innovation_inverse_[track_idx];
 
         for (size_t detection_idx = 0; detection_idx < current_detections.size(); ++detection_idx)
         {
             const auto& detection = current_detections[detection_idx];
 
-            // Calculate squared distance efficiently
-            const double dx               = predicted_pos.x - detection->x;
-            const double dy               = predicted_pos.y - detection->y;
+            const float  dx               = detection->x - predicted_pos.x;
+            const float  dy               = detection->y - predicted_pos.y;
             const double squared_distance = dx * dx + dy * dy;
+            const float  mahalanobis_sq =
+                inverse(0, 0) * dx * dx + 2.0f * inverse(0, 1) * dx * dy + inverse(1, 1) * dy * dy;
 
-            // Only consider matches within threshold distance
-            if (squared_distance < max_dist_sq_)
+            // Within the distance gate, the filter's own gate, and of a similar apparent size
+            if (squared_distance < max_dist_sq_ && mahalanobis_sq < GATE_CHI2 &&
+                std::abs(std::log(detection->m0 / tracks_[track_idx].size)) < MAX_LOG_SIZE_CHANGE)
             {
                 potential_matches_.push_back({ squared_distance,
                                                static_cast<int>(track_idx),
@@ -187,21 +166,15 @@ void MarkerTracker::update(
     {
         if (!track_assigned_[track_idx] && !detection_matched_[detection_idx])
         {
-            WHYCON_DEBUG(
-                "[Tracker] Matched detection to track ID " << tracks_[track_idx].tracking_id);
+            ActiveTrack&                    track     = tracks_[track_idx];
+            whycon::MarkerDetector::Marker& detection = *current_detections[detection_idx];
+            WHYCON_DEBUG("[Tracker] Matched detection to track ID " << track.tracking_id);
 
-            // Update the track with kalman filter correction
-            cv::Mat measurement =
-                (cv::Mat_<float>(2, 1) << current_detections[detection_idx]->x,
-                 current_detections[detection_idx]->y);
-
-            tracks_[track_idx].kf.correct(measurement);
-
-            // Update last known position and reset unseen counter
-            tracks_[track_idx].last_position               = { current_detections[detection_idx]->x,
-                                                               current_detections[detection_idx]->y };
-            tracks_[track_idx].frames_unseen               = 0;
-            current_detections[detection_idx]->tracking_id = tracks_[track_idx].tracking_id;
+            track.last_position = { detection.x, detection.y };
+            correct(track, track.last_position);
+            track.size            = detection.m0;
+            track.frames_unseen   = 0;
+            detection.tracking_id = track.tracking_id;
 
             track_assigned_[track_idx]        = true;
             detection_matched_[detection_idx] = true;
@@ -213,66 +186,33 @@ void MarkerTracker::update(
     {
         if (!detection_matched_[i])
         {
-            // Add new track and update mapping
-            tracks_.emplace_back(
-                next_id_++,
-                cv::Point2f(current_detections[i]->x, current_detections[i]->y));
-            ActiveTrack& new_track = tracks_.back();
-
-            // Initialize Kalman filter for new track
-            initializeKalmanFilter(new_track.kf, new_track.last_position);
-
-            const int new_track_id             = new_track.tracking_id;
-            track_id_to_index_[new_track_id]   = tracks_.size() - 1;
-            current_detections[i]->tracking_id = new_track_id;
-            WHYCON_INFO("[Tracker] Created new track with ID " << new_track_id);
+            addTrack(*current_detections[i]);
         }
     }
 
     // --- Stage 4: Remove stale tracks ---
-    removed_ids.clear();
-
-    auto   it    = tracks_.begin();
-    size_t index = 0;
-
-    while (it != tracks_.end())
-    {
-        if (it->frames_unseen > max_unseen_)
+    std::erase_if(tracks_, [this, &removed_ids](const ActiveTrack& track) {
+        if (track.frames_unseen <= max_unseen_)
         {
-            WHYCON_INFO("[Tracker] Removing stale track with ID " << it->tracking_id);
-            removed_ids.push_back(it->tracking_id);
-
-            // Remove from id-to-index map
-            track_id_to_index_.erase(it->tracking_id);
-
-            // Remove the track from vector
-            it = tracks_.erase(it);
-
-            // Update indices for all subsequent tracks in the map
-            for (auto& [id, idx] : track_id_to_index_)
-            {
-                if (idx > index)
-                {
-                    idx--;  // Decrement indices of tracks that were after the removed one
-                }
-            }
+            return false;
         }
-        else
-        {
-            ++it;
-            ++index;
-        }
-    }
+        WHYCON_INFO("[Tracker] Removing stale track with ID " << track.tracking_id);
+        removed_ids.push_back(track.tracking_id);
+        return true;
+    });
 
     WHYCON_DEBUG("[Tracker] Update complete. Active tracks: " << tracks_.size());
 }
 
 std::optional<int> MarkerTracker::getTrackAge(int tracking_id) const
 {
-    auto it = track_id_to_index_.find(tracking_id);
-    if (it != track_id_to_index_.end())
+    // A handful of tracks: a scan is cheaper than keeping an index in step
+    for (const auto& track : tracks_)
     {
-        return tracks_[it->second].marker_age;
+        if (track.tracking_id == tracking_id)
+        {
+            return track.marker_age;
+        }
     }
     return std::nullopt;  // Track not found
 }
