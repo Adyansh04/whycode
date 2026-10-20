@@ -8,7 +8,6 @@
 #include <string>
 #include <xsimd/types/xsimd_api.hpp>
 
-#include "whycode/utils/coord_lut.hpp"
 #include "whycode/utils/whycon_config.h"
 
 #undef ENABLE_RANDOMIZED_THRESHOLD

@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "whycode/utils/coord_lut.hpp"
 #include "whycode/utils/whycon_config.h"
 
 whycon::WhyconRosInterface::WhyconRosInterface(rclcpp::Node* node)
@@ -37,9 +36,6 @@ whycon::WhyconRosInterface::WhyconRosInterface(rclcpp::Node* node)
     whycode_pose_array.poses.reserve(targets_);
     valid_detections_buffer_.reserve(targets_);
     removed_ids_buffer_.reserve(targets_);
-
-    // Build global coord LUT once for these dimensions
-    whycon::lut::ensure(cam_width_, cam_height_);
 }
 
 void whycon::WhyconRosInterface::loadParameters()

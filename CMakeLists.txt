@@ -73,7 +73,6 @@ rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typ
 # WhyCon Core Library (algorithmic core + image pipeline)
 add_library(whycon_core SHARED
   src/core/CNecklace.cpp
-  src/utils/coord_lut.cpp
   src/image/debug_image_manager.cpp
   src/tracking/id_stabilizer.cpp
   src/image/image_handler.cpp
