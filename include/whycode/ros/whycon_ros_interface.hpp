@@ -5,7 +5,6 @@
 
 #include <array>
 #include <cv_bridge/cv_bridge.hpp>
-#include <image_transport/image_transport.hpp>
 #include <memory>
 #include <numbers>
 #include <rclcpp/rclcpp.hpp>
@@ -22,6 +21,7 @@
 #include "whycode/core/whycon_localization.hpp"
 #include "whycode/image/debug_image_manager.hpp"
 #include "whycode/image/image_handler.hpp"
+#include "whycode/ros/recycled_image_strategy.hpp"
 #include "whycode/tracking/ambiguity_resolver.hpp"
 #include "whycode/tracking/id_stabilizer.hpp"
 #include "whycode/tracking/marker_tracker.hpp"
@@ -66,9 +66,9 @@ private:
     std::unique_ptr<DebugImageManager>          debug_manager_      = nullptr;
 
     // ROS-specific members
-    image_transport::Subscriber                           image_sub_;
-    rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr    detection_control_service_;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_, debug_images_pub_;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+    rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr       detection_control_service_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr    image_pub_, debug_images_pub_;
     rclcpp::Publisher<whycode_vision::msg::WhyCodePoseArray>::SharedPtr whycode_pose_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr  visualization_markers_pub_;
     std::unique_ptr<tf2_ros::TransformBroadcaster>                      tf_broadcaster_;

@@ -35,7 +35,6 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -124,7 +123,6 @@ ament_target_dependencies(whycon_component
   rclcpp
   rclcpp_components
   cv_bridge
-  image_transport
   nav_msgs
   sensor_msgs
   std_msgs
@@ -154,7 +152,6 @@ ament_target_dependencies(whycon
   rclcpp
   rclcpp_components
   cv_bridge
-  image_transport
   nav_msgs
   sensor_msgs
   std_msgs

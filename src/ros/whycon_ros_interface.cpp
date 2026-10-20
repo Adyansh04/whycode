@@ -234,12 +234,16 @@ void whycon::WhyconRosInterface::setupROSTopics()
     image_qos.reliability       = input_reliable ? RMW_QOS_POLICY_RELIABILITY_RELIABLE :
                                                    RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 
-    image_sub_ = image_transport::create_subscription(
-        node_,
+    // Intra-process: a camera driver in the same container, publishing with intra-process on,
+    // hands its frames over as pointers. Over DDS, the recycled message spares the zero-fill.
+    rclcpp::SubscriptionOptions image_options;
+    image_options.use_intra_process_comm = rclcpp::IntraProcessSetting::Enable;
+    image_sub_                           = node_->create_subscription<sensor_msgs::msg::Image>(
         image_topic,
+        rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(image_qos), image_qos),
         std::bind(&WhyconRosInterface::onRosImageReceived, this, std::placeholders::_1),
-        "raw",
-        image_qos);
+        image_options,
+        std::make_shared<RecycledImageStrategy>());
 
     if (publish_poses_)
     {
