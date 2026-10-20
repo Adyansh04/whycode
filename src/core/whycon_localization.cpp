@@ -1,7 +1,10 @@
 
 #include "whycode/core/whycon_localization.hpp"
 
+#include <cstdio>
 #include <iostream>
+#include <opencv2/imgproc.hpp>
+#include <string_view>
 
 #include "whycode/core/marker_detector.hpp"
 #include "whycode/utils/whycon_config.h"
@@ -108,6 +111,26 @@ void whycon::LocalizationSystem::estimateMarkerPose(
         marker_angle_              = inner_marker.angle;
         result.ambiguity_signal_px = 0.0f;
         result.id_valid            = true;  // No ID to validate, so pose is considered valid
+        if (debug_manager != nullptr && debug_manager->wants(DebugImageManager::MARKERS))
+        {
+            char top[64];
+            std::snprintf(
+                top,
+                sizeof(top),
+                "track %d  %d px",
+                result.tracking_id,
+                refined_outer_.size);
+            drawMarkerTile(
+                *debug_manager,
+                image_handler,
+                centers,
+                refined_outer_,
+                nullptr,
+                chosen,
+                top,
+                {},
+                "WhyCon: the inner circle\npicks the solution");
+        }
     }
 
     // Report this frame's favourite; AmbiguityResolver may swap in the other across frames
@@ -138,21 +161,25 @@ float whycon::LocalizationSystem::identifyAndWeighSolutions(
                             outer_marker.v0,
                             outer_marker.v1 };
 
-    if (debug_manager && debug_manager->isEnabled())
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            ellipse_processing_.solutions[i].segment   = ring;
-            ellipse_processing_.solutions[i].segment.x = ellipse_centers.u[i];
-            ellipse_processing_.solutions[i].segment.y = ellipse_centers.v[i];
-            ellipse_processing_.solutions[i].u         = ellipse_centers.u[i];
-            ellipse_processing_.solutions[i].v         = ellipse_centers.v[i];
-        }
-        drawSolutionDebugImage(image_handler, debug_manager);
-    }
-
+    const bool draw_tile =
+        debug_manager != nullptr && debug_manager->wants(DebugImageManager::MARKERS);
     if (!sampleRing(ring, image_handler, analysis_data_[0]))
     {
+        if (draw_tile)
+        {
+            char top[64];
+            std::snprintf(top, sizeof(top), "track %d  %d px", pose.tracking_id, outer_marker.size);
+            drawMarkerTile(
+                *debug_manager,
+                image_handler,
+                ellipse_centers,
+                outer_marker,
+                nullptr,
+                0,
+                top,
+                "ID ring leaves the image",
+                {});
+        }
         return 0.0f;
     }
 
@@ -225,6 +252,49 @@ float whycon::LocalizationSystem::identifyAndWeighSolutions(
     pose.id_valid =
         decoded.id >= 0 && manchester && regular && outer_marker.size >= min_marker_pixels_;
     pose.ID = pose.id_valid ? decoded.id + 1 : -1;
+
+    if (draw_tile)
+    {
+        // What was read, every ID check that refused it, and the evidence between the solutions
+        char top[96], problems[96], bottom[128];
+        std::snprintf(
+            top,
+            sizeof(top),
+            "track %d  ID %d  read %d  %d px\ncode %s",
+            pose.tracking_id,
+            pose.ID,
+            decoded.id >= 0 ? decoded.id + 1 : -1,
+            outer_marker.size,
+            code_ring.code.data());
+        std::snprintf(
+            problems,
+            sizeof(problems),
+            "%s%s%s%s",
+            decoded.id >= 0 ? "" : "no code  ",
+            manchester ? "" : "not Manchester  ",
+            regular ? "" : "irregular  ",
+            outer_marker.size >= min_marker_pixels_ ? "" : "too small");
+        std::snprintf(
+            bottom,
+            sizeof(bottom),
+            "LLR %+.2f  solution %d\ncentres %.2f px apart  spread %.2f",
+            log_odds,
+            favourite,
+            std::hypot(
+                ellipse_centers.u[0] - ellipse_centers.u[1],
+                ellipse_centers.v[0] - ellipse_centers.v[1]),
+            spread);
+        drawMarkerTile(
+            *debug_manager,
+            image_handler,
+            ellipse_centers,
+            outer_marker,
+            &code_ring,
+            favourite,
+            top,
+            problems,
+            bottom);
+    }
 
     WHYCON_DEBUG("Decoded marker ID: " << pose.ID << " angle: " << marker_angle_);
     return log_odds;
@@ -1010,88 +1080,108 @@ void whycon::LocalizationSystem::precomputeUndistorMap(void)
     }
 }
 
-void whycon::LocalizationSystem::drawSolutionDebugImage(
-    const ImageHandler& image_handler, DebugImageManager* debug_manager) const
+void whycon::LocalizationSystem::drawMarkerTile(
+    DebugImageManager& debug_manager, const ImageHandler& image_handler,
+    const EllipseCenters& centers, const MarkerDetector::Marker& outline,
+    const SignalAnalysisData* code_ring, int favourite, std::string_view top,
+    std::string_view problems, std::string_view bottom) const
 {
-    // Draw these two solutions of ellipses on the image for debugging
-    // Create debug visualization for marker solutions
-    cv::Mat debug_image;
-    image_handler.copyColour(debug_image);
-    cv::circle(
-        debug_image,
-        cv::Point2f(
-            ellipse_processing_.solutions[0].segment.x,
-            ellipse_processing_.solutions[0].segment.y),
-        1,
-        cv::Scalar(255, 0, 0),
-        2);
-    cv::circle(
-        debug_image,
-        cv::Point2f(
-            ellipse_processing_.solutions[1].segment.x,
-            ellipse_processing_.solutions[1].segment.y),
-        1,
-        cv::Scalar(0, 255, 0),
-        2);
-
-    // Draw ellipse for the first solution using the given function
-    for (float e = 0; e < 2 * M_PI; e += 0.01)
+    cv::Mat tile = debug_manager.nextTile();
+    if (tile.empty())
     {
-        float fx = ellipse_processing_.solutions[0].segment.x +
-                   cos(e) * ellipse_processing_.solutions[0].segment.v0 *
-                       ellipse_processing_.solutions[0].segment.m0 * 2 +
-                   ellipse_processing_.solutions[0].segment.v1 *
-                       ellipse_processing_.solutions[0].segment.m1 * 2 * sin(e);
-        float fy = ellipse_processing_.solutions[0].segment.y +
-                   cos(e) * ellipse_processing_.solutions[0].segment.v1 *
-                       ellipse_processing_.solutions[0].segment.m0 * 2 -
-                   ellipse_processing_.solutions[0].segment.v0 *
-                       ellipse_processing_.solutions[0].segment.m1 * 2 * sin(e);
-        int fxi = static_cast<int>(fx + 0.5);
-        int fyi = static_cast<int>(fy + 0.5);
-        if (fxi >= 0 && fxi < debug_image.cols && fyi >= 0 && fyi < debug_image.rows)
-            debug_image.at<cv::Vec3b>(fyi, fxi) = cv::Vec3b(255, 0, 0);
-    }
-    // Draw ellipse for the second solution using the given function
-    for (float e = 0; e < 2 * M_PI; e += 0.01)
-    {
-        float fx = ellipse_processing_.solutions[1].segment.x +
-                   cos(e) * ellipse_processing_.solutions[1].segment.v0 *
-                       ellipse_processing_.solutions[1].segment.m0 * 2 +
-                   ellipse_processing_.solutions[1].segment.v1 *
-                       ellipse_processing_.solutions[1].segment.m1 * 2 * sin(e);
-        float fy = ellipse_processing_.solutions[1].segment.y +
-                   cos(e) * ellipse_processing_.solutions[1].segment.v1 *
-                       ellipse_processing_.solutions[1].segment.m0 * 2 -
-                   ellipse_processing_.solutions[1].segment.v0 *
-                       ellipse_processing_.solutions[1].segment.m1 * 2 * sin(e);
-        int fxi = static_cast<int>(fx + 0.5);
-        int fyi = static_cast<int>(fy + 0.5);
-        if (fxi >= 0 && fxi < debug_image.cols && fyi >= 0 && fyi < debug_image.rows)
-            debug_image.at<cv::Vec3b>(fyi, fxi) = cv::Vec3b(0, 255, 0);
+        return;
     }
 
-    // Put text on the image
-    cv::putText(
-        debug_image,
-        "Solution 1",
-        cv::Point2f(
-            ellipse_processing_.solutions[0].segment.x,
-            ellipse_processing_.solutions[0].segment.y - 10),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(255, 0, 0),
-        1);
-    cv::putText(
-        debug_image,
-        "Solution 2",
-        cv::Point2f(
-            ellipse_processing_.solutions[1].segment.x,
-            ellipse_processing_.solutions[1].segment.y - 10),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(0, 255, 0),
-        1);
+    // A square crop of 1.5 outline radii each way, grey outside the image, scaled to the tile with
+    // whole pixels kept visible
+    const float    radius = 2.0f * std::max(outline.m0, outline.m1);
+    const int      n = std::clamp(static_cast<int>(3.0f * radius) + 8, 16, std::max(width, height));
+    const int      x0 = static_cast<int>(std::lround(outline.x)) - n / 2;
+    const int      y0 = static_cast<int>(std::lround(outline.y)) - n / 2;
+    cv::Mat        crop(n, n, CV_8UC1, cv::Scalar(64));
+    const cv::Rect inside = cv::Rect(x0, y0, n, n) & cv::Rect(0, 0, width, height);
+    if (!inside.empty())
+    {
+        image_handler.getGray()(inside).copyTo(crop(inside - cv::Point(x0, y0)));
+    }
+    cv::Mat zoomed;
+    cv::resize(crop, zoomed, tile.size(), 0, 0, cv::INTER_NEAREST);
+    cv::cvtColor(zoomed, tile, cv::COLOR_GRAY2RGB);
 
-    debug_manager->addDebugImage(debug_image, "Marker Solutions");
+    // Image to tile coordinates, pixel centres at integers in both
+    const float scale = static_cast<float>(tile.cols) / static_cast<float>(n);
+    const auto  at    = [&](float x, float y) {
+        return cv::Point2f((x - x0 + 0.5f) * scale - 0.5f, (y - y0 + 0.5f) * scale - 0.5f);
+    };
+    const cv::Point2f centre = at(outline.x, outline.y);
+    const float       angle  = std::atan2(outline.v1, outline.v0);
+    const cv::Scalar  green(0, 255, 0), red(255, 60, 60), light(255, 220, 0), dark(0, 170, 255);
+
+    // The cue rings, then the outline
+    for (const float ratio : CUE_RING_RATIOS)
+    {
+        DebugImageManager::drawEllipse(
+            tile,
+            centre,
+            { 2 * ratio * outline.m0 * scale, 2 * ratio * outline.m1 * scale },
+            angle,
+            cv::Scalar(150, 150, 255));
+    }
+    DebugImageManager::drawEllipse(
+        tile,
+        centre,
+        { 2 * outline.m0 * scale, 2 * outline.m1 * scale },
+        angle,
+        green);
+
+    // The code ring's samples by the bit each reads (light: white), and each segment's bit
+    // halfway out into the black ring
+    if (code_ring != nullptr)
+    {
+        for (int a = 0; a < id_samples_; a++)
+        {
+            const cv::Point2f p = at(code_ring->x_coords[a], code_ring->y_coords[a]);
+            cv::circle(
+                tile,
+                cv::Point(cvRound(p.x), cvRound(p.y)),
+                1,
+                code_ring->smooth[a] > 0.5f ? light : dark,
+                cv::FILLED);
+        }
+        const float cx = 0.5f * (code_ring->x_coords[0] + code_ring->x_coords[id_samples_ / 2]);
+        const float cy = 0.5f * (code_ring->y_coords[0] + code_ring->y_coords[id_samples_ / 2]);
+        for (int k = 0; k < 2 * id_bits_; k++)
+        {
+            const int         a = (code_ring->max_idx + k * segment_width_) % id_samples_;
+            const cv::Point2f p =
+                at(cx + CODE_LABEL_RADIUS * (code_ring->x_coords[a] - cx),
+                   cy + CODE_LABEL_RADIUS * (code_ring->y_coords[a] - cy));
+            DebugImageManager::drawText(
+                tile,
+                std::string_view(&code_ring->code[k], 1),
+                cv::Point(cvRound(p.x) - 5, cvRound(p.y) + 6),
+                code_ring->code[k] == '1' ? light : dark,
+                0.5);
+        }
+    }
+
+    // Both pose solutions' centres, under a pixel apart: the favourite a green +, the other a red x
+    for (int k = 0; k < 2; k++)
+    {
+        const cv::Point2f p = at(centers.u[k], centers.v[k]);
+        cv::drawMarker(
+            tile,
+            cv::Point(cvRound(p.x), cvRound(p.y)),
+            k == favourite ? green : red,
+            k == favourite ? cv::MARKER_CROSS : cv::MARKER_TILTED_CROSS,
+            12,
+            1,
+            cv::LINE_AA);
+    }
+
+    // Two lines of text on top, the failed ID checks under them, two lines at the bottom
+    DebugImageManager::drawText(tile, top, { 6, 18 }, cv::Scalar::all(255), 0.5);
+    DebugImageManager::drawText(tile, problems, { 6, 60 }, red, 0.5);
+    DebugImageManager::drawText(tile, bottom, { 6, tile.rows - 30 }, cv::Scalar::all(255), 0.5);
+    cv::rectangle(tile, { 0, 0 }, { tile.cols - 1, tile.rows - 1 }, cv::Scalar::all(110));
 }

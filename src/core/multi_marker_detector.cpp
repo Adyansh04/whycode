@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <opencv2/imgproc.hpp>
+#include <string>
 
 #include "whycode/utils/whycon_config.h"
 
@@ -19,6 +21,7 @@ whycon::MultiMarkerDetector::MultiMarkerDetector(
     last_valid_outer_.resize(number_of_circles);
     found_last_frame_.assign(number_of_circles, 0);
     last_motion_px_.assign(number_of_circles, 0.0f);
+    debug_thresholds_.assign(number_of_circles, -1);
     // Reserve space once to avoid reallocations
     detectors.reserve(number_of_circles);
     for (int i = 0; i < number_of_circles; i++)
@@ -35,6 +38,14 @@ bool whycon::MultiMarkerDetector::detectMarkers(
 {
     bool all_detected        = true;
     int  binarized_threshold = -1;
+
+    // The binary panel shows the first binarisation, and each detector's search threshold
+    const bool draw_binary =
+        debug_manager != nullptr && debug_manager->wants(DebugImageManager::BINARY);
+    if (draw_binary)
+    {
+        std::fill(debug_thresholds_.begin(), debug_thresholds_.end(), -1);
+    }
 
     // if reset was asked, looking for circles anywhere in the image
     if (reset)
@@ -78,7 +89,18 @@ bool whycon::MultiMarkerDetector::detectMarkers(
         if (current_threshold != binarized_threshold)
         {
             image_handler.binarizeSIMD(static_cast<uchar>(current_threshold));
+            if (draw_binary && binarized_threshold < 0)
+            {
+                cv::cvtColor(
+                    image_handler.getBinaryVisualization(),
+                    debug_manager->image(DebugImageManager::BINARY),
+                    cv::COLOR_GRAY2RGB);
+            }
             binarized_threshold = current_threshold;
+        }
+        if (draw_binary)
+        {
+            debug_thresholds_[i] = current_threshold;
         }
 
         detectors[i].detectMarkerPair(
@@ -128,6 +150,15 @@ bool whycon::MultiMarkerDetector::detectMarkers(
         }
     }
 
+    if (draw_binary)
+    {
+        drawThresholds(debug_manager->image(DebugImageManager::BINARY));
+    }
+    if (debug_manager != nullptr && debug_manager->wants(DebugImageManager::CANDIDATES))
+    {
+        MarkerDetector::drawCandidateKey(debug_manager->image(DebugImageManager::CANDIDATES));
+    }
+
     // Every visited pixel stays marked until cleared here; a stale mark hides that pixel from the
     // next frame's search. Clearing the whole bitset is one ~115 KB fill.
     context.cleanupBuffer();
@@ -136,4 +167,21 @@ bool whycon::MultiMarkerDetector::detectMarkers(
     context.reset();
 
     return all_detected;
+}
+
+void whycon::MultiMarkerDetector::drawThresholds(cv::Mat& image) const
+{
+    // Detectors binarise in order, so the first that searched made the image shown
+    const auto  first = std::find_if(debug_thresholds_.begin(), debug_thresholds_.end(), [](int t) {
+        return t >= 0;
+    });
+    std::string text  = first == debug_thresholds_.end() ?
+                            "no search this frame" :
+                            "binary at threshold " + std::to_string(*first);
+    text += "\nthreshold per detector:";
+    for (const int t : debug_thresholds_)
+    {
+        text += t < 0 ? " -" : " " + std::to_string(t);
+    }
+    DebugImageManager::drawText(image, text, { 10, 30 }, cv::Scalar(255, 150, 0), 0.8);
 }

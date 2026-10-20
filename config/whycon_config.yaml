@@ -91,7 +91,7 @@ ros_interface:
   publish_images: true         # Publish processed images
   publish_tf: true            # Publish TF transforms
   publish_visualization_markers: false  # Publish visualization markers for RViz
-  publish_debug_images: true  # Publish consolidated debug images
+  publish_debug_images: false  # Debug panels: binary, candidates, markers (see README)
 
   # TF Parameters
   tf_frame_prefix: "whycode_" # Prefix for TF frames
@@ -107,7 +107,7 @@ ros_interface:
   camera_info_topic: "/usb_cam1/camera_info"
   poses_output_topic: "/whycon/poses"
   image_output_topic: "/whycon/image_out"
-  debug_images_topic: "/whycon/debug_images"
+  debug_images_topic: "/whycon/debug_images"  # Panels publish on <this>/<panel>
   visualization_markers_topic: "/whycon/visualization_markers"
 
   # Service names
@@ -132,17 +132,3 @@ camera:
   image_width: 1280
   image_height: 720
  
-# ==============================================================================
-# DEBUG AND VISUALIZATION PARAMETERS
-# ==============================================================================
-debug:
-  # Drawing options
-  draw_coordinates: false     # Draw coordinate axes on markers
-  draw_segments: false       # Draw detected segments
-  
-  # Verbose output
-  enable_verbose: false      # Enable verbose console output
-  enable_debug_images: false # Enable debug image output
-  
-  # Log levels
-  log_level: "INFO"         # Log level: DEBUG, INFO, WARN, ERROR

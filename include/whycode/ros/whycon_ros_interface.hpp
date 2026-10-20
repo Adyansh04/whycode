@@ -40,7 +40,7 @@ private:
     void loadParameters();
     void setupROSTopics();
     void initializeWhyConModules();
-    void publishResults(const std_msgs::msg::Header& header);
+    void publishResults(const std_msgs::msg::Header& header, DebugImageManager* debug);
     void publishSingleTF(const whycon::LocalizationSystem::MarkerPose& pose, const int marker_index);
     void createMarkerVisualization(
         const whycon::LocalizationSystem::MarkerPose& pose, int marker_index,
@@ -66,12 +66,17 @@ private:
     std::unique_ptr<DebugImageManager>          debug_manager_      = nullptr;
 
     // ROS-specific members
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-    rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr       detection_control_service_;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr    image_pub_, debug_images_pub_;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr            image_sub_;
+    rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr                  detection_control_service_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr               image_pub_;
     rclcpp::Publisher<whycode_vision::msg::WhyCodePoseArray>::SharedPtr whycode_pose_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr  visualization_markers_pub_;
     std::unique_ptr<tf2_ros::TransformBroadcaster>                      tf_broadcaster_;
+
+    // One topic per debug panel, and its reused outgoing message
+    std::array<rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr, DebugImageManager::PANEL_COUNT>
+                                                                        debug_pubs_;
+    std::array<sensor_msgs::msg::Image, DebugImageManager::PANEL_COUNT> debug_msgs_;
 
     // TF parameters
     std::string tf_frame_prefix_{};

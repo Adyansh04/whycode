@@ -2,9 +2,12 @@
 #include "whycode/core/marker_detector.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cstdio>
 #include <ctime>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <string>
+#include <string_view>
 
 #include "whycode/image/free_pixels.hpp"
 #include "whycode/utils/whycon_config.h"
@@ -14,6 +17,73 @@
 
 namespace
 {
+// The candidates panel's key: why a segment was dropped, or that it is a marker
+enum class Verdict
+{
+    ROUNDNESS,
+    CENTRE,
+    AREA_RATIO,
+    CONCENTRICITY,
+    SHAPE,
+    MARKER
+};
+constexpr std::array<std::string_view, 6> VERDICT_NAMES = {
+    "roundness", "no white centre", "area ratio", "concentricity", "circularity / eccentricity",
+    "marker"
+};
+const std::array<cv::Scalar, 6> VERDICT_COLOURS = {
+    cv::Scalar(255, 150, 0),   // RGB: orange
+    cv::Scalar(255, 235, 0),   // yellow
+    cv::Scalar(190, 60, 255),  // violet
+    cv::Scalar(0, 190, 255),   // sky blue
+    cv::Scalar(255, 40, 40),   // red
+    cv::Scalar(0, 255, 0)      // green
+};
+constexpr int    MIN_LABELLED_PX = 10;   // Smaller segments are painted without a label
+constexpr int    LABEL_WIDTH_PX  = 250;  // Room a label takes beside its segment
+constexpr double LABEL_SCALE     = 0.45;
+
+// Marks a segment's outline: each run's ends, and the runs of its top and bottom rows whole
+void outlineRuns(
+    cv::Mat& image, const whycon::MarkerDetector::DetectionContext::Span* runs, size_t begin,
+    size_t end, int top, int bottom, const cv::Scalar& colour)
+{
+    const cv::Vec3b pixel(
+        cv::saturate_cast<uchar>(colour[0]),
+        cv::saturate_cast<uchar>(colour[1]),
+        cv::saturate_cast<uchar>(colour[2]));
+    for (size_t i = begin; i < end; i++)
+    {
+        auto* row = image.ptr<cv::Vec3b>(runs[i].y);
+        if (runs[i].y == top || runs[i].y == bottom)
+        {
+            std::fill(row + runs[i].x0, row + runs[i].x1 + 1, pixel);
+        }
+        else
+        {
+            row[runs[i].x0] = row[runs[i].x1] = pixel;
+        }
+    }
+}
+
+// Blends a segment's runs towards a colour
+void paintRuns(
+    cv::Mat& image, const whycon::MarkerDetector::DetectionContext::Span* runs, size_t begin,
+    size_t end, const cv::Scalar& colour, float alpha)
+{
+    for (size_t i = begin; i < end; i++)
+    {
+        auto* row = image.ptr<cv::Vec3b>(runs[i].y);
+        for (int x = runs[i].x0; x <= runs[i].x1; x++)
+        {
+            for (int c = 0; c < 3; c++)
+            {
+                row[x][c] = cv::saturate_cast<uchar>(row[x][c] + alpha * (colour[c] - row[x][c]));
+            }
+        }
+    }
+}
+
 // Mean grey level of a segment's runs, rounded down as the per-pixel sum was
 int meanGrey(
     const uchar* gray, int width, const whycon::MarkerDetector::DetectionContext::Span* runs,
@@ -299,11 +369,10 @@ whycon::MarkerDetector::validateMarkerPair(const Marker& inner, const Marker& ou
     return true;
 }
 
-bool whycon::MarkerDetector::examineSeed(
-    const ImageHandler& image_handler, int seed_pixel_index, DebugImageManager* debug_manager)
+whycon::MarkerDetector::Check
+whycon::MarkerDetector::examineSeed(const ImageHandler& image_handler, int seed_pixel_index)
 {
-    const int  width = image_handler.getWidth();
-    const bool debug = debug_manager && debug_manager->isEnabled();
+    const int width = image_handler.getWidth();
 
     // The outer ring: a round black segment
     span_end_ = 0;
@@ -314,7 +383,7 @@ bool whycon::MarkerDetector::examineSeed(
             outer_area_ratio,
             true))
     {
-        return false;
+        return Check::RING;
     }
 
     // The inner disc: the white segment at the ring's centre, if no segment has taken it yet
@@ -323,30 +392,28 @@ bool whycon::MarkerDetector::examineSeed(
     WHYCON_DEBUG(
         "found valid outer, looking for white at (" << centre_x << "," << centre_y
                                                     << ") id: " << context->total_segments - 1);
-    if (!freePixels(image_handler, *context, PIXEL_WHITE).isFree(centre_y, centre_x) ||
-        !analyzeMarkerCandidate(
+    if (!freePixels(image_handler, *context, PIXEL_WHITE).isFree(centre_y, centre_x))
+    {
+        return Check::CENTRE;
+    }
+    if (!analyzeMarkerCandidate(
             image_handler,
             *inner_marker_,
             centre_y * width + centre_x,
             inner_area_ratio,
-            false) ||
-        !validateMarkerPair(*inner_marker_, *outer_marker_))
+            false))
     {
-        return false;
+        return Check::DISC;
     }
-    if (debug)
+    if (!validateMarkerPair(*inner_marker_, *outer_marker_))
     {
-        generateSegmentDebugImage(image_handler, debug_manager);
+        return Check::PAIR;
     }
 
     computeEllipseParameters(span_start_, span_end_, *inner_marker_);
     // The outline is the ring and its centre together, as in the original WhyCon: the ring's
     // moments alone overstate the radius by 11-17% and pull the centre towards the code's teeth.
     computeEllipseParameters(0, span_end_, *outer_marker_);
-    if (debug)
-    {
-        generateEllipseDebugImage(image_handler, debug_manager);
-    }
     WHYCON_DEBUG(
         "Outer ellipse params: center=("
         << outer_marker_->x << "," << outer_marker_->y << ")"
@@ -361,14 +428,10 @@ bool whycon::MarkerDetector::examineSeed(
         (outer_marker_->size + inner_marker_->size));
     const float eccentricity = sqrtf(
         1.0f - (outer_marker_->m1 * outer_marker_->m1) / (outer_marker_->m0 * outer_marker_->m0));
-    if (debug)
-    {
-        generateMParamDebugImage(image_handler, debug_manager, eccentricity, circularity);
-    }
     if (!(fabsf(circularity - 1.0f) < parameters.circularity_tolerance &&
           eccentricity < parameters.max_eccentricity))
     {
-        return false;
+        return Check::SHAPE;
     }
 
     outer_marker_->valid = inner_marker_->valid = true;
@@ -380,37 +443,15 @@ bool whycon::MarkerDetector::examineSeed(
     // use a new threshold estimate based on current detection
     threshold = edgeThreshold(outer_marker_->mean, inner_marker_->mean, parameters.image_gamma);
     WHYCON_DEBUG("found inner segment " << context->total_segments - 1);
-    return true;
+    return Check::MARKER;
 }
 
-void whycon::MarkerDetector::detectMarkerPair(
-    const ImageHandler& image_handler, MarkerPair& result, const Marker& previous_circle,
-    DebugImageManager* debug_manager, const SearchWindow* window)
+template <bool DRAW>
+void whycon::MarkerDetector::searchSeeds(
+    const ImageHandler& image_handler, int seed_pixel_index, const SearchWindow* window,
+    cv::Mat* candidates)
 {
-    // Reset the member buffers to ensure a clean state for this detection run
-    *inner_marker_ = Marker{};
-    *outer_marker_ = Marker{};
-
     const int width = image_handler.getWidth();
-
-    // this allows to differentiate segments found by this detector from others, and know how many
-    // segments where found in this call
-    initial_segment_id = context->total_segments;
-
-    WHYCON_DEBUG("detector id " << detector_id << " B/W " << PIXEL_BLACK << "/" << PIXEL_WHITE);
-    WHYCON_DEBUG("threshold " << threshold);
-    WHYCON_DEBUG("initial segment id " << initial_segment_id);
-
-    int seed_pixel_index = 0;
-
-    if (previous_circle.valid)
-    {
-        WHYCON_DEBUG(
-            "starting with previously valid circle at " << previous_circle.x << ","
-                                                        << previous_circle.y);
-        seed_pixel_index =
-            (static_cast<int>(previous_circle.y)) * width + static_cast<int>(previous_circle.x);
-    }
 
     // Seeds are the unvisited black pixels, in row-major order; true once the search is over
     const FreePixels seeds      = freePixels(image_handler, *context, PIXEL_BLACK);
@@ -423,7 +464,12 @@ void whycon::MarkerDetector::detectMarkerPair(
                 WHYCON_DEBUG("reached maximum number of segments");
                 return true;
             }
-            if (examineSeed(image_handler, y * width + x, debug_manager))
+            const Check check = examineSeed(image_handler, y * width + x);
+            if constexpr (DRAW)
+            {
+                drawCandidate(*candidates, check);
+            }
+            if (check == Check::MARKER)
             {
                 return true;
             }
@@ -457,6 +503,51 @@ void whycon::MarkerDetector::detectMarkerPair(
         {
             search_row(first_y, x0, first_x - 1);
         }
+    }
+}
+
+void whycon::MarkerDetector::detectMarkerPair(
+    const ImageHandler& image_handler, MarkerPair& result, const Marker& previous_circle,
+    DebugImageManager* debug_manager, const SearchWindow* window)
+{
+    // Reset the member buffers to ensure a clean state for this detection run
+    *inner_marker_ = Marker{};
+    *outer_marker_ = Marker{};
+
+    const int width = image_handler.getWidth();
+
+    // this allows to differentiate segments found by this detector from others, and know how many
+    // segments where found in this call
+    initial_segment_id = context->total_segments;
+
+    WHYCON_DEBUG("detector id " << detector_id << " B/W " << PIXEL_BLACK << "/" << PIXEL_WHITE);
+    WHYCON_DEBUG("threshold " << threshold);
+    WHYCON_DEBUG("initial segment id " << initial_segment_id);
+
+    int seed_pixel_index = 0;
+
+    if (previous_circle.valid)
+    {
+        WHYCON_DEBUG(
+            "starting with previously valid circle at " << previous_circle.x << ","
+                                                        << previous_circle.y);
+        seed_pixel_index =
+            (static_cast<int>(previous_circle.y)) * width + static_cast<int>(previous_circle.x);
+    }
+
+    // The candidates panel is drawn by its own instantiation of the search, so the search without
+    // it tests nothing per seed
+    if (debug_manager != nullptr && debug_manager->wants(DebugImageManager::CANDIDATES))
+    {
+        searchSeeds<true>(
+            image_handler,
+            seed_pixel_index,
+            window,
+            &debug_manager->image(DebugImageManager::CANDIDATES));
+    }
+    else
+    {
+        searchSeeds<false>(image_handler, seed_pixel_index, window, nullptr);
     }
 
     // Pose-processing: angle and threshold logic
@@ -602,219 +693,178 @@ void whycon::MarkerDetector::DetectionContext::cleanupBuffer(void)
     }
 }
 
-void whycon::MarkerDetector::generateSegmentDebugImage(
-    const ImageHandler& image_handler, DebugImageManager* debug_manager) const
+void whycon::MarkerDetector::drawCandidate(cv::Mat& image, Check check) const
 {
-    // Make a copy of the input image for visualization
-    cv::Mat segment_debug;
-    image_handler.copyColour(segment_debug);
-
-    // Draw the segments' runs: yellow for outer, magenta for inner
-    for (size_t i = 0; i < span_end_; i++)
+    const Marker& ring = *outer_marker_;
+    const Marker& disc = *inner_marker_;
+    // A ring of the wrong size is noise or background, and has no bounding box: not drawn
+    if (check == Check::RING &&
+        !(ring.size > parameters.min_size && ring.size < parameters.max_size))
     {
-        const auto& run = context->spans[i];
-        cv::line(
-            segment_debug,
-            cv::Point(run.x0, run.y),
-            cv::Point(run.x1, run.y),
-            i < span_start_ ? cv::Scalar(0, 255, 255) : cv::Scalar(255, 0, 255));
+        return;
     }
-    // Draw/ Plot all points of outer and inner
-    cv::circle(
-        segment_debug,
-        cv::Point((outer_marker_->maxx), outer_marker_->maxy),
-        2,
-        cv::Scalar(0, 255, 0),
-        10);
-    cv::circle(
-        segment_debug,
-        cv::Point((outer_marker_->minx), outer_marker_->miny),
-        2,
-        cv::Scalar(0, 255, 0),
-        10);
-    cv::circle(
-        segment_debug,
-        cv::Point((inner_marker_->maxx), inner_marker_->maxy),
-        2,
-        cv::Scalar(255, 0, 0),
-        10);
-    cv::circle(
-        segment_debug,
-        cv::Point((inner_marker_->minx), inner_marker_->miny),
-        2,
-        cv::Scalar(255, 0, 0),
-        10);
 
-    debug_manager->addDebugImage(segment_debug, "Marker Pair Detection");
+    // The failed check's value against its limit, computed as the check computes it
+    Verdict verdict = Verdict::MARKER;
+    char    label[128];
+    switch (check)
+    {
+        case Check::RING:
+            verdict = Verdict::ROUNDNESS;
+            std::snprintf(
+                label,
+                sizeof(label),
+                "roundness %.2f [1+-%.2f]",
+                ring.roundness,
+                parameters.roundness_tolerance);
+            break;
+        case Check::CENTRE:
+            verdict = Verdict::CENTRE;
+            std::snprintf(label, sizeof(label), "no white centre pixel");
+            break;
+        case Check::DISC:
+            verdict = Verdict::CENTRE;
+            std::snprintf(
+                label,
+                sizeof(label),
+                "centre %d px [%d-%d]",
+                disc.size,
+                parameters.min_size,
+                parameters.max_size);
+            break;
+        case Check::PAIR:
+        {
+            const float ratio =
+                static_cast<float>(ring.size) / static_cast<float>(disc.size) * inv_areas_ratio;
+            if (fabsf(ratio - 1.0f) > parameters.ratio_tolerance)
+            {
+                verdict = Verdict::AREA_RATIO;
+                std::snprintf(
+                    label,
+                    sizeof(label),
+                    "area ratio %.2f [1+-%.2f]",
+                    ratio,
+                    parameters.ratio_tolerance);
+            }
+            else
+            {
+                verdict = Verdict::CONCENTRICITY;
+                std::snprintf(
+                    label,
+                    sizeof(label),
+                    "centres dx %.1f dy %.1f [%.1f %.1f]",
+                    fabsf(disc.x - ring.x),
+                    fabsf(disc.y - ring.y),
+                    parameters.center_distance_tolerance_abs +
+                        parameters.center_distance_tolerance_ratio * (ring.maxx - ring.minx),
+                    parameters.center_distance_tolerance_abs +
+                        parameters.center_distance_tolerance_ratio * (ring.maxy - ring.miny));
+            }
+            break;
+        }
+        case Check::SHAPE:
+        case Check::MARKER:
+        {
+            const float circularity =
+                static_cast<float>(M_PI * 4 * ring.m0 * ring.m1 / (ring.size + disc.size));
+            const float eccentricity = sqrtf(1.0f - (ring.m1 * ring.m1) / (ring.m0 * ring.m0));
+            if (check == Check::SHAPE)
+            {
+                verdict = Verdict::SHAPE;
+                std::snprintf(
+                    label,
+                    sizeof(label),
+                    "circularity %.2f [1+-%.2f]\neccentricity %.2f [<%.2f]",
+                    circularity,
+                    parameters.circularity_tolerance,
+                    eccentricity,
+                    parameters.max_eccentricity);
+            }
+            else
+            {
+                std::snprintf(
+                    label,
+                    sizeof(label),
+                    "roundness %.2f  ratio %.2f\ncircularity %.2f  ecc %.2f",
+                    ring.roundness,
+                    ring.size / static_cast<float>(disc.size) * inv_areas_ratio,
+                    circularity,
+                    eccentricity);
+            }
+            break;
+        }
+    }
+
+    // A segment over a third of the image is background, not a marker: only outlined, so it does
+    // not hide the frame. Others are painted, the ring strongly and the disc lightly. The disc's
+    // box is set once it has passed its size check.
+    const cv::Scalar& colour     = VERDICT_COLOURS[static_cast<size_t>(verdict)];
+    const auto        background = [&](const Marker& m) {
+        return m.maxx - m.minx >= image.cols / 3 || m.maxy - m.miny >= image.rows / 3;
+    };
+    const auto draw = [&](const Marker& m, size_t begin, size_t end, float alpha) {
+        if (background(m) && check != Check::MARKER)
+        {
+            outlineRuns(image, context->spans.get(), begin, end, m.miny, m.maxy, colour);
+        }
+        else
+        {
+            paintRuns(image, context->spans.get(), begin, end, colour, alpha);
+        }
+    };
+    const bool has_disc = check >= Check::PAIR;
+    draw(ring, 0, check >= Check::DISC ? span_start_ : span_end_, 0.6f);
+    if (has_disc)
+    {
+        draw(disc, span_start_, span_end_, 0.3f);
+    }
+    if (check >= Check::SHAPE)
+    {
+        for (const Marker* m : { &ring, &disc })
+        {
+            DebugImageManager::drawEllipse(
+                image,
+                { m->x, m->y },
+                { 2 * m->m0, 2 * m->m1 },
+                atan2f(m->v1, m->v0),
+                colour);
+        }
+    }
+
+    // Labels for segments that could be a marker; of the roundness failures, only near misses
+    const int  ring_w = ring.maxx - ring.minx + 1, ring_h = ring.maxy - ring.miny + 1;
+    const bool near_miss =
+        check != Check::RING || fabsf(ring.roundness - 1.0f) < 2 * parameters.roundness_tolerance;
+    if (ring_w >= MIN_LABELLED_PX && ring_h >= MIN_LABELLED_PX && !background(ring) && near_miss)
+    {
+        const int x = ring.maxx + LABEL_WIDTH_PX < image.cols ?
+                          ring.maxx + 4 :
+                          std::max(ring.minx - LABEL_WIDTH_PX, 0);
+        DebugImageManager::drawText(
+            image,
+            label,
+            { x, std::max(ring.miny + 10, 12) },
+            colour,
+            LABEL_SCALE);
+    }
 }
 
-void whycon::MarkerDetector::generateEllipseDebugImage(
-    const ImageHandler& image_handler, DebugImageManager* debug_manager) const
+void whycon::MarkerDetector::drawCandidateKey(cv::Mat& image)
 {
-    // Make a copy of the input image for visualization
-    cv::Mat ellipse_debug;
-    image_handler.copyColour(ellipse_debug);
-
-    // Draw outer and ellipse in a new opencv imshow window
-    cv::ellipse(
-        ellipse_debug,
-        cv::Point(outer_marker_->x, outer_marker_->y),
-        cv::Size(outer_marker_->m0, outer_marker_->m1),
-        atan2(outer_marker_->v1, outer_marker_->v0) * 180 / M_PI,
-        0,
-        360,
-        cv::Scalar(0, 255, 255),
-        2);
-    cv::ellipse(
-        ellipse_debug,
-        cv::Point(inner_marker_->x, inner_marker_->y),
-        cv::Size(inner_marker_->m0, inner_marker_->m1),
-        atan2(inner_marker_->v1, inner_marker_->v0) * 180 / M_PI,
-        0,
-        360,
-        cv::Scalar(255, 0, 255),
-        2);
-    // Draw center points of inner and outer ellipses
-    cv::circle(
-        ellipse_debug,
-        cv::Point(outer_marker_->x, outer_marker_->y),
-        2,
-        cv::Scalar(0, 255, 0),
-        5);
-    cv::circle(
-        ellipse_debug,
-        cv::Point(inner_marker_->x, inner_marker_->y),
-        2,
-        cv::Scalar(255, 0, 0),
-        5);
-
-    cv::putText(
-        ellipse_debug,
-        "Outer",
-        cv::Point(outer_marker_->x + 10, outer_marker_->y - 10),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(0, 255, 255),
-        1);
-    cv::putText(
-        ellipse_debug,
-        "Inner",
-        cv::Point(inner_marker_->x + 10, inner_marker_->y - 10),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(255, 0, 255),
-        1);
-
-    debug_manager->addDebugImage(ellipse_debug, "ellipse_debug");
-}
-
-void whycon::MarkerDetector::generateMParamDebugImage(
-    const ImageHandler& image_handler, DebugImageManager* debug_manager, float eccentricity,
-    float circularity) const
-{
-    // Make a copy of the input image for visualization
-    cv::Mat annotate_debug;
-    image_handler.copyColour(annotate_debug);
-
-    // Draw ellipse and center
-    cv::ellipse(
-        annotate_debug,
-        cv::Point(outer_marker_->x, outer_marker_->y),
-        cv::Size(outer_marker_->m0, outer_marker_->m1),
-        atan2(outer_marker_->v1, outer_marker_->v0) * 180 / M_PI,
-        0,
-        360,
-        cv::Scalar(0, 255, 255),
-        2);
-    cv::circle(
-        annotate_debug,
-        cv::Point(outer_marker_->x, outer_marker_->y),
-        2,
-        cv::Scalar(0, 255, 0),
-        5);
-
-    // Calculate center distance
-    float center_distance = std::sqrt(
-        (inner_marker_->x - outer_marker_->x) * (inner_marker_->x - outer_marker_->x) +
-        (inner_marker_->y - outer_marker_->y) * (inner_marker_->y - outer_marker_->y));
-
-    // Calculate center tolerance values
-    float toleranceX = parameters.center_distance_tolerance_abs +
-                       parameters.center_distance_tolerance_ratio *
-                           static_cast<float>(outer_marker_->maxx - outer_marker_->minx);
-    float toleranceY = parameters.center_distance_tolerance_abs +
-                       parameters.center_distance_tolerance_ratio *
-                           static_cast<float>(outer_marker_->maxy - outer_marker_->miny);
-
-    float center_x_diff = std::abs(inner_marker_->x - outer_marker_->x);
-    float center_y_diff = std::abs(inner_marker_->y - outer_marker_->y);
-
-    // Prepare annotation texts (one per line)
-    char text1[128], text2[128], text3[128], text4[128];
-    snprintf(text1, sizeof(text1), "Ecc: %.3f  Round: %.3f", eccentricity, outer_marker_->roundness);
-    snprintf(
-        text2,
-        sizeof(text2),
-        "CtrDist: %.1f  CtrThrX: %.1f  CtrThrY: %.1f",
-        center_distance,
-        toleranceX,
-        toleranceY);
-    snprintf(text4, sizeof(text4), "  CtrX: %.1f  CtrY: %.1f", center_x_diff, center_y_diff);
-    snprintf(text3, sizeof(text3), "Circ: %.3f  Size: %d", circularity, outer_marker_->size);
-
-    // Draw text near the marker with vertical offsets
-    int base_x     = std::max(0, static_cast<int>(outer_marker_->x) + 10 - 400);
-    int base_y     = std::max(0, static_cast<int>(outer_marker_->y) - 10);
-    int lineHeight = 15;  // vertical space between lines
-
-    cv::putText(
-        annotate_debug,
-        text1,
-        cv::Point(base_x, base_y),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(0, 255, 255),
-        1);
-    cv::putText(
-        annotate_debug,
-        text2,
-        cv::Point(base_x, base_y + lineHeight),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(0, 255, 255),
-        1);
-    cv::putText(
-        annotate_debug,
-        text4,
-        cv::Point(base_x, base_y + 2 * lineHeight),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(0, 255, 255),
-        1);
-    cv::putText(
-        annotate_debug,
-        text3,
-        cv::Point(base_x, base_y + 3 * lineHeight),
-        cv::FONT_HERSHEY_SIMPLEX,
-        0.5,
-        cv::Scalar(0, 255, 255),
-        1);
-
-    // Optionally, color code the ellipse if it failed a check
-    cv::Scalar ellipse_color = (fabsf(circularity - 1) < parameters.circularity_tolerance &&
-                                eccentricity < parameters.max_eccentricity) ?
-                                   cv::Scalar(0, 255, 0)  // Green for valid
-                                   :
-                                   cv::Scalar(0, 0, 255);  // Red for invalid
-    cv::ellipse(
-        annotate_debug,
-        cv::Point(outer_marker_->x, outer_marker_->y),
-        cv::Size(outer_marker_->m0, outer_marker_->m1),
-        atan2(outer_marker_->v1, outer_marker_->v0) * 180 / M_PI,
-        0,
-        360,
-        ellipse_color,
-        2);
-
-    debug_manager->addDebugImage(annotate_debug, "Marker Checks");
+    // Darkened under the key, so it reads over any frame
+    cv::Mat box = image(
+        cv::Rect(0, 0, 300, 28 + 24 * static_cast<int>(VERDICT_NAMES.size())) &
+        cv::Rect({}, image.size()));
+    box.convertTo(box, -1, 0.3);
+    DebugImageManager::drawText(
+        image,
+        "segments by the check they failed",
+        { 8, 20 },
+        cv::Scalar::all(255));
+    for (size_t k = 0; k < VERDICT_NAMES.size(); k++)
+    {
+        const int y = 46 + 24 * static_cast<int>(k);
+        cv::rectangle(image, { 10, y - 12 }, { 24, y + 2 }, VERDICT_COLOURS[k], cv::FILLED);
+        DebugImageManager::drawText(image, VERDICT_NAMES[k], { 34, y }, VERDICT_COLOURS[k]);
+    }
 }

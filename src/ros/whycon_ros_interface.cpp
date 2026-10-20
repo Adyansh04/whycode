@@ -180,7 +180,7 @@ void whycon::WhyconRosInterface::initializeWhyConModules()
     float       pose_alpha           = params.getParams<float>("tracking", "pose_alpha");
     std::string image_encoding = params.getParams<std::string>("ros_interface", "image_encoding");
 
-    debug_manager_ = std::make_unique<DebugImageManager>(publish_debug_images_);
+    debug_manager_ = std::make_unique<DebugImageManager>(targets_);
     tracker_ =
         std::make_unique<MarkerTracker>(max_unseen_frames, max_association_dist, min_track_age_);
     id_stabilizer_      = std::make_unique<IDStabilizer>(id_switch_threshold);
@@ -258,7 +258,12 @@ void whycon::WhyconRosInterface::setupROSTopics()
 
     if (publish_debug_images_)
     {
-        debug_images_pub_ = node_->create_publisher<sensor_msgs::msg::Image>(debug_images_topic, 1);
+        for (int p = 0; p < DebugImageManager::PANEL_COUNT; p++)
+        {
+            debug_pubs_[p] = node_->create_publisher<sensor_msgs::msg::Image>(
+                debug_images_topic + "/" + DebugImageManager::PANEL_NAMES[p],
+                1);
+        }
     }
 
     if (publish_visualization_markers_)
@@ -308,16 +313,24 @@ void whycon::WhyconRosInterface::onRosImageReceived(
 
 void whycon::WhyconRosInterface::processLatestFrame()
 {
-    if (debug_manager_)
+    // A debug panel costs a full-frame copy and its drawing: only built for a subscriber
+    DebugImageManager* debug = nullptr;
+    if (publish_debug_images_)
     {
-        debug_manager_->clearDebugImages();
-        // Debug images cost several full-frame copies each: only build them for a subscriber
-        debug_manager_->setEnabled(
-            publish_debug_images_ && debug_images_pub_ &&
-            debug_images_pub_->get_subscription_count() > 0U);
+        for (int p = 0; p < DebugImageManager::PANEL_COUNT; p++)
+        {
+            debug_manager_->setWanted(
+                static_cast<DebugImageManager::Panel>(p),
+                debug_pubs_[p]->get_subscription_count() > 0U);
+        }
+        if (debug_manager_->any())
+        {
+            debug_manager_->beginFrame(*image_handler_);
+            debug = debug_manager_.get();
+        }
     }
 
-    is_tracking_  = system_->localizeMarkers(*image_handler_, should_reset_, debug_manager_.get());
+    is_tracking_  = system_->localizeMarkers(*image_handler_, should_reset_, debug);
     should_reset_ = false;
 
     // Valid detections to avoid extra allocations
@@ -337,17 +350,19 @@ void whycon::WhyconRosInterface::processLatestFrame()
     ambiguity_resolver_->removeTracks(removed_ids_buffer_);
 
     // Publish results
-    publishResults(latest_header_);
+    publishResults(latest_header_, debug);
 
-    // Publish consolidated debug images if enabled
-    if (publish_debug_images_ && debug_manager_->isEnabled() && debug_images_pub_ &&
-        debug_images_pub_->get_subscription_count() > 0U)
+    if (debug != nullptr)
     {
-        cv::Mat consolidated_debug = debug_manager_->createConsolidatedImage();
-        if (!consolidated_debug.empty())
+        for (int p = 0; p < DebugImageManager::PANEL_COUNT; p++)
         {
-            cv_bridge::CvImage cv_image(latest_header_, "rgb8", consolidated_debug);
-            debug_images_pub_->publish(*cv_image.toImageMsg());
+            const auto panel = static_cast<DebugImageManager::Panel>(p);
+            if (debug->wants(panel))
+            {
+                cv_bridge::CvImage(latest_header_, "rgb8", debug->image(panel))
+                    .toImageMsg(debug_msgs_[p]);
+                debug_pubs_[p]->publish(debug_msgs_[p]);
+            }
         }
     }
 }
@@ -365,7 +380,8 @@ void whycon::WhyconRosInterface::detectionControlCallback(
         detection_enabled_ ? "enabled" : "disabled");
 }
 
-void whycon::WhyconRosInterface::publishResults(const std_msgs::msg::Header& header)
+void whycon::WhyconRosInterface::publishResults(
+    const std_msgs::msg::Header& header, DebugImageManager* debug)
 {
     // Converting and drawing the frame costs time on every frame: only for a subscriber. The
     // frame is copied once, into the reused outgoing message, and drawn on there.
@@ -416,7 +432,7 @@ void whycon::WhyconRosInterface::publishResults(const std_msgs::msg::Header& hea
             outer_circle,
             system_->getMarkerByID(i),
             pose_buffer_,
-            debug_manager_.get());
+            debug);
 
         // Choose between the pose's two solutions over the whole track, then stabilize ID and pose
         ambiguity_resolver_->resolve(pose_buffer_);

@@ -14,6 +14,7 @@
 #include <array>
 #include <complex>
 #include <opencv2/opencv.hpp>
+#include <string_view>
 
 #include "whycode/core/CNecklace.hpp"
 #include "whycode/core/multi_marker_detector.hpp"
@@ -334,6 +335,9 @@ private:
     static constexpr int    REGULAR_CODE_PIXELS = 300;
     static constexpr double MAX_CODE_SPREAD     = 0.5;
 
+    // Debug tile: each code segment's bit is drawn this many code-ring radii out, in the black ring
+    static constexpr float CODE_LABEL_RADIUS = 1.55f;
+
     // Sub-pixel outline: edge search along normals of the moment ellipse
     static constexpr int   OUTLINE_RAYS       = 64;
     static constexpr int   MIN_OUTLINE_POINTS = 24;    // Fewer, and the moment ellipse is kept
@@ -347,23 +351,6 @@ private:
         aligned_vec<float> cosv;
         aligned_vec<float> sinv;
         int                n = 0;
-    };
-
-    /**
-     * @brief Holds data for processing the two possible ellipse solutions.
-     *
-     * This struct contains the parameters for each solution, including the segment parameters,
-     * reprojected center coordinates, and working variables for variance calculation and solution selection.
-     */
-    struct EllipseProcessingData
-    {
-        struct Solution
-        {
-            SegmentParameters segment;  // x, y, m0, m1, v0, v1
-            float             u, v;     // Reprojected center coordinates
-        };
-
-        std::array<Solution, 2> solutions;
     };
 
     /**
@@ -454,7 +441,6 @@ private:
 
     // Cached state variables for computation
     mutable std::array<SignalAnalysisData, 2> analysis_data_;
-    mutable EllipseProcessingData             ellipse_processing_;
     mutable EllipseCenters                    ellipse_centers_buffer_;
     mutable PoseCalculationCache              pose_calc_cache_;
 
@@ -492,22 +478,11 @@ private:
      * for (int a = 0; a < id_samples_; a++) {
      *     const float cos_angle = cosf(a * two_pi_over_samples);
      *     const float sin_angle = sinf(a * two_pi_over_samples);
-     *     analysis_data_[solution_idx].x_coords[a] =
-     *         ellipse_processing_.solutions[solution_idx].segment.x +
-     *         (ellipse_processing_.solutions[solution_idx].segment.m0 * cos_angle *
-     * ellipse_processing_.solutions[solution_idx].segment.v0 +
-     * ellipse_processing_.solutions[solution_idx].segment.m1 * sin_angle *
-     * ellipse_processing_.solutions[solution_idx].segment.v1) * 2.0f;
-     * analysis_data_[solution_idx].y_coords[a] =
-     * ellipse_processing_.solutions[solution_idx].segment.y +
-     * (ellipse_processing_.solutions[solution_idx].segment.m0
-     * * cos_angle * ellipse_processing_.solutions[solution_idx].segment.v1 -
-     * ellipse_processing_.solutions[solution_idx].segment.m1
-     * * sin_angle * ellipse_processing_.solutions[solution_idx].segment.v0) * 2.0f;
-     *
-     *     if (analysis_data_[solution_idx].x_coords[a] < 0 || width <=
-     * analysis_data_[solution_idx].x_coords[a] || analysis_data_[solution_idx].y_coords[a] < 0 ||
-     * height <= analysis_data_[solution_idx].y_coords[a]) { return false;
+     *     x_coords[a] = s.x + (s.m0 * cos_angle * s.v0 + s.m1 * sin_angle * s.v1) * 2.0f;
+     *     y_coords[a] = s.y + (s.m0 * cos_angle * s.v1 - s.m1 * sin_angle * s.v0) * 2.0f;
+     *     if (x_coords[a] < 0 || width <= x_coords[a] || y_coords[a] < 0 ||
+     *         height <= y_coords[a]) {
+     *         return false;
      *     }
      * }
      * ```
@@ -639,12 +614,27 @@ private:
     void accumulateEdges(const SignalAnalysisData& data, int ring_index) const;
 
     /**
-     * @brief Draws the two possible ellipse solutions for debugging purposes.
+     * @brief Draws a marker's tile on the markers debug panel.
+     *
+     * A zoomed crop of the grey frame around the outline, with the outline, the cue rings, the
+     * code ring's samples coloured by the bit each reads, each code segment's bit and both pose
+     * solutions' centres.
+     *
+     * @param debug_manager The debug panels; nothing is drawn once every tile is used.
      * @param image_handler The image handler containing the frame data.
-     * @param debug_manager The debug image manager to add the visualization to.
+     * @param centers Both pose solutions of the outline.
+     * @param outline The outer ellipse the pose was computed from.
+     * @param code_ring The ring the code was read from, or nullptr if none was.
+     * @param favourite The solution this frame favours.
+     * @param top Two lines above the marker.
+     * @param problems The ID checks that failed, in red under the top lines.
+     * @param bottom Two lines below the marker.
      */
-    void drawSolutionDebugImage(
-        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
+    void drawMarkerTile(
+        DebugImageManager& debug_manager, const ImageHandler& image_handler,
+        const EllipseCenters& centers, const MarkerDetector::Marker& outline,
+        const SignalAnalysisData* code_ring, int favourite, std::string_view top,
+        std::string_view problems, std::string_view bottom) const;
 
     /**
      * @brief Applies camera undistortion to an image point.

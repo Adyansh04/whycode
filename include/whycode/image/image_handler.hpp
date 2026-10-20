@@ -63,8 +63,8 @@ public:
     void binarizeSIMD(const uint8_t threshold);
 
     /**
-     * @brief Get visualization of SIMD binarized image
-     * @return cv::Mat representation of packed binary data
+     * @brief The current binary image for display: black pixels 0, the others 255.
+     * @return A new CV_8UC1 image; it allocates, so debug output only.
      */
     cv::Mat getBinaryVisualization() const;
 

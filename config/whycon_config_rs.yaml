@@ -65,7 +65,7 @@ ros_interface:
   publish_images: false                  # Publish processed images
   publish_poses: true                   # Publish pose array
   publish_tf: false                     # Publish TF transforms
-  publish_debug_images: false           # Publish consolidated debug images
+  publish_debug_images: false           # Debug panels: binary, candidates, markers (see README)
   publish_visualization_markers: false  # Publish visualization markers for RViz
 
   # TF Parameters
@@ -82,7 +82,7 @@ ros_interface:
   image_input_topic:  "/camera/color/image_raw"
   poses_output_topic: "/whycon/poses"
   image_output_topic: "/whycon/image_out"
-  debug_images_topic: "/whycon/debug_images"
+  debug_images_topic: "/whycon/debug_images"  # Panels publish on <this>/<panel>
   visualization_markers_topic: "/whycon/visualization_markers"
 
 

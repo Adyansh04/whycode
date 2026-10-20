@@ -11,8 +11,6 @@
 #include "Simd/SimdLib.hpp"
 #include "whycode/utils/whycon_config.h"
 
-#define ENABLE_BINARY_IMSHOW 0
-
 namespace whycon
 {
 ImageHandler::ImageHandler(int initial_width, int initial_height, const std::string& encoding)
@@ -102,19 +100,6 @@ bool ImageHandler::updateFromROS(const sensor_msgs::msg::Image& ros_image)
             SimdRgbToGray(data_, width_, height_, stride, gray_.data, gray_.step);
             break;
     }
-
-#if ENABLE_BINARY_IMSHOW
-    cv::imshow("Gray Image", gray_);
-    cv::waitKey(1);
-
-    // Display SIMD binarized image if available
-    if (binary_packed_)
-    {
-        cv::Mat binary_vis = getBinaryVisualization();
-        cv::imshow("SIMD Binary Image", binary_vis);
-        cv::waitKey(1);
-    }
-#endif
 
     return true;
 }

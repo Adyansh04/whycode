@@ -26,12 +26,15 @@ flowchart LR
 
   Pub --> T1["topic /whycon/poses"]
   Pub --> T2["topic /whycon/image_out"]
-  Pub --> T3["topic /whycon/debug_images"]
+  Pub --> T3["topics /whycon/debug_images/binary, candidates, markers"]
   Pub --> T4["topic /whycon/visualization_markers"]
   Pub --> T5["tf broadcaster /tf"]
 ```
 
-The annotated image and the debug images are only drawn while something subscribes to them.
+The annotated image, the RViz markers and each debug panel are only built while something
+subscribes to them. The detectors draw the binary and candidates panels as they search, and the
+pose estimation draws a tile per marker on the markers panel; with no panel wanted, the detection
+path passes no debug state at all.
 
 ## Component and Standalone Modes
 

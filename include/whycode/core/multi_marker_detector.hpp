@@ -38,6 +38,13 @@ private:
     std::vector<MarkerDetector::Marker> last_valid_outer_;
     std::vector<char>                   found_last_frame_;
     std::vector<float>                  last_motion_px_;
+
+    // Each detector's search threshold this frame, -1 if it did not search; kept for the binary
+    // debug panel only
+    std::vector<int> debug_thresholds_;
+
+    // Writes the thresholds on the binary panel
+    void drawThresholds(cv::Mat& image) const;
 };
 }  // namespace whycon
 

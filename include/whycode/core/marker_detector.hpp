@@ -90,6 +90,19 @@ public:
     class DetectionContext;
 
     /**
+     * @brief How far a seed's segment got through the checks: the one it failed, or MARKER.
+     */
+    enum class Check : uint8_t
+    {
+        RING,    // The black segment's size or roundness
+        CENTRE,  // No unvisited white pixel at the ring's centre
+        DISC,    // The white centre segment's size
+        PAIR,    // Area ratio or concentricity of ring and disc
+        SHAPE,   // Circularity or eccentricity of the fitted outline
+        MARKER   // Passed every check
+    };
+
+    /**
      * @brief Constructs a marker detector for a shared context.
      * @param context Shared detection context (visited pixels, segment runs), which sets the size.
      * @param parameters Detection parameters (see DetectorParameters).
@@ -109,11 +122,9 @@ public:
      * @brief Tests one seed pixel: flood-fills its segment and checks for a whole marker.
      * @param image_handler The image handler containing the frame to process.
      * @param seed_pixel_index Linear index of an unvisited black pixel.
-     * @param debug_manager Optional manager for collecting debug images.
-     * @return True if a valid marker was found from this seed.
+     * @return The check the segment failed, or Check::MARKER if it is a valid marker.
      */
-    bool examineSeed(
-        const ImageHandler& image_handler, int seed_pixel_index, DebugImageManager* debug_manager);
+    Check examineSeed(const ImageHandler& image_handler, int seed_pixel_index);
 
     /**
      * @brief Flood-fills the segment of a seed pixel and checks its size and roundness.
@@ -128,14 +139,11 @@ public:
         const ImageHandler& image_handler, whycon::MarkerDetector::Marker& marker,
         int seed_pixel_index, float expected_area_ratio, bool is_outer);
 
-    // Debug image generation helpers
-    void generateSegmentDebugImage(
-        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
-    void generateEllipseDebugImage(
-        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
-    void generateMParamDebugImage(
-        const ImageHandler& image_handler, DebugImageManager* debug_manager, float eccentricity,
-        float circularity) const;
+    /**
+     * @brief Draws the key to the candidates panel's colours.
+     * @param image The candidates panel.
+     */
+    static void drawCandidateKey(cv::Mat& image);
 
     /**
      * @brief Returns the current intensity threshold value.
@@ -208,7 +216,8 @@ public:
      * @param image_handler The image handler containing the frame to process.
      * @param result Output: MarkerPair containing both inner and outer markers.
      * @param previous_circle Optional previous detection, where the search starts.
-     * @param debug_manager Optional manager for collecting debug images.
+     * @param debug_manager Optional debug panels; every examined segment is drawn on the
+     * candidates panel while it is wanted.
      * @param window Optional region to search instead of the whole image.
      */
     void detectMarkerPair(
@@ -261,6 +270,18 @@ private:
      * @param[out] marker Output marker to store computed ellipse parameters.
      */
     void computeEllipseParameters(size_t begin, size_t end, Marker& marker) const;
+
+    // Searches the seeds from the previous centre, over the window or the whole image. DRAW
+    // paints every examined segment on candidates; it is a template parameter so the plain search
+    // tests nothing per seed. Out of line, so each instantiation is optimised on its own: inlined
+    // together into detectMarkerPair, the row search stopped being inlined (+0.8% instructions).
+    template <bool DRAW>
+    [[gnu::noinline]] void searchSeeds(
+        const ImageHandler& image_handler, int seed_pixel_index, const SearchWindow* window,
+        cv::Mat* candidates);
+
+    // Paints the last examined segment on the candidates panel, with its values against the limits
+    void drawCandidate(cv::Mat& image, Check check) const;
 
     /**
      * @brief Normalizes an angle to the range [-pi, pi].

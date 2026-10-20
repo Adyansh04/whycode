@@ -262,7 +262,17 @@ configuration must set every key.
   circle fits two orientations, mirror images about the line of sight; `orientation_confidence` is the
   probability that the published one is right (0.5: undecided, typical below ~20 px).
 * `/whycon/image_out` (`sensor_msgs/msg/Image`): Annotated image showing detected WhyCode/WhyCon markers.
-* `/whycon/debug_images` (`sensor_msgs/msg/Image`): Consolidated debug image with ellipses, marker IDs, and geometric overlays.
+* `/whycon/debug_images/{binary,candidates,markers}` (`sensor_msgs/msg/Image`, rgb8): debug panels
+  for tuning, published when `ros_interface.publish_debug_images` is true (false in every config).
+  Each panel is drawn only while something subscribes to it, so they cost nothing otherwise.
+  * `binary`: the frame binarised at the first searching detector's threshold, with every
+    detector's threshold.
+  * `candidates`: every segment the search examined, painted by the check that dropped it (key in
+    the corner) and labelled with its value against the limit; markers are green, with their fitted
+    outlines.
+  * `markers`: a zoomed tile per marker with its outline, the code ring's samples by the bit each
+    reads, every segment's bit, both pose solutions' centres (the favoured one green), and the ID,
+    the code, the log-odds between the solutions and every ID check that failed.
 * `/tf` (`tf2_msgs/msg/TFMessage`): Broadcasts TF transforms.
 * `/whycon/visualization_markers` (`visualization_msgs/msg/MarkerArray`): RViz markers for visualizing detections and poses.
 
