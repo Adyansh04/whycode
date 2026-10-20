@@ -80,22 +80,9 @@ Where these fit:
 
 ## Benchmarks (src/benchmarks)
 
-Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs measure micro-performance of core routines:
-
-* `benchmark`: End-to-end timing of core WhyCon algorithms in a synthetic setup.
-* `segment_bench`: Benchmarks segment computation used in marker decoding.
-* `ellipse_bench`: Tests ellipse-related computations (fit/evaluate) for detector performance.
-* `binarize_loop_bench`: Measures thresholding/binarization loop throughput.
-* `bilinear_bench`: Times bilinear interpolation used in image sampling.
-* `benchmark_binarization`: Compares different binarization strategies and parameters.
-* `cv_simd`: Sanity test for SIMD-accelerated OpenCV/xsimd integration.
-* `branch_pred`: Micro-benchmark to see impact of branch prediction on tight loops.
-* `class_test`: Evaluates class/object overhead patterns relevant to hot paths.
-* `detector_bench`: Times `MultiMarkerDetector` on frames saved from a bag; its checksum changes with any detection output, bit for bit.
-* `floodfill_bench`: Checks the detector's flood fill against a per-pixel fill on saved frames and on random frames of odd widths, and times both.
-* `binarize_packed_bench`: Checks the bit-packed binarisation pixel by pixel for every threshold and odd widths, and times it against the former version.
-* `rgb_to_gray_bench`: Times `SimdRgbToGray` against a plain loop, with the frame in and out of cache.
-* `eigen_vs_xsimd_bench`: Compares Eigen and xsimd on the code-ring kernels.
+Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. Timing and self-check programs for
+the per-frame kernels; [src/benchmarks/README.md](src/benchmarks/README.md) says what each
+measures, how to run it, and its latest results.
 
 ## Architecture
 
