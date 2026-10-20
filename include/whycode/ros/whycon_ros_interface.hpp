@@ -44,7 +44,8 @@ private:
     void publishSingleTF(const whycon::LocalizationSystem::MarkerPose& pose, const int marker_index);
     void createMarkerVisualization(
         const whycon::LocalizationSystem::MarkerPose& pose, int marker_index,
-        const std_msgs::msg::Header& header, visualization_msgs::msg::Marker& marker);
+        const std_msgs::msg::Header& header, visualization_msgs::msg::Marker& marker,
+        visualization_msgs::msg::Marker& label);
 
     // Processing
     void onRosImageReceived(const sensor_msgs::msg::Image::ConstSharedPtr image_msg);
@@ -90,6 +91,8 @@ private:
     whycon::LocalizationSystem::MarkerPose pose_buffer_;
     whycode_vision::msg::WhyCodePose       whycode_pose_msg_buffer_;
     visualization_msgs::msg::Marker        marker_buffer_;
+    visualization_msgs::msg::Marker        marker_label_buffer_;
+    visualization_msgs::msg::Marker        delete_all_marker_;  // Clears last frame's RViz markers
 
     std::array<char, 128>                        label_buffer_{};
     std::vector<whycon::MarkerDetector::Marker*> valid_detections_buffer_;
@@ -101,9 +104,8 @@ private:
     cv::Mat distortion_coeffs_;
     int     cam_height_ = 0, cam_width_ = 0;
 
-    int  targets_           = 0;
-    int  min_track_age_     = 0;
-    bool last_marker_count_ = 0;
+    int targets_       = 0;
+    int min_track_age_ = 0;
 
     bool camera_params_loaded_ = false;
 

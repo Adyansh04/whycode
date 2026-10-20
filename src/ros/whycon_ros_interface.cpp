@@ -3,6 +3,7 @@
 #include <rmw/qos_profiles.h>
 #include <yaml-cpp/yaml.h>
 
+#include <algorithm>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <chrono>
 #include <cstdio>
@@ -272,8 +273,11 @@ void whycon::WhyconRosInterface::setupROSTopics()
             visualization_markers_topic,
             1);
 
-        // Pre-allocate marker array buffer
-        marker_array_buffer_.markers.reserve(targets_);
+        // Pre-allocate marker array buffer: a disc and a label per marker, after the clearing one
+        marker_array_buffer_.markers.reserve(2 * targets_ + 1);
+        // No namespace: RViz then clears every marker of the topic, discs and labels, and the
+        // clearing marker cannot share an ns and id with one it precedes
+        delete_all_marker_.action = visualization_msgs::msg::Marker::DELETEALL;
     }
 }
 
@@ -400,8 +404,15 @@ void whycon::WhyconRosInterface::publishResults(
         image_handler_->copyColour(output_image);
     }
 
+    // RViz markers likewise; each array first clears the last frame's
+    const bool draw_markers = publish_visualization_markers_ && visualization_markers_pub_ &&
+                              visualization_markers_pub_->get_subscription_count() > 0U;
     int marker_count = 0;
-    marker_array_buffer_.markers.clear();
+    if (draw_markers)
+    {
+        marker_array_buffer_.markers.clear();
+        marker_array_buffer_.markers.push_back(delete_all_marker_);
+    }
 
     // Clear and reuse pose array buffer
     whycode_pose_array.poses.clear();
@@ -481,10 +492,16 @@ void whycon::WhyconRosInterface::publishResults(
         }
 
         // Create Marker visualization
-        if (publish_visualization_markers_)
+        if (draw_markers)
         {
-            createMarkerVisualization(pose_buffer_, marker_count, header, marker_buffer_);
+            createMarkerVisualization(
+                pose_buffer_,
+                marker_count,
+                header,
+                marker_buffer_,
+                marker_label_buffer_);
             marker_array_buffer_.markers.push_back(marker_buffer_);
+            marker_array_buffer_.markers.push_back(marker_label_buffer_);
             ++marker_count;
         }
 
@@ -500,21 +517,8 @@ void whycon::WhyconRosInterface::publishResults(
         image_pub_->publish(output_image_msg_);
     }
 
-    // Publish RViz markers (delete stale ones to avoid leftovers)
-    if (publish_visualization_markers_ && visualization_markers_pub_ &&
-        visualization_markers_pub_->get_subscription_count() > 0U)
+    if (draw_markers)
     {
-        for (int i = marker_count; i < last_marker_count_; ++i)
-        {
-            visualization_msgs::msg::Marker del;
-            del.header = header;
-            del.ns     = "whycon_markers";
-            del.id     = i;
-            del.action = visualization_msgs::msg::Marker::DELETE;
-            marker_array_buffer_.markers.push_back(std::move(del));
-        }
-        last_marker_count_ = marker_count;
-
         visualization_markers_pub_->publish(marker_array_buffer_);
     }
 
@@ -547,15 +551,16 @@ void whycon::WhyconRosInterface::publishSingleTF(
 
 void whycon::WhyconRosInterface::createMarkerVisualization(
     const whycon::LocalizationSystem::MarkerPose& pose, int marker_index,
-    const std_msgs::msg::Header& header, visualization_msgs::msg::Marker& marker)
+    const std_msgs::msg::Header& header, visualization_msgs::msg::Marker& marker,
+    visualization_msgs::msg::Marker& label)
 {
-    (void)marker_index;
-
-    // Basic marker properties
-    marker.header = header;
-    marker.ns     = "whycon_markers";
-    marker.id     = pose.ID;
-    marker.action = visualization_msgs::msg::Marker::ADD;
+    // Basic marker properties; ids are per frame, so undecoded markers (ID -1) stay apart. The
+    // pose is in the parent frame, as in the pose array, not in the image's frame
+    marker.header.stamp    = header.stamp;
+    marker.header.frame_id = parent_frame_id_;
+    marker.ns              = "whycon_markers";
+    marker.id              = marker_index;
+    marker.action          = visualization_msgs::msg::Marker::ADD;
 
     // Set marker type and scale
     marker.type =
@@ -569,11 +574,13 @@ void whycon::WhyconRosInterface::createMarkerVisualization(
     marker.pose.position.y = pose.pos[1];
     marker.pose.position.z = pose.pos[2];
 
-    // Set orientation from quaternion
-    marker.pose.orientation.x = pose.orientation.x;
-    marker.pose.orientation.y = pose.orientation.y;
-    marker.pose.orientation.z = pose.orientation.z;
-    marker.pose.orientation.w = pose.orientation.w;
+    // The pose's normal is its x axis and a cylinder's axis is its z: turn z onto x, 90 deg about y
+    const float      half     = std::numbers::sqrt2_v<float> / 2;
+    const Quaternion disc     = pose.orientation * Quaternion(0.0f, half, 0.0f, half);
+    marker.pose.orientation.x = disc.x;
+    marker.pose.orientation.y = disc.y;
+    marker.pose.orientation.z = disc.z;
+    marker.pose.orientation.w = disc.w;
 
     // Set color based on ID validity and ID value
     if (pose.id_valid && pose.ID != -1)
@@ -632,19 +639,39 @@ void whycon::WhyconRosInterface::createMarkerVisualization(
         marker.color.b = 0.5f;
         marker.color.a = 0.6f;
     }
+    // Rounding leaves a component a hair outside [0, 1] (ID 6: blue -1.2e-7), and RViz then
+    // rejects the marker
+    marker.color.r = std::clamp(marker.color.r, 0.0f, 1.0f);
+    marker.color.g = std::clamp(marker.color.g, 0.0f, 1.0f);
+    marker.color.b = std::clamp(marker.color.b, 0.0f, 1.0f);
 
     // Set marker lifetime
     // marker.lifetime = rclcpp::Duration::from_seconds(0.1).to_msg();  // Auto-delete after 100ms if not updated
     marker.lifetime =
         rclcpp::Duration::from_seconds(0.1);  // Auto-delete after 100ms if not updated
 
-    // Add text marker for ID display
+    // The ID and range on a label under the disc, as a cylinder shows no text; the ground truth's
+    // label sits above its plate
+    label.header        = marker.header;
+    label.ns            = "whycon_labels";
+    label.id            = marker_index;
+    label.action        = visualization_msgs::msg::Marker::ADD;
+    label.type          = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+    label.pose.position = marker.pose.position;
+    label.pose.position.z -= parameters_.outer_diameter;
+    label.pose.orientation.w = 1.0;
+    label.scale.z            = 0.12;  // Text height (m), as the ground truth's labels
+    label.color              = marker.color;
+    label.color.a            = 1.0f;
+    label.lifetime           = marker.lifetime;
+    std::array<char, 32> text{};
     if (pose.id_valid && pose.ID != -1)
     {
-        marker.text = std::to_string(pose.ID);
+        std::snprintf(text.data(), text.size(), "id%d %.2fm", pose.ID, cv::norm(pose.pos));
     }
     else
     {
-        marker.text = "?";
+        std::snprintf(text.data(), text.size(), "id? %.2fm", cv::norm(pose.pos));
     }
+    label.text = text.data();
 }
