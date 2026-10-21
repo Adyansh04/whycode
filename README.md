@@ -13,33 +13,66 @@
 * **ID Tracking and Stabilization**: Reduces ID flicker using a hysteresis-based ID stabilizer and maintains tracks over time with lightweight 2D tracking.
 * **Modular Build Options**: Enable or disable triangulation and benchmarks using CMake options.
 
-## Demo Videos
+## Demo
 
-### Moving camera and detection
+A lap of the warehouse loop in Isaac Sim, replayed through the detector with every debug output on:
+the annotated image, the detections over the ground truth in 3D, the binary, candidates and marker
+panels, and Isaac Sim's view of the robot. Recorded with
+[whycode-bench](https://github.com/Adyansh04/whycode-bench)'s `scripts/demos/whycode.sh replay`.
 
-![Moving camera and detection](docs/demo_media/demo1.gif)
+<!-- DEMO VIDEO: replace this line with the uploaded mp4's https://github.com/user-attachments/assets/... link -->
 
-### Four-marker triangulation demo
+## Detection range and CPU
 
-![Four-marker triangulation demo](docs/demo_media/demo2.gif)
+| D435 colour camera | WhyCode 0.20 m | WhyCode 0.146 m | WhyCon 0.20 m | WhyCon 0.146 m | WhyCode CPU per frame |
+|:---|---:|---:|---:|---:|---:|
+| 640x480, HFOV 55.6 deg | 16.5 m | 12.5 m | 14.5 m | 10.5 m | 0.75 ms (2.3%) |
+| 1280x720, HFOV 70.3 deg | 23.5 m | 18.5 m | 20.0 m | 15.0 m | 1.34 ms (4.0%) |
+| 1920x1080, HFOV 70.3 deg | 34.0 m | 27.5 m | 31.5 m | 24.0 m | 2.42 ms (7.3%) |
 
-## WhyCon Marker Detection Range
+* Measured in Isaac Sim with [whycode-bench](https://github.com/Adyansh04/whycode-bench): the
+  camera looks back at two markers while the robot drives 41.5 m straight away from them. The
+  sizes are the marker's outer diameter.
+* Range: the distance out to which the detector finds the marker in at least 90% of frames, with
+  the right ID for WhyCode. Plain WhyCon falls short of WhyCode as its white centre is smaller:
+  17% of the marker's area, against WhyCode's 24% with the teeth.
+* CPU: the detector process's CPU time per frame, every thread, with only `/whycon/poses`
+  published, on an Intel i9-14900HX with nothing else running; in brackets, the share of one core
+  at 30 Hz. Repeat runs agree within about 5%.
+* A rendered scene has no noise, blur or glare; expect less range from a real camera.
 
-The maximum detection range of WhyCon markers depends on both the **physical size of the marker** and the **camera resolution**. Below are reference values measured in typical warehouse lighting with a RealSense camera:
+## Compared with AprilTag
 
-| Marker Outer Diameter (m) | Marker Inner Diameter (m) | Resolution | Max Detection Range (m) | CPU Usage (%) |
-|--------------------------:|--------------------------:|:----------:|------------------------:|--------------:|
-| 0.146                     | 0.088                     | 640x480    | 10                      | 10-13         |
-| 0.146                     | 0.088                     | 1280x720   | 14                      | 30-33         |
-| 0.146                     | 0.088                     | 1920x1080  | 17                      | 80 - 85       |
-| 0.206                     | 0.124                     | 1280x720   | 20                      | 30-33         |
-| 0.206                     | 0.124                     | 1920x1080  | 32                      | 80 - 85       |
+![WhyCode against AprilTag: range and CPU at 1280x720](docs/media/benchmark_summary.svg)
 
-**Notes:**
+The same runs on AprilTag 36h11 tags whose black square is as wide as the ring, so it covers 27%
+more than the disc, with AprilTag 3 through `apriltag_ros` at its default half-resolution
+decimation and at full resolution, NVIDIA's GPU detector in Isaac ROS, and OpenCV's ArUco
+module.
 
-* CPU usage was measured using `top` in a Docker container with specified CPU cores, ensuring no other process runs on the same core.
-* CPU usage values can fluctuate by approximately +/- 5% depending on system load and runtime conditions.
-* Tests used the standard ROS image input path (a subscription in a separate process).
+| 1280x720 | WhyCode | WhyCon | AprilTag 3 | AprilTag 3, full res | Isaac ROS (GPU) | OpenCV ArUco |
+|:---|---:|---:|---:|---:|---:|---:|
+| Range, 0.20 m marker | 23.5 m | 20.0 m | 10.0 m | 14.5 m | 5.5 m | 5.5 m |
+| Range, 0.146 m marker | 18.5 m | 15.0 m | 6.0 m | 9.5 m | 4.0 m | 4.0 m |
+| Range error at 2-10 m, median | 0.20% | 0.33% | 1.50% | 1.51% | 5.30% | 1.17% |
+| Steepest view, 90% of frames | 60 deg | 60 deg | 65 deg | 70 deg | 60 deg | - |
+| Warehouse lap: markers found | 99.3% | 99.5% | 96.0% | 100.0% | 67.1% | 72.2% |
+| CPU per frame | 1.3 ms | 1.2 ms | 9.0 ms | 23.5 ms | 3.5 ms + GPU | 16.9 ms |
+
+* No detector reported a wrong ID, or an ID on anything but its marker, in any run.
+* WhyCode and WhyCon also find other black rings on white, such as the 0s on the aisle signs:
+  WhyCode publishes them without an ID (`id_valid` false), plain WhyCon cannot tell them apart.
+* The viewing angle counts the 2 and 4 m circles, within every detector's range. WhyCode stops
+  where a circle seen off head-on reaches `max_eccentricity` (0.9, 64 deg); AprilTag keeps tags
+  further round. OpenCV ArUco misses half the head-on frames even on the 2 m circle.
+* The AprilTag detectors read a tag about half a pixel narrower than it is (two pixels for Isaac
+  ROS), so their range error grows as the tag shrinks in the image.
+* At 640x480 and 1920x1080, and per marker size:
+  [detection against distance](docs/media/range.png),
+  [pose error against distance](docs/media/accuracy.png),
+  [detection against viewing angle](docs/media/angle.png).
+
+![The benchmark's three scenes, from above](docs/media/benchmark_scenes.svg)
 
 ## Tools
 
