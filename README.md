@@ -67,6 +67,18 @@ module.
 
 ![The benchmark's three scenes, from above](docs/media/benchmark_scenes.svg)
 
+## Performance
+
+![The detector's CPU per frame before and after the optimisation](docs/media/perf_summary.svg)
+
+An optimisation pass cut the detector's CPU per 1280x720 frame on the warehouse lap from 5.9 to
+1.25 ms, and the detection core alone from 4.95 to 0.27 ms, with the same detections. The flame
+graphs show where the time went: before, the flood fill took most of it; after, the detector is
+about a fifth, and most of the rest is ROS 2 bringing the 2.7 MB image in, which running the
+detector in the camera driver's process (`use_composition`) mostly removes.
+
+![Flame graphs of the detector process before and after, on one time scale](docs/media/flamegraphs.svg)
+
 ## Build
 
 Needs ROS 2 Jazzy, OpenCV 4, yaml-cpp, [Simd](https://github.com/ermig1979/Simd) and the
