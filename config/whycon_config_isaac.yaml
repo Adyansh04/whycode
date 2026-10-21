@@ -8,7 +8,6 @@ system:
   targets: 6                   # Number of markers to track
   frame_id: "whycon"           # Frame ID for published poses
   world_frame_id: "world"      # World frame ID
-  process_rate_hz: 30.0        # Processing rate in Hz
 
 # ==============================================================================
 # DETECTOR PARAMETERS
@@ -16,18 +15,18 @@ system:
 detector:
   # Size constraints
   min_size: 10                 # Minimum marker size in pixels
-  max_size: 10000000              # Maximum marker size in pixels
+  max_size: auto               # Largest segment examined (px); auto: the image area. A number overrides
   
   # Geometric tolerances
-  center_distance_tolerance_ratio: 0.05   # Center distance tolerance (ratio). 0.01 rejects large off-axis markers
+  center_distance_tolerance_ratio: auto   # Allowed offset of the white centre's box from the ring's, over the ring's box size; auto: the teeth's widest (from id_bits) + 0.03 for perspective. A number overrides
   center_distance_tolerance_abs: 2.0      # Center distance tolerance (absolute)
   roundness_tolerance: 0.35               # Roundness tolerance
   circularity_tolerance: 0.15            # Circularity tolerance. The outline fit is exact, true markers sit within ~0.1
-  ratio_tolerance: 0.4                    # Black/white area ratio tolerance. Measured 0.76-1.11 of expected; rejects thin rings
+  ratio_tolerance: 0.4                    # Black/white area ratio tolerance. True markers measure 0.77-1.15 of expected (99%); rejects thin rings
   max_eccentricity: 0.9                   # Maximum eccentricity
   
   # Marker physical dimensions (meters)
-  inner_diameter: 0.1024      # Inner diameter (m) giving WhyCode's measured black/white area ratio; printed centre 0.12
+  inner_diameter: auto        # Printed white centre, teeth included (m); auto: whycode_gen's, 0.6 x outer_diameter (WhyCon 0.41). A number overrides
   outer_diameter: 0.20        # Outer diameter of marker (0.108) (0.206) (loop bag: 0.146)  (big Markers: 0.252)
   image_gamma: 2.2            # Encoding gamma of the image (sRGB ~2.2, linear 1.0); the edge threshold sits halfway in linear light
   full_scan_interval: 1       # Frames between whole-image searches (1 = every frame); between them only known markers are searched, near their last position
@@ -51,8 +50,8 @@ identification:
 # TRACKING PARAMETERS
 # ==============================================================================
 tracking:
-  max_association_dist: 40.0  # Max distance (px) for a new track's first match; markers move up to 37 px/frame in turns. Established tracks use the Kalman gate
-  max_unseen_frames: 10       # Number of frames a track can be lost before being removed
+  max_association_dist: auto  # Gate (px) for a new track's first match; auto: 40 px at a 762.7 px focal length and 30 Hz, scaled to this camera. A number overrides
+  max_unseen_frames: auto     # Frames a track may go unseen before removal; auto: a third of a second. A number overrides
   id_switch_threshold: 5      # Num of consecutive different ID detections needed to switch the locked ID.
   pose_alpha: 1.0             # Smoothing factor for pose (XYZ). Smaller is smoother but has more lag. Range: 0.0-1.0. 1.0 = off
   min_track_age: 2            # Frames a track must exist before it is published. Clutter tracks mostly live 1 frame
@@ -101,3 +100,4 @@ camera:
   # Image dimensions
   image_width: 1280
   image_height: 720
+  frame_rate: 30.0            # Camera frame rate (Hz): sets the per-frame motion limits

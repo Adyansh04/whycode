@@ -4,6 +4,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <opencv2/opencv.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -120,6 +121,18 @@ public:
     template <typename T>
     std::vector<T>
     getParams(const std::string& category, const std::string& parameter, char delimiter) const;
+
+    /**
+     * @brief Get a parameter that may be set to "auto", for values derived from the camera.
+     *
+     * @tparam T The expected parameter type (int, double)
+     * @param category Top-level category
+     * @param parameter Parameter name
+     * @return The configured value, or std::nullopt if it is "auto"
+     * @throws std::runtime_error If the parameter is missing or neither "auto" nor a T
+     */
+    template <typename T>
+    std::optional<T> getAutoParams(const std::string& category, const std::string& parameter) const;
 
     /**
      * @brief Check if a parameter exists in the configuration

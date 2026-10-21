@@ -137,6 +137,20 @@ T ParamLoader::getParams(const std::string& category, const std::string& paramet
 }
 
 template <typename T>
+std::optional<T>
+ParamLoader::getAutoParams(const std::string& category, const std::string& parameter) const
+{
+    const YAML::Node node = navigateNode(category, parameter);
+    if (node.IsScalar() && node.Scalar() == "auto")
+    {
+        std::cout << "[ParamLoader] Successfully loaded " << category << "/" << parameter
+                  << ": auto" << std::endl;
+        return std::nullopt;
+    }
+    return getParams<T>(category, parameter);
+}
+
+template <typename T>
 std::vector<T> ParamLoader::getParams(
     const std::string& category, const std::string& parameter, char delimiter) const
 {
@@ -307,6 +321,11 @@ template int    ParamLoader::getParams<int>(const std::string&, const std::strin
 template float  ParamLoader::getParams<float>(const std::string&, const std::string&) const;
 template double ParamLoader::getParams<double>(const std::string&, const std::string&) const;
 template bool   ParamLoader::getParams<bool>(const std::string&, const std::string&) const;
+
+template std::optional<int>
+ParamLoader::getAutoParams<int>(const std::string&, const std::string&) const;
+template std::optional<double>
+ParamLoader::getAutoParams<double>(const std::string&, const std::string&) const;
 
 // Vector parameter instantiations for common numeric types
 template std::vector<double>

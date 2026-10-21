@@ -63,10 +63,13 @@ public:
      * @param max_frames_unseen The number of frames a track can be unseen before it is removed.
      * @param max_association_dist The maximum distance (in pixels) to associate a detection with a track.
      * @param min_track_age The minimum number of frames a track must exist to be considered "confirmed".
+     * @param motion_scale Image motion per frame relative to the reference camera (CameraScaling).
+     * @param acceleration_scale Its change over one frame relative to the reference camera.
      * @param max_tracks Maximum expected number of simultaneous tracks (for memory pre-allocation).
      */
     MarkerTracker(
-        int max_frames_unseen, double max_association_dist, int min_track_age, int max_tracks = 25);
+        int max_frames_unseen, double max_association_dist, int min_track_age,
+        float motion_scale = 1.0f, float acceleration_scale = 1.0f, int max_tracks = 25);
 
     /**
      * @brief Updates tracks with a new set of detections.
@@ -107,14 +110,18 @@ private:
     std::vector<PotentialMatch> potential_matches_;
 
     // Kalman filter parameters
+    // Motion terms on the reference camera (CameraScaling), scaled to this one's motion
     static constexpr float ACCELERATION_NOISE = 2.0f;   // px/frame^2; fast turns reach 5.5
     static constexpr float MEASUREMENT_NOISE  = 4.0f;   // pixels ^ 2
     static constexpr float INITIAL_VARIANCE = 1000.0f;  // Unknown velocity: the distance gate rules
     static constexpr float GATE_CHI2        = 13.8f;  // 99.9% of innovations, 2 degrees of freedom
     static constexpr float MAX_LOG_SIZE_CHANGE = 0.3f;  // Apparent size changes under 3% per frame
 
+    float       initial_variance_;
+    cv::Matx44f process_noise_;  // Random acceleration over one frame
+
     void        addTrack(whycon::MarkerDetector::Marker& detection);
-    static void predict(ActiveTrack& track) noexcept;
+    void        predict(ActiveTrack& track) const noexcept;
     static void correct(ActiveTrack& track, const cv::Point2f& measurement) noexcept;
 };
 

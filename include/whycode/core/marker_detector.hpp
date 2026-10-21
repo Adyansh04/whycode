@@ -28,7 +28,8 @@ struct DetectorParameters
     double ratio_tolerance                 = 1.0;
     double max_eccentricity                = 1.0;
 
-    double inner_diameter = 0.050;
+    double inner_diameter = 0.050;  // Disc with the marker's white area (m): what the area
+                                    // checks expect (MarkerGeometry derives it from the design)
     double outer_diameter = 0.122;
     double image_gamma    = 1.0;  // Encoding gamma of the grey levels; 1.0 for linear images
 
@@ -47,6 +48,8 @@ struct DetectorParameters
 
     int full_scan_interval = 1;  // Frames between whole-image searches; between them only known
                                  // markers are looked for, near where they were
+    float motion_scale = 1.0f;   // Image motion per frame relative to the reference camera
+                                 // (CameraScaling); widens the search windows to match
 };
 
 /**

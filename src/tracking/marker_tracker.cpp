@@ -12,14 +12,25 @@ namespace whycon
 {
 
 MarkerTracker::MarkerTracker(
-    int max_frames_unseen, double max_association_dist, int min_track_age, int max_tracks)
+    int max_frames_unseen, double max_association_dist, int min_track_age, float motion_scale,
+    float acceleration_scale, int max_tracks)
   : max_unseen_(max_frames_unseen)
   , min_track_age_(min_track_age)
   , max_dist_sq_(max_association_dist * max_association_dist)
   , next_id_(0)
   , initialized_(false)
   , max_tracks_(max_tracks)
+  , initial_variance_(INITIAL_VARIANCE * motion_scale * motion_scale)
 {
+    // clang-format off
+    const float acceleration = ACCELERATION_NOISE * acceleration_scale;
+    process_noise_ = acceleration * acceleration * cv::Matx44f(
+        0.25f, 0,     0.5f, 0,
+        0,     0.25f, 0,    0.5f,
+        0.5f,  0,     1,    0,
+        0,     0.5f,  0,    1);
+    // clang-format on
+
     // Pre-allocate memory for all vectors to avoid reallocations during tracking
     tracks_.reserve(max_tracks_);
     predicted_positions_.reserve(max_tracks_);
@@ -35,12 +46,12 @@ void MarkerTracker::addTrack(whycon::MarkerDetector::Marker& detection)
         next_id_++,
         cv::Point2f(detection.x, detection.y),
         detection.m0,
-        INITIAL_VARIANCE);
+        initial_variance_);
     detection.tracking_id = tracks_.back().tracking_id;
     WHYCON_INFO("[Tracker] Created new track with ID " << detection.tracking_id);
 }
 
-void MarkerTracker::predict(ActiveTrack& track) noexcept
+void MarkerTracker::predict(ActiveTrack& track) const noexcept
 {
     // clang-format off
     // Constant velocity over one frame; the process noise is a random acceleration
@@ -49,14 +60,9 @@ void MarkerTracker::predict(ActiveTrack& track) noexcept
         0, 1, 0, 1,
         0, 0, 1, 0,
         0, 0, 0, 1);
-    static const cv::Matx44f process_noise = ACCELERATION_NOISE * ACCELERATION_NOISE * cv::Matx44f(
-        0.25f, 0,     0.5f, 0,
-        0,     0.25f, 0,    0.5f,
-        0.5f,  0,     1,    0,
-        0,     0.5f,  0,    1);
     // clang-format on
     track.state      = transition * track.state;
-    track.covariance = transition * track.covariance * transition.t() + process_noise;
+    track.covariance = transition * track.covariance * transition.t() + process_noise_;
 }
 
 void MarkerTracker::correct(ActiveTrack& track, const cv::Point2f& measurement) noexcept

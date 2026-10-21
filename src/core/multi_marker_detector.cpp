@@ -14,6 +14,7 @@ whycon::MultiMarkerDetector::MultiMarkerDetector(
   , height(_height)
   , number_of_circles(_number_of_circles)
   , full_scan_interval_(parameters.full_scan_interval)
+  , search_margin_px_(static_cast<int>(std::lround(SEARCH_MARGIN_PX * parameters.motion_scale)))
 {
     circles.resize(number_of_circles);
     outer_circles.resize(number_of_circles);
@@ -76,7 +77,7 @@ bool whycon::MultiMarkerDetector::detectMarkers(
                 continue;
             }
             const auto& last   = last_valid_outer_[i];
-            const int   margin = SEARCH_MARGIN_PX + static_cast<int>(last_motion_px_[i]);
+            const int   margin = search_margin_px_ + static_cast<int>(last_motion_px_[i]);
             window             = { std::max(last.minx - margin, 0),
                                    std::max(last.miny - margin, 0),
                                    std::min(last.maxx + margin + 1, width),
