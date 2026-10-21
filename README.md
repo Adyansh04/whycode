@@ -1,4 +1,4 @@
-# whycode_vision
+![whycode_vision: the detector finding, decoding and tracking WhyCode markers](docs/media/banner.svg)
 
 A ROS 2 detector for WhyCon and WhyCode markers: black rings on white, with an ID coded in the
 centre for WhyCode. In every camera frame it finds each marker, decodes its ID, estimates its 6-DoF
