@@ -255,6 +255,12 @@ played), `ground_truth`, `marker_size_m` and `rviz`.
 Every parameter is described next to its value in the YAML files. The loader has no defaults: a
 configuration must set every key.
 
+Three limits depend on the camera and default to `auto`: `detector.max_size` (the image area),
+`tracking.max_association_dist` and `tracking.max_unseen_frames`. They are derived at startup from
+the focal length in the intrinsics file, `camera.frame_rate` and the image size, and logged once;
+a number overrides them. The detector's other pixel limits and its shape tolerances do not depend on
+the camera's resolution.
+
 ## Subscribed Topics
 
 * The node subscribes to the camera image topic (raw `sensor_msgs/msg/Image`, in the encoding `ros_interface.image_encoding` names; frames of another size or encoding are dropped). The name of this topic is specified in the YAML configuration file.

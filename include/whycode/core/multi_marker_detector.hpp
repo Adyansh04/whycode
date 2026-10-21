@@ -24,8 +24,9 @@ public:
     MarkerDetector::DetectionContext context;
 
 private:
-    static constexpr int SEARCH_MARGIN_PX = 20;  // Window margin beyond a marker's last motion;
-                                                 // its image speed changes < 3 px per frame
+    static constexpr int SEARCH_MARGIN_PX = 20;  // Window margin beyond a marker's last motion on
+                                                 // the reference camera (CameraScaling); its image
+                                                 // speed changes < 3 px per frame
 
     MarkerDetector::MarkerPair  marker_pair_result_;
     std::vector<MarkerDetector> detectors;
@@ -33,6 +34,7 @@ private:
 
     // Search near known markers between full scans (full_scan_interval > 1)
     int                                 full_scan_interval_;
+    int                                 search_margin_px_;  // SEARCH_MARGIN_PX on this camera
     long                                frame_counter_   = 0;
     bool                                force_full_scan_ = true;
     std::vector<MarkerDetector::Marker> last_valid_outer_;

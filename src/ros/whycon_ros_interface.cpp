@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "whycode/utils/camera_scaling.hpp"
 #include "whycode/utils/whycon_config.h"
 
 whycon::WhyconRosInterface::WhyconRosInterface(rclcpp::Node* node)
@@ -85,12 +86,10 @@ void whycon::WhyconRosInterface::loadParameters()
     const auto& params = whycon::WhyConConfig::getParamLoader();
 
     // System parameters
-    targets_         = params.getParams<int>("system", "targets");
-    process_rate_hz_ = params.getParams<double>("system", "process_rate_hz");
+    targets_ = params.getParams<int>("system", "targets");
 
     // Detector parameters
     parameters_.min_size = params.getParams<int>("detector", "min_size");
-    parameters_.max_size = params.getParams<int>("detector", "max_size");
     parameters_.center_distance_tolerance_ratio =
         params.getParams<double>("detector", "center_distance_tolerance_ratio");
     parameters_.center_distance_tolerance_abs =
@@ -174,16 +173,50 @@ void whycon::WhyconRosInterface::loadParameters()
 
 void whycon::WhyconRosInterface::initializeWhyConModules()
 {
-    const auto& params               = whycon::WhyConConfig::getParamLoader();
-    double      max_association_dist = params.getParams<double>("tracking", "max_association_dist");
-    int         max_unseen_frames    = params.getParams<int>("tracking", "max_unseen_frames");
-    int         id_switch_threshold  = params.getParams<int>("tracking", "id_switch_threshold");
-    float       pose_alpha           = params.getParams<float>("tracking", "pose_alpha");
+    const auto& params              = whycon::WhyConConfig::getParamLoader();
+    int         id_switch_threshold = params.getParams<int>("tracking", "id_switch_threshold");
+    float       pose_alpha          = params.getParams<float>("tracking", "pose_alpha");
     std::string image_encoding = params.getParams<std::string>("ros_interface", "image_encoding");
 
+    // The camera-dependent limits, each derived from the camera unless the configuration sets it
+    const double frame_rate = params.getParams<double>("camera", "frame_rate");
+    if (!(frame_rate > 0.0))
+    {
+        RCLCPP_FATAL(node_->get_logger(), "camera/frame_rate must be positive, got %f", frame_rate);
+        camera_params_loaded_ = false;
+        rclcpp::shutdown();
+        return;
+    }
+    const double focal_length = camera_params_loaded_ ? camera_matrix_.at<double>(0, 0) : 0.0;
+    const CameraScaling scaling(focal_length, frame_rate, cam_width_, cam_height_);
+    parameters_.max_size =
+        params.getAutoParams<int>("detector", "max_size").value_or(scaling.maxSegmentSize());
+    parameters_.motion_scale = static_cast<float>(scaling.motionScale());
+    const double max_association_dist =
+        params.getAutoParams<double>("tracking", "max_association_dist")
+            .value_or(scaling.associationDistance());
+    const int max_unseen_frames = params.getAutoParams<int>("tracking", "max_unseen_frames")
+                                      .value_or(scaling.maxUnseenFrames());
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Camera %dx%d, focal length %.1f px, %.1f Hz (motion %.2fx the reference): max_size %d px, "
+        "max_association_dist %.1f px, max_unseen_frames %d",
+        cam_width_,
+        cam_height_,
+        focal_length,
+        frame_rate,
+        scaling.motionScale(),
+        parameters_.max_size,
+        max_association_dist,
+        max_unseen_frames);
+
     debug_manager_ = std::make_unique<DebugImageManager>(targets_);
-    tracker_ =
-        std::make_unique<MarkerTracker>(max_unseen_frames, max_association_dist, min_track_age_);
+    tracker_       = std::make_unique<MarkerTracker>(
+        max_unseen_frames,
+        max_association_dist,
+        min_track_age_,
+        parameters_.motion_scale,
+        static_cast<float>(scaling.accelerationScale()));
     id_stabilizer_      = std::make_unique<IDStabilizer>(id_switch_threshold);
     pose_stabilizer_    = std::make_unique<PoseStabilizer>(pose_alpha);
     ambiguity_resolver_ = std::make_unique<AmbiguityResolver>();

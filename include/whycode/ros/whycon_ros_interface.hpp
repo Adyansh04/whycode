@@ -125,9 +125,6 @@ private:
     // Latest frame state
     std_msgs::msg::Header latest_header_;
     rclcpp::Time          latest_ros_timestamp_;
-
-    // Proecessing rate
-    double process_rate_hz_ = 30.0;
 };
 }  // namespace whycon
 
