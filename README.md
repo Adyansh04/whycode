@@ -12,7 +12,7 @@ the annotated image, the detections over the ground truth in 3D, the binary, can
 panels, and Isaac Sim's view of the robot. Recorded with
 [whycode-bench](https://github.com/Adyansh04/whycode-bench)'s `scripts/demos/whycode.sh replay`.
 
-<!-- DEMO VIDEO: replace this line with the uploaded mp4's https://github.com/user-attachments/assets/... link -->
+https://github.com/user-attachments/assets/69ed1863-5ebb-4684-8899-67896d51971d
 
 ## Detection range and CPU
 
@@ -78,9 +78,8 @@ colcon build --symlink-install --packages-select whycode_vision \
   --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 ```
 
-`-DBUILD_TRIANGULATION=OFF` and `-DBUILD_BENCHMARKS=OFF` leave out the triangulation nodes and the
-benchmarks, both built by default. The release flags include `-march=native`, so build on the
-machine that runs the detector.
+`-DBUILD_BENCHMARKS=OFF` leaves out the benchmarks, built by default. The release flags include
+`-march=native`, so build on the machine that runs the detector.
 
 <details>
 <summary>Installing Simd and xsimd from source</summary>
@@ -164,13 +163,6 @@ ros2 run whycode_vision whycon-id-gen -- -d 2 8    # 8 bits, Hamming distance 2
 
 Print each ring with a white border around it; `-h` lists the options.
 
-## Triangulation
-
-`two_marker_whycode_triangulation_node` and `four_marker_whycode_triangulation_node` read
-`/whycon/poses` and publish a `geometry_msgs/PoseStamped`, a TF frame and optionally
-`nav_msgs/Odometry`: one from two WhyCode markers a known distance apart, the other from a rig of
-four. Their marker IDs and distances are ROS parameters, declared in `src/triangulate/`.
-
 ## Benchmarks
 
 `src/benchmarks` holds timing and self-check programs for the per-frame kernels;
@@ -182,7 +174,7 @@ its latest results.
 One camera frame through the detector, a stage per panel with the class that runs it. The first
 four panels replay the detector's own steps on a coarse pixel grid: the search meets clutter first,
 then the scanline fill takes the ring and its centre run by run, in the order the code does.
-[docs/architecture.md](docs/architecture.md) covers the runtime, composition and triangulation.
+[docs/architecture.md](docs/architecture.md) covers the runtime and composition.
 
 ![A camera frame through the detector](docs/architecture.svg)
 
