@@ -14,6 +14,7 @@
 #include <string>
 
 #include "whycode/utils/camera_scaling.hpp"
+#include "whycode/utils/marker_geometry.hpp"
 #include "whycode/utils/whycon_config.h"
 
 whycon::WhyconRosInterface::WhyconRosInterface(rclcpp::Node* node)
@@ -90,8 +91,6 @@ void whycon::WhyconRosInterface::loadParameters()
 
     // Detector parameters
     parameters_.min_size = params.getParams<int>("detector", "min_size");
-    parameters_.center_distance_tolerance_ratio =
-        params.getParams<double>("detector", "center_distance_tolerance_ratio");
     parameters_.center_distance_tolerance_abs =
         params.getParams<double>("detector", "center_distance_tolerance_abs");
     parameters_.roundness_tolerance = params.getParams<double>("detector", "roundness_tolerance");
@@ -99,7 +98,6 @@ void whycon::WhyconRosInterface::loadParameters()
         params.getParams<double>("detector", "circularity_tolerance");
     parameters_.ratio_tolerance    = params.getParams<double>("detector", "ratio_tolerance");
     parameters_.max_eccentricity   = params.getParams<double>("detector", "max_eccentricity");
-    parameters_.inner_diameter     = params.getParams<double>("detector", "inner_diameter");
     parameters_.outer_diameter     = params.getParams<double>("detector", "outer_diameter");
     parameters_.image_gamma        = params.getParams<double>("detector", "image_gamma");
     parameters_.full_scan_interval = params.getParams<int>("detector", "full_scan_interval");
@@ -177,6 +175,38 @@ void whycon::WhyconRosInterface::initializeWhyConModules()
     int         id_switch_threshold = params.getParams<int>("tracking", "id_switch_threshold");
     float       pose_alpha          = params.getParams<float>("tracking", "pose_alpha");
     std::string image_encoding = params.getParams<std::string>("ros_interface", "image_encoding");
+
+    // The marker's shape expectations, derived from its design unless the configuration sets them
+    const MarkerGeometry marker(
+        parameters_.outer_diameter,
+        parameters_.identify ? parameters_.id_bits : 0,
+        params.getAutoParams<double>("detector", "inner_diameter"));
+    if (!marker.valid())
+    {
+        RCLCPP_FATAL(
+            node_->get_logger(),
+            "detector/inner_diameter %.4f m does not fit a %.4f m marker: it must lie inside the "
+            "ring%s",
+            marker.centreDiameter(),
+            parameters_.outer_diameter,
+            parameters_.identify ? " and outside the white disc inside the teeth" : "");
+        camera_params_loaded_ = false;
+        rclcpp::shutdown();
+        return;
+    }
+    parameters_.inner_diameter = marker.whiteAreaDiameter();
+    parameters_.center_distance_tolerance_ratio =
+        params.getAutoParams<double>("detector", "center_distance_tolerance_ratio")
+            .value_or(marker.centreToleranceRatio());
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Marker %s, %.3f m with a %.4f m centre: white area of a %.4f m disc, "
+        "center_distance_tolerance_ratio %.3f",
+        parameters_.identify ? "WhyCode" : "WhyCon",
+        parameters_.outer_diameter,
+        marker.centreDiameter(),
+        parameters_.inner_diameter,
+        parameters_.center_distance_tolerance_ratio);
 
     // The camera-dependent limits, each derived from the camera unless the configuration sets it
     const double frame_rate = params.getParams<double>("camera", "frame_rate");

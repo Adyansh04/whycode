@@ -81,6 +81,7 @@ add_library(whycon_core SHARED
   src/tracking/marker_tracker.cpp
   src/core/multi_marker_detector.cpp
   src/utils/camera_scaling.cpp
+  src/utils/marker_geometry.cpp
   src/utils/param_loader.cpp
   src/tracking/pose_stabilizer.cpp
   src/utils/whycon_config.cpp

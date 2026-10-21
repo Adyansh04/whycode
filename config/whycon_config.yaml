@@ -19,7 +19,7 @@ detector:
   max_size: auto               # Largest segment examined (px); auto: the image area. A number overrides
   
   # Geometric tolerances
-  center_distance_tolerance_ratio: 0.97   # Center distance tolerance (ratio)
+  center_distance_tolerance_ratio: auto   # Allowed offset of the white centre's box from the ring's, over the ring's box size; auto: the teeth's widest (from id_bits) + 0.03 for perspective. A number overrides
   center_distance_tolerance_abs: 0.5      # Center distance tolerance (absolute)
   roundness_tolerance: 0.18               # Roundness tolerance
   circularity_tolerance: 0.3             # Circularity tolerance
@@ -27,7 +27,7 @@ detector:
   max_eccentricity: 0.3                   # Maximum eccentricity
   
   # Marker physical dimensions (meters)
-  inner_diameter: 0.092         # Inner diameter of marker
+  inner_diameter: auto          # Printed white centre, teeth included (m); auto: whycode_gen's, 0.6 x outer_diameter (WhyCon 0.41). A number overrides
   outer_diameter: 0.153         # Outer diameter of marker
   image_gamma: 1.0            # Encoding gamma of the image (sRGB ~2.2, linear 1.0); the edge threshold sits halfway in linear light
   full_scan_interval: 1       # Frames between whole-image searches (1 = every frame); between them only known markers are searched, near their last position

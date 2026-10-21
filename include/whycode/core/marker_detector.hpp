@@ -28,7 +28,8 @@ struct DetectorParameters
     double ratio_tolerance                 = 1.0;
     double max_eccentricity                = 1.0;
 
-    double inner_diameter = 0.050;
+    double inner_diameter = 0.050;  // Disc with the marker's white area (m): what the area
+                                    // checks expect (MarkerGeometry derives it from the design)
     double outer_diameter = 0.122;
     double image_gamma    = 1.0;  // Encoding gamma of the grey levels; 1.0 for linear images
 

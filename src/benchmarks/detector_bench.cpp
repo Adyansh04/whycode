@@ -15,6 +15,7 @@
 #include "bench_util.hpp"
 #include "whycode/core/multi_marker_detector.hpp"
 #include "whycode/image/image_handler.hpp"
+#include "whycode/utils/marker_geometry.hpp"
 
 // A frame as the camera message the node receives
 static sensor_msgs::msg::Image toMessage(const cv::Mat& rgb)
@@ -53,17 +54,18 @@ int main(int argc, char** argv)
     constexpr int REPEATS = 100;
     constexpr int TARGETS = 6;  // As the Isaac config: more targets than markers in view
 
-    // The Isaac config's detector parameters
-    whycon::DetectorParameters parameters;
+    // The Isaac config's detector parameters, the marker's derived from its design as in the node
+    const whycon::MarkerGeometry marker(0.20, 6, std::nullopt);
+    whycon::DetectorParameters   parameters;
     parameters.min_size                        = 10;
     parameters.max_size                        = 10000000;
-    parameters.center_distance_tolerance_ratio = 0.05;
+    parameters.center_distance_tolerance_ratio = marker.centreToleranceRatio();
     parameters.center_distance_tolerance_abs   = 2.0;
     parameters.roundness_tolerance             = 0.35;
     parameters.circularity_tolerance           = 0.15;
     parameters.ratio_tolerance                 = 0.4;
     parameters.max_eccentricity                = 0.9;
-    parameters.inner_diameter                  = 0.1024;
+    parameters.inner_diameter                  = marker.whiteAreaDiameter();
     parameters.outer_diameter                  = 0.20;
     parameters.image_gamma                     = 2.2;
 

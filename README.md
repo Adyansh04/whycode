@@ -257,9 +257,15 @@ configuration must set every key.
 
 Three limits depend on the camera and default to `auto`: `detector.max_size` (the image area),
 `tracking.max_association_dist` and `tracking.max_unseen_frames`. They are derived at startup from
-the focal length in the intrinsics file, `camera.frame_rate` and the image size, and logged once;
-a number overrides them. The detector's other pixel limits and its shape tolerances do not depend on
-the camera's resolution.
+the focal length in the intrinsics file, `camera.frame_rate` and the image size. Two values depend
+on the marker and default to `auto` too: `detector.inner_diameter`, the printed white centre with
+its teeth (0.6 of `outer_diameter` on `whycode_gen` markers, 0.41 on WhyCon markers), and
+`detector.center_distance_tolerance_ratio`, which allows for the teeth moving the centre's bounding
+box, more with fewer `identification.id_bits`. Derived values are logged once; a number overrides
+any of them. The detector's other pixel limits and its shape tolerances do not depend on the
+camera's resolution, and the shape tolerances not on the marker's design.
+
+A configuration detects one marker type: WhyCode with `identification.enabled`, WhyCon without.
 
 ## Subscribed Topics
 
