@@ -2,169 +2,97 @@
 
 #include <algorithm>
 #include <cmath>
+#include <opencv2/imgproc.hpp>
+#include <string>
+
+#include "whycode/image/image_handler.hpp"
 
 namespace whycon
 {
 
-DebugImageManager::DebugImageManager(bool enabled)
-  : enabled_(enabled)
+DebugImageManager::DebugImageManager(int max_markers)
 {
-    // Reserve space for typical debug image count
-    debug_images_.reserve(8);
-    image_titles_.reserve(8);
+    // Tiles in a near-square grid: 6 markers take 3 x 2
+    const int tiles = std::max(max_markers, 1);
+    tile_cols_      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(tiles))));
+    tile_rows_      = (tiles + tile_cols_ - 1) / tile_cols_;
 }
 
-void DebugImageManager::addDebugImage(const cv::Mat& image, const std::string& title)
+void DebugImageManager::beginFrame(const ImageHandler& image_handler)
 {
-    if (!enabled_ || image.empty())
+    const cv::Mat& grey = image_handler.getGray();
+    if (wanted_[BINARY])
     {
-        return;
+        // Stays black if no detector searches this frame
+        images_[BINARY].create(grey.size(), CV_8UC3);
+        images_[BINARY].setTo(cv::Scalar::all(0));
     }
-
-    // Store copy of image for later processing
-    debug_images_.push_back(image.clone());
-    image_titles_.push_back(title);
+    if (wanted_[CANDIDATES])
+    {
+        cv::cvtColor(grey, images_[CANDIDATES], cv::COLOR_GRAY2RGB);
+        images_[CANDIDATES].convertTo(images_[CANDIDATES], -1, BACKGROUND_GAIN);
+    }
+    if (wanted_[MARKERS])
+    {
+        images_[MARKERS].create(tile_rows_ * TILE_PX, tile_cols_ * TILE_PX, CV_8UC3);
+        images_[MARKERS].setTo(cv::Scalar::all(0));
+        tiles_used_ = 0;
+    }
 }
 
-void DebugImageManager::clearDebugImages()
+cv::Mat DebugImageManager::nextTile()
 {
-    debug_images_.clear();
-    image_titles_.clear();
+    if (!wanted_[MARKERS] || tiles_used_ >= tile_cols_ * tile_rows_)
+    {
+        return {};
+    }
+    const int tile = tiles_used_++;
+    return images_[MARKERS](
+        cv::Rect(tile % tile_cols_ * TILE_PX, tile / tile_cols_ * TILE_PX, TILE_PX, TILE_PX));
 }
 
-cv::Mat DebugImageManager::createConsolidatedImage()
+void DebugImageManager::drawText(
+    cv::Mat& image, std::string_view text, cv::Point origin, const cv::Scalar& colour, double scale)
 {
-    if (!enabled_ || debug_images_.empty())
+    int       baseline = 0;
+    const int line_height =
+        cv::getTextSize("Ag", cv::FONT_HERSHEY_SIMPLEX, scale, 1, &baseline).height + baseline + 4;
+    size_t start = 0;
+    while (start <= text.size())
     {
-        return cv::Mat();
+        const size_t      end = std::min(text.find('\n', start), text.size());
+        const std::string line(text.substr(start, end - start));
+        cv::putText(
+            image,
+            line,
+            origin,
+            cv::FONT_HERSHEY_SIMPLEX,
+            scale,
+            cv::Scalar::all(0),
+            3,
+            cv::LINE_AA);
+        cv::putText(image, line, origin, cv::FONT_HERSHEY_SIMPLEX, scale, colour, 1, cv::LINE_AA);
+        origin.y += line_height;
+        start = end + 1;
     }
-
-    int        num_images  = debug_images_.size();
-    GridLayout grid_layout = calculateGridLayout(num_images);
-    int        grid_rows   = grid_layout.rows;
-    int        grid_cols   = grid_layout.cols;
-
-    // Calculate cell dimensions (aiming for reasonable resolution)
-    const int max_total_width  = 1920;  // Max consolidated image width
-    const int max_total_height = 1080;  // Max consolidated image height
-
-    int cell_width  = max_total_width / grid_cols;
-    int cell_height = max_total_height / grid_rows;
-
-    // Create consolidated image
-    cv::Mat consolidated_image =
-        cv::Mat::zeros(grid_rows * cell_height, grid_cols * cell_width, CV_8UC3);
-
-    cv::Mat resized_image;  // Declare reusable Mat
-    for (int i = 0; i < num_images; i++)
-    {
-        int row = i / grid_cols;
-        int col = i % grid_cols;
-
-        // Resize debug image to fit cell
-        resizeToFit(debug_images_[i], resized_image, cell_width, cell_height);
-
-        // Calculate position in consolidated image
-        int y_offset = row * cell_height;
-        int x_offset = col * cell_width;
-
-        // Ensure the image fits within bounds
-        int actual_height = std::min(resized_image.rows, cell_height);
-        int actual_width  = std::min(resized_image.cols, cell_width);
-
-        // Copy resized image to consolidated image
-        cv::Rect roi(x_offset, y_offset, actual_width, actual_height);
-        resized_image(cv::Rect(0, 0, actual_width, actual_height)).copyTo(consolidated_image(roi));
-
-        // Add title text
-        if (!image_titles_[i].empty())
-        {
-            cv::putText(
-                consolidated_image,
-                image_titles_[i],
-                cv::Point(x_offset + 5, y_offset + 20),
-                cv::FONT_HERSHEY_SIMPLEX,
-                0.5,
-                cv::Scalar(0, 255, 0),
-                1);
-        }
-
-        // Draw border around each image
-        cv::rectangle(
-            consolidated_image,
-            cv::Point(x_offset, y_offset),
-            cv::Point(x_offset + cell_width - 1, y_offset + cell_height - 1),
-            cv::Scalar(128, 128, 128),
-            1);
-    }
-
-    return consolidated_image;
 }
 
-GridLayout DebugImageManager::calculateGridLayout(int num_images)
+void DebugImageManager::drawEllipse(
+    cv::Mat& image, cv::Point2f centre, cv::Size2f semi_axes, float angle, const cv::Scalar& colour,
+    int thickness)
 {
-    if (num_images <= 0)
-        return GridLayout(1, 1);
-    if (num_images == 1)
-        return GridLayout(1, 1);
-    if (num_images <= 2)
-        return GridLayout(1, 2);
-    if (num_images <= 4)
-        return GridLayout(2, 2);
-    if (num_images <= 6)
-        return GridLayout(2, 3);
-    if (num_images <= 9)
-        return GridLayout(3, 3);
-    if (num_images <= 12)
-        return GridLayout(3, 4);
-
-    // For larger numbers, calculate approximately square grid
-    int cols = static_cast<int>(std::ceil(std::sqrt(num_images)));
-    int rows = static_cast<int>(std::ceil(static_cast<double>(num_images) / cols));
-    return GridLayout(rows, cols);
-}
-
-void DebugImageManager::resizeToFit(
-    const cv::Mat& image, cv::Mat& output, int target_width, int target_height)
-{
-    if (image.empty())
-    {
-        output = cv::Mat::zeros(target_height, target_width, CV_8UC3);
-        return;
-    }
-
-    // Convert to 3-channel if needed
-    cv::Mat color_image;
-    if (image.channels() == 1)
-    {
-        cv::cvtColor(image, color_image, cv::COLOR_GRAY2BGR);
-    }
-    else if (image.channels() == 3)
-    {
-        color_image = image;
-    }
-    else
-    {
-        cv::cvtColor(image, color_image, cv::COLOR_RGBA2BGR);
-    }
-
-    // Calculate scaling to maintain aspect ratio
-    double scale_x = static_cast<double>(target_width) / color_image.cols;
-    double scale_y = static_cast<double>(target_height) / color_image.rows;
-    double scale   = std::min(scale_x, scale_y);
-
-    int new_width  = static_cast<int>(color_image.cols * scale);
-    int new_height = static_cast<int>(color_image.rows * scale);
-
-    cv::Mat resized;
-    cv::resize(color_image, resized, cv::Size(new_width, new_height));
-
-    // Create final image with padding if needed
-    output       = cv::Mat::zeros(target_height, target_width, CV_8UC3);
-    int x_offset = (target_width - new_width) / 2;
-    int y_offset = (target_height - new_height) / 2;
-
-    resized.copyTo(output(cv::Rect(x_offset, y_offset, new_width, new_height)));
+    // Coordinates in 1/16 pixel. Clamped as integers: cv::ellipse throws on a negative axis, and a
+    // NaN would get past a float comparison under -ffast-math
+    constexpr int   SHIFT = 4;
+    constexpr float ONE   = 1 << SHIFT;
+    const int       limit = (image.cols + image.rows) << SHIFT;
+    const cv::Size  axes(
+        std::clamp(cvRound(semi_axes.width * ONE), 0, limit),
+        std::clamp(cvRound(semi_axes.height * ONE), 0, limit));
+    const cv::Point at(
+        std::clamp(cvRound(centre.x * ONE), -limit, limit),
+        std::clamp(cvRound(centre.y * ONE), -limit, limit));
+    cv::ellipse(image, at, axes, angle * 180.0 / CV_PI, 0, 360, colour, thickness, cv::LINE_AA, SHIFT);
 }
 
 }  // namespace whycon

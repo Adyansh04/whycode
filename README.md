@@ -39,7 +39,7 @@ The maximum detection range of WhyCon markers depends on both the **physical siz
 
 * CPU usage was measured using `top` in a Docker container with specified CPU cores, ensuring no other process runs on the same core.
 * CPU usage values can fluctuate by approximately +/- 5% depending on system load and runtime conditions.
-* Tests used the standard ROS image input path via `image_transport`.
+* Tests used the standard ROS image input path (a subscription in a separate process).
 
 ## Tools
 
@@ -80,17 +80,9 @@ Where these fit:
 
 ## Benchmarks (src/benchmarks)
 
-Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs measure micro-performance of core routines:
-
-* `benchmark`: End-to-end timing of core WhyCon algorithms in a synthetic setup.
-* `segment_bench`: Benchmarks segment computation used in marker decoding.
-* `ellipse_bench`: Tests ellipse-related computations (fit/evaluate) for detector performance.
-* `binarize_loop_bench`: Measures thresholding/binarization loop throughput.
-* `bilinear_bench`: Times bilinear interpolation used in image sampling.
-* `benchmark_binarization`: Compares different binarization strategies and parameters.
-* `cv_simd`: Sanity test for SIMD-accelerated OpenCV/xsimd integration.
-* `branch_pred`: Micro-benchmark to see impact of branch prediction on tight loops.
-* `class_test`: Evaluates class/object overhead patterns relevant to hot paths.
+Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. Timing and self-check programs for
+the per-frame kernels; [src/benchmarks/README.md](src/benchmarks/README.md) says what each
+measures, how to run it, and its latest results.
 
 ## Architecture
 
@@ -98,10 +90,7 @@ Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs
 
 ## Documentation
 
-* [docs/README.md](docs/README.md) - Documentation index
 * [docs/architecture.md](docs/architecture.md) - System architecture and module overview
-* [docs/pipeline.md](docs/pipeline.md) - Detection and tracking pipeline details
-* [docs/configuration/README.md](docs/configuration/README.md) - Full parameter reference
 
 ## Dependencies
 
@@ -116,7 +105,7 @@ Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. These small programs
 
 * `rclcpp`, `rclcpp_components`
 * `std_msgs`, `sensor_msgs`, `geometry_msgs`, `nav_msgs`, `visualization_msgs`
-* `image_transport`, `cv_bridge`
+* `cv_bridge`
 * `tf2`, `tf2_ros`, `tf2_geometry_msgs`
 * `std_srvs`, `rosidl_default_runtime`
 
@@ -225,6 +214,10 @@ The primary way to run the package is through the `whycon.launch.py` file, which
 ros2 launch whycode_vision whycon.launch.py use_composition:=true
 ```
 
+The image subscription accepts intra-process messages. It pays off when the camera driver is loaded
+into the same container (`whycon_container`) with `use_intra_process_comms` on the driver: frames
+then arrive without DDS serialisation, fragmentation or copies.
+
 ### Running as a standalone node
 
 ```bash
@@ -237,29 +230,57 @@ ros2 launch whycode_vision whycon.launch.py use_composition:=false
 * `config_file` (string, default: `.../config/whycon_config_sim.yaml`): Path to the main configuration file.
 * `image_view` (bool, default: `false`): If true, launches an `image_view` node to display the annotated image output.
 
+### Debugging and tuning
+
+```bash
+ros2 launch whycode_vision whycon_debug.launch.py bag:=/root/data/whycode_1lap
+```
+
+The same detector with every output switched on (poses, annotated image, TF, RViz markers and the
+debug panels; the YAML file itself is not changed), and RViz laid out for a full-screen 3840x1600
+window: the detected markers next to the bag's ground truth in 3D, the annotated image and the
+three debug panels described under Published Topics. `bag:=` plays a bag on its own clock, in a
+loop; without it, the detector reads the configured camera topic. The ground truth needs
+`whycode_sim`, whose `ground_truth_viz_node` renders `/marker_ground_truth`.
+
+Arguments: those of `whycon.launch.py` (here `config_file` defaults to
+`whycon_config_isaac.yaml`), plus `bag`, `rate`, `loop`, `use_sim_time` (`auto`: true when a bag is
+played), `ground_truth`, `marker_size_m` and `rviz`.
+
 ## Configuration
 
 * **`config/whycon_config_*.yaml`**: Main configuration for the detector, including number of targets, marker dimensions, and tracking parameters.
 * **`config/camera_intrinsics_*.yaml`**: Camera calibration parameters, including the camera matrix and distortion coefficients.
 
-Full parameter reference: see [docs/configuration/README.md](docs/configuration/README.md).
+Every parameter is described next to its value in the YAML files. The loader has no defaults: a
+configuration must set every key.
 
 ## Subscribed Topics
 
-* The node subscribes to the camera image topic (via `image_transport`). The name of this topic is specified in the YAML configuration file.
+* The node subscribes to the camera image topic (raw `sensor_msgs/msg/Image`, in the encoding `ros_interface.image_encoding` names; frames of another size or encoding are dropped). The name of this topic is specified in the YAML configuration file.
 * Camera calibration parameters are loaded from a dedicated YAML file specified in the main configuration file (see the `camera.config_path` parameter).
 
 ## Published Topics
 
-* `/whycon/poses` (`whycode_vision/msg/WhyCodePoseArray`): Poses for all detected markers.
+* `/whycon/poses` (`whycode_vision/msg/WhyCodePoseArray`): Poses for all detected markers. A tilted
+  circle fits two orientations, mirror images about the line of sight; `orientation_confidence` is the
+  probability that the published one is right (0.5: undecided, typical below ~20 px).
 * `/whycon/image_out` (`sensor_msgs/msg/Image`): Annotated image showing detected WhyCode/WhyCon markers.
-* `/whycon/debug_images` (`sensor_msgs/msg/Image`): Consolidated debug image with ellipses, marker IDs, and geometric overlays.
-* `/tf` (`tf2_msgs/msg/TFMessage`): Broadcasts TF transforms.
+* `/whycon/debug_images/{binary,candidates,markers}` (`sensor_msgs/msg/Image`, rgb8): debug panels
+  for tuning, published when `ros_interface.publish_debug_images` is true (false in every config).
+  Each panel is drawn only while something subscribes to it, so they cost nothing otherwise.
+  * `binary`: the frame binarised at the first searching detector's threshold, with every
+    detector's threshold.
+  * `candidates`: every segment the search examined, painted by the check that dropped it (key in
+    the corner) and labelled with its value against the limit; markers are green, with their fitted
+    outlines.
+  * `markers`: a zoomed tile per marker with its outline, the code ring's samples by the bit each
+    reads, every segment's bit, both pose solutions' centres (the favoured one green), and the ID,
+    the code, the log-odds between the solutions and every ID check that failed.
+* `/tf` (`tf2_msgs/msg/TFMessage`): A frame per marker under `ros_interface.parent_frame_id`, stamped
+  with its image: `<tf_frame_prefix><ID>` (e.g. `whycode_3`), or `<tf_frame_prefix>track_<track id>`
+  while the marker has no ID.
 * `/whycon/visualization_markers` (`visualization_msgs/msg/MarkerArray`): RViz markers for visualizing detections and poses.
-
-## Configuration and Tuning
-
-Full configuration and tuning details are documented in [docs/configuration/README.md](docs/configuration/README.md).
 
 ## Further docs and test assets
 

@@ -6,36 +6,42 @@ This document describes the internal architecture of `whycode_vision`, including
 
 `whycode_vision` has three major runtime layers:
 
-1. ROS2 interface layer: parameter loading, subscriptions, timers, services, and publications.
+1. ROS2 interface layer: parameter loading, the image subscription, services, and publications.
 2. Core detection layer: image preprocessing, marker detection, WhyCode decoding, tracking, pose estimation.
 3. Output layer: pose arrays, debug images, TF, and visualization markers.
 
+Each frame is processed in the image callback, as it arrives:
+
 ```mermaid
 flowchart LR
-  Camera["camera image topic"] --> Sub["image_transport subscription"]
+  Camera["camera image topic"] --> Sub["image subscription (intra-process capable, recycled message)"]
   Sub --> Rx["onRosImageReceived"]
-  Rx --> Img["ImageHandler update and grayscale conversion"]
-  Img --> Flag["new_frame_available true"]
+  Rx --> Img["ImageHandler: frame read in place, grey conversion"]
+  Img --> Core["processLatestFrame"]
 
-  Timer["processing timer"] --> Tick["processTimerCallback"]
-  Flag --> Tick
-  Tick --> Core["processLatestFrame"]
-
-  Core --> Detect["LocalizationSystem localizeMarkers"]
+  Core --> Detect["LocalizationSystem localizeMarkers: binarise, scanline flood fill, ellipse"]
   Detect --> Track["MarkerTracker update"]
-  Track --> Pose["estimateMarkerPose and stabilizers"]
+  Track --> Pose["estimateMarkerPose, AmbiguityResolver and stabilizers"]
   Pose --> Pub["publishResults"]
 
   Pub --> T1["topic /whycon/poses"]
   Pub --> T2["topic /whycon/image_out"]
-  Pub --> T3["topic /whycon/debug_images"]
+  Pub --> T3["topics /whycon/debug_images/binary, candidates, markers"]
   Pub --> T4["topic /whycon/visualization_markers"]
   Pub --> T5["tf broadcaster /tf"]
 ```
 
+The annotated image, the RViz markers and each debug panel are only built while something
+subscribes to them. The detectors draw the binary and candidates panels as they search, and the
+pose estimation draws a tile per marker on the markers panel; with no panel wanted, the detection
+path passes no debug state at all.
+
 ## Component and Standalone Modes
 
-The ROS1 nodelet path has been replaced with ROS2 components.
+The ROS1 nodelet path has been replaced with ROS2 components. As with nodelets, the gain comes
+from sharing a process with the camera driver: the image subscription accepts intra-process
+messages, so a driver loaded into the same container with intra-process communication hands its
+frames over as pointers instead of through DDS.
 
 - Standalone executable: `whycon`
 - Composable component: `whycon::WhyconComponent`
@@ -77,5 +83,4 @@ flowchart LR
 - `src/tracking/*`: temporal data association and stabilization.
 - `src/triangulate/*`: 2-marker and 4-marker geometric triangulation nodes.
 - `src/utils/*`: YAML config loading and global config access.
-
-For function-by-function behavior, see [core_algorithms.md](core_algorithms.md).
+- `src/benchmarks/*`: benchmarks and self-checks of the hot kernels (built with `BUILD_BENCHMARKS`).

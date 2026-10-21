@@ -1,10 +1,9 @@
 #ifndef MARKER_TRACKER_HPP
 #define MARKER_TRACKER_HPP
 
+#include <opencv2/core/matx.hpp>
 #include <opencv2/core/types.hpp>
-#include <opencv2/video/tracking.hpp>
 #include <optional>
-#include <unordered_map>
 #include <vector>
 
 #include "whycode/core/marker_detector.hpp"
@@ -14,21 +13,26 @@ namespace whycon
 {
 
 /**
- * @brief Represents a single tracked marker over time using its last known position.
+ * @brief Represents a single tracked marker: a constant-velocity Kalman filter on its centre.
  */
 struct ActiveTrack
 {
     int         tracking_id;    // The persistent ID for this track.
     cv::Point2f last_position;  // The last known 2D position in image coordinates.
-    int frames_unseen;    // Counter for how many consecutive frames this track has not been seen.
-    int marker_age;       // How many frames this track has been alive.
-    cv::KalmanFilter kf;  // Kalman filter for this track (state: [x, y, vx, vy])
+    int   frames_unseen;  // Counter for how many consecutive frames this track has not been seen.
+    int   marker_age;     // How many frames this track has been alive.
+    float size;           // Outer ellipse's m0 at the last match (px)
+    cv::Vec4f   state;    // Kalman state [x, y, vx, vy] (px, px/frame)
+    cv::Matx44f covariance;  // Kalman state covariance
 
-    ActiveTrack(int id, const cv::Point2f& pos)
+    ActiveTrack(int id, const cv::Point2f& pos, float marker_size, float initial_variance)
       : tracking_id(id)
       , last_position(pos)
       , frames_unseen(0)
       , marker_age(1)
+      , size(marker_size)
+      , state(pos.x, pos.y, 0.0f, 0.0f)
+      , covariance(cv::Matx44f::eye() * initial_variance)
     {}
 };
 
@@ -46,7 +50,11 @@ struct PotentialMatch
 };
 
 /**
- * @brief Manages marker tracking across video frames using Lucas-Kanade Optical Flow.
+ * @brief Keeps a persistent tracking ID per marker across frames.
+ *
+ * A detection joins the track whose prediction is nearest, within the distance gate, the Kalman
+ * filter's own gate and a size check, so a track whose marker is missed for a frame does not
+ * take over a neighbouring marker.
  */
 class MarkerTracker
 {
@@ -61,7 +69,7 @@ public:
         int max_frames_unseen, double max_association_dist, int min_track_age, int max_tracks = 25);
 
     /**
-     * @brief Updates tracks with a new set of detections using Optical Flow.
+     * @brief Updates tracks with a new set of detections.
      *
      * This function performs data association. It modifies the 'tracking_id'
      * field of the Marker objects in the input vector in-place by using pointers.
@@ -83,33 +91,31 @@ public:
     std::optional<int> getTrackAge(int tracking_id) const;
 
 private:
-    std::vector<ActiveTrack>        tracks_;
-    std::unordered_map<int, size_t> track_id_to_index_;  // Maps track ID to index in tracks_ vector
-    double                          max_dist_sq_;
-    int                             max_unseen_;
-    int                             min_track_age_;
-    int                             next_id_;
-    int                             max_tracks_;
-    bool                            initialized_;
+    std::vector<ActiveTrack> tracks_;
+    double                   max_dist_sq_;
+    int                      max_unseen_;
+    int                      min_track_age_;
+    int                      next_id_;
+    int                      max_tracks_;
+    bool                     initialized_;
 
     // Vectors for computations (pre-allocated)
     std::vector<cv::Point2f>    predicted_positions_;
+    std::vector<cv::Matx22f>    innovation_inverse_;  // Inverse covariance of each prediction
     std::vector<bool>           detection_matched_;
     std::vector<bool>           track_assigned_;
     std::vector<PotentialMatch> potential_matches_;
 
     // Kalman filter parameters
-    static constexpr double PROCESS_NOISE_POS = 1e-2;
-    static constexpr double PROCESS_NOISE_VEL = 1e-3;
-    static constexpr double MEASUREMENT_NOISE = 4.0;  // pixels ^ 2
+    static constexpr float ACCELERATION_NOISE = 2.0f;   // px/frame^2; fast turns reach 5.5
+    static constexpr float MEASUREMENT_NOISE  = 4.0f;   // pixels ^ 2
+    static constexpr float INITIAL_VARIANCE = 1000.0f;  // Unknown velocity: the distance gate rules
+    static constexpr float GATE_CHI2        = 13.8f;  // 99.9% of innovations, 2 degrees of freedom
+    static constexpr float MAX_LOG_SIZE_CHANGE = 0.3f;  // Apparent size changes under 3% per frame
 
-    /**
-     * @brief Initialize a Kalman filter for a new track
-     *
-     * @param kf The Kalman filter to initialize
-     * @param initial_pos The initial position of the tracked object
-     */
-    void initializeKalmanFilter(cv::KalmanFilter& kf, const cv::Point2f& initial_pos);
+    void        addTrack(whycon::MarkerDetector::Marker& detection);
+    static void predict(ActiveTrack& track) noexcept;
+    static void correct(ActiveTrack& track, const cv::Point2f& measurement) noexcept;
 };
 
 }  // namespace whycon

@@ -35,7 +35,6 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -73,8 +72,8 @@ rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typ
 # WhyCon Core Library (algorithmic core + image pipeline)
 add_library(whycon_core SHARED
   src/core/CNecklace.cpp
-  src/utils/coord_lut.cpp
   src/image/debug_image_manager.cpp
+  src/tracking/ambiguity_resolver.cpp
   src/tracking/id_stabilizer.cpp
   src/image/image_handler.cpp
   src/image/packed_binary_image.cpp
@@ -124,7 +123,6 @@ ament_target_dependencies(whycon_component
   rclcpp
   rclcpp_components
   cv_bridge
-  image_transport
   nav_msgs
   sensor_msgs
   std_msgs
@@ -154,7 +152,6 @@ ament_target_dependencies(whycon
   rclcpp
   rclcpp_components
   cv_bridge
-  image_transport
   nav_msgs
   sensor_msgs
   std_msgs

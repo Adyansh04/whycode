@@ -11,7 +11,10 @@
 #ifndef WHYCON_LOCALIZATION_H
 #define WHYCON_LOCALIZATION_H
 
+#include <array>
+#include <complex>
 #include <opencv2/opencv.hpp>
+#include <string_view>
 
 #include "whycode/core/CNecklace.hpp"
 #include "whycode/core/multi_marker_detector.hpp"
@@ -159,6 +162,13 @@ public:
         cv::Vec3f  rot;  // Orientation as Euler angles: pitch, roll, yaw (in radians)
         Quaternion orientation;
 
+        // The mirror solution the same outline allows, and this frame's evidence between the two
+        cv::Vec3f  alt_pos;
+        Quaternion alt_orientation;
+        float      ambiguity_llr          = 0.0f;  // Log-odds of this solution over the mirror one
+        float      ambiguity_signal_px    = 0.0f;  // Image distance between the two marker centres
+        float      orientation_confidence = 0.5f;  // Probability that this is the right solution
+
         // Euler Angles
         float roll = 0, pitch = 0, yaw = 0;
 
@@ -167,6 +177,17 @@ public:
         int   ID          = -1;     // Decoder marker ID
         int   tracking_id = -1;     // Unique tracking identifier for the marker
         bool  id_valid    = false;  // Whether ID decoding was successful.
+
+        /** @brief Reports the mirror solution instead of the current one. */
+        void swapSolutions() noexcept
+        {
+            std::swap(pos, alt_pos);
+            std::swap(orientation, alt_orientation);
+            rot   = orientation.toEulerAngles();
+            roll  = rot[0];
+            pitch = rot[1];
+            yaw   = rot[2];
+        }
     };
 
     // Struct to hold all signal analysis data for a single solution
@@ -179,10 +200,8 @@ public:
         std::vector<char>  code;      // Raw bit code with null terminator
 
         // Analysis results
-        float variance;    // Calculated variance for this solution
-        float sum;         // Sum for variance calculation
-        float num_points;  // Number of edge points found
-        int   max_idx;     // Index of maximum variance
+        float mean    = 0.0f;  // Binarisation threshold: the ring's mean signal
+        int   max_idx = 0;     // Sample at the centre of the first code segment
 
         // Constructor to initialize the code vector with proper size
         SignalAnalysisData(int id_bits)
@@ -305,6 +324,27 @@ private:
     // Constants
     static constexpr int MAX_ID_SAMPLES = 720;
 
+    // Pose ambiguity cue: rings nearer the centre than the ID ring, all inside the code's teeth
+    // (0.342-0.600 of the outer radius)
+    static constexpr std::array<float, 2> CUE_RING_RATIOS = { 0.40f, 0.47f };
+    static constexpr int                  CUE_GROUPS =
+        2 * (static_cast<int>(CUE_RING_RATIOS.size()) + 1);  // ring x polarity
+
+    // Outlines from this many pixels read codes whose edges spread under 0.3 about the segment
+    // grid (p99.9); a wider spread there is clutter, not a code
+    static constexpr int    REGULAR_CODE_PIXELS = 300;
+    static constexpr double MAX_CODE_SPREAD     = 0.5;
+
+    // Debug tile: each code segment's bit is drawn this many code-ring radii out, in the black ring
+    static constexpr float CODE_LABEL_RADIUS = 1.55f;
+
+    // Sub-pixel outline: edge search along normals of the moment ellipse
+    static constexpr int   OUTLINE_RAYS       = 64;
+    static constexpr int   MIN_OUTLINE_POINTS = 24;    // Fewer, and the moment ellipse is kept
+    static constexpr float OUTLINE_STEP_PX    = 0.5f;  // Profile sampling step
+    static constexpr float OUTLINE_INSIDE_PX  = 1.5f;  // Search starts this far inside the outline
+    static constexpr float OUTLINE_OUTSIDE_PX = 2.5f;  // and ends this far outside
+
     // LUT structure for fast trig calculations
     struct TrigLUTAligned
     {
@@ -314,24 +354,15 @@ private:
     };
 
     /**
-     * @brief Holds data for processing the two possible ellipse solutions.
+     * @brief One pose solution's marker plane in the optical camera frame.
      *
-     * This struct contains the parameters for each solution, including the segment parameters,
-     * reprojected center coordinates, and working variables for variance calculation and solution selection.
+     * Back-projects image points onto the plane, in polar coordinates about the marker centre.
      */
-    struct EllipseProcessingData
+    struct PlaneFrame
     {
-        struct Solution
-        {
-            SegmentParameters segment;  // x, y, m0, m1, v0, v1
-            float             u, v;     // Reprojected center coordinates
-        };
-
-        std::array<Solution, 2> solutions;
-        int                     selected_idx    = 0;     // Index of selected solution (0 or 1)
-        float               variance_difference = 0.0f;  // Difference in variance between solutions
-        std::array<bool, 2> valid_solutions     = { false,
-                                                    false };  // Which solutions are geometrically valid
+        cv::Vec3d n, t;    // Plane normal and marker centre
+        cv::Vec3d e1, e2;  // In-plane axes
+        double    nt;      // n . t
     };
 
     /**
@@ -393,9 +424,10 @@ private:
     int  hamming_distance_;  // Hamming distance for error correction
 
     // Threshold values
-    float variance_threshold_;
-    int   min_marker_pixels_;
-    float diameter_ratio_correction_;
+    double image_gamma_;
+    float  ambiguity_noise_px_;
+    int    min_marker_pixels_;
+    float  diameter_ratio_correction_;
 
     float marker_angle_;  //
 
@@ -403,14 +435,22 @@ private:
     cv::Mat          K;              // Camera intrinsic matrix (3x3)
     cv::Mat          dist_coeff;     // Camera distortion coefficients
     CameraParameters camera_params;  // Structured camera parameters
+    bool             has_distortion_ = false;
 
     std::unique_ptr<CNecklace> decoder_;  // ID Decoder for WhyCode markers
 
     // Cached state variables for computation
     mutable std::array<SignalAnalysisData, 2> analysis_data_;
-    mutable EllipseProcessingData             ellipse_processing_;
     mutable EllipseCenters                    ellipse_centers_buffer_;
     mutable PoseCalculationCache              pose_calc_cache_;
+
+    // Per solution: the marker plane, and per ring and polarity the sums of w * exp(i k angle)
+    // and of w over the edges, with w the squared plane radius and k the number of code segments
+    mutable std::array<PlaneFrame, 2>                                   plane_frames_;
+    mutable std::array<std::array<std::complex<double>, CUE_GROUPS>, 2> grid_sum_;
+    mutable std::array<std::array<double, CUE_GROUPS>, 2>               grid_weight_;
+
+    MarkerDetector::Marker refined_outer_;  // The outer ellipse refit to sub-pixel edges
 
     TrigLUTAligned trig_lut_samples_;    // Lookup table for sine/cosine values of 2Pi/id_samples
     TrigLUTAligned trig_lut_seg_width_;  // Lookup table for sine/cosine values of 2Pi/segment_width
@@ -438,22 +478,11 @@ private:
      * for (int a = 0; a < id_samples_; a++) {
      *     const float cos_angle = cosf(a * two_pi_over_samples);
      *     const float sin_angle = sinf(a * two_pi_over_samples);
-     *     analysis_data_[solution_idx].x_coords[a] =
-     *         ellipse_processing_.solutions[solution_idx].segment.x +
-     *         (ellipse_processing_.solutions[solution_idx].segment.m0 * cos_angle *
-     * ellipse_processing_.solutions[solution_idx].segment.v0 +
-     * ellipse_processing_.solutions[solution_idx].segment.m1 * sin_angle *
-     * ellipse_processing_.solutions[solution_idx].segment.v1) * 2.0f;
-     * analysis_data_[solution_idx].y_coords[a] =
-     * ellipse_processing_.solutions[solution_idx].segment.y +
-     * (ellipse_processing_.solutions[solution_idx].segment.m0
-     * * cos_angle * ellipse_processing_.solutions[solution_idx].segment.v1 -
-     * ellipse_processing_.solutions[solution_idx].segment.m1
-     * * sin_angle * ellipse_processing_.solutions[solution_idx].segment.v0) * 2.0f;
-     *
-     *     if (analysis_data_[solution_idx].x_coords[a] < 0 || width <=
-     * analysis_data_[solution_idx].x_coords[a] || analysis_data_[solution_idx].y_coords[a] < 0 ||
-     * height <= analysis_data_[solution_idx].y_coords[a]) { return false;
+     *     x_coords[a] = s.x + (s.m0 * cos_angle * s.v0 + s.m1 * sin_angle * s.v1) * 2.0f;
+     *     y_coords[a] = s.y + (s.m0 * cos_angle * s.v1 - s.m1 * sin_angle * s.v0) * 2.0f;
+     *     if (x_coords[a] < 0 || width <= x_coords[a] || y_coords[a] < 0 ||
+     *         height <= y_coords[a]) {
+     *         return false;
      *     }
      * }
      * ```
@@ -536,41 +565,76 @@ private:
      */
     void binarizeSignal(SignalAnalysisData& data, int n);
 
-    bool processMarkerAmbiguityAndIdentify(
-        const ImageHandler& image_handler, MarkerPose& pose, const EllipseCenters& ellipse_centers,
-        const MarkerDetector::Marker& outer_marker, DebugImageManager* debug_manager = nullptr);
-
     /**
-     * @brief Processes signal analysis for a single solution index.
-     * @param solution_idx Index of the solution to process (0 or 1).
+     * @brief Decodes the ID and weighs the two pose solutions against each other.
+     *
+     * Samples the ID ring and two rings inside it around the ellipse centre, then back-projects
+     * the code's radial edges onto each solution's plane: only the right one puts them on a
+     * regular angular grid.
+     *
      * @param image_handler The image handler containing the frame data.
-     * @param width Image width in pixels.
-     * @param height Image height in pixels.
-     * @param image_data Raw image data pointer.
-     * @return True if processing was successful, false if coordinates went out of bounds.
+     * @param ellipse_centers Both pose solutions of the outer ellipse.
+     * @param outer_marker The outer ellipse.
+     * @param pose Output: decoded ID and its validity.
+     * @param debug_manager Optional manager for collecting debug images.
+     * @return Log-odds of solution 0 over solution 1; 0 when the ID ring leaves the image.
      */
-    bool processSingleSolution(
-        int solution_idx, const ImageHandler& image_handler, int width, int height,
-        unsigned char* image_data);
+    float identifyAndWeighSolutions(
+        const ImageHandler& image_handler, const EllipseCenters& ellipse_centers,
+        const MarkerDetector::Marker& outer_marker, MarkerPose& pose,
+        DebugImageManager* debug_manager = nullptr);
 
     /**
-     * @brief Selects the best solution based on variance and decodes the marker ID.
-     * @param pose Output pose to update with position, orientation, and ID.
-     * @param ellipse_centers The ellipse centers containing both possible solutions.
-     * @param outer_marker The outer marker parameters for ID decoding.
-     * @return True if ID decoding was successful, false otherwise.
-     */
-    bool selectSolutionAndDecodeID(
-        MarkerPose& pose, const EllipseCenters& ellipse_centers,
-        const MarkerDetector::Marker& outer_marker);
-
-    /**
-     * @brief Draws the two possible ellipse solutions for debugging purposes.
+     * @brief Samples one ring of the marker and binarises it at its mean.
+     * @param ring Ring centre, axes and orientation.
      * @param image_handler The image handler containing the frame data.
-     * @param debug_manager The debug image manager to add the visualization to.
+     * @param data Output: sample coordinates, signal, binarised signal and threshold.
+     * @return False if the ring leaves the image.
      */
-    void drawSolutionDebugImage(
-        const ImageHandler& image_handler, DebugImageManager* debug_manager) const;
+    bool sampleRing(
+        const SegmentParameters& ring, const ImageHandler& image_handler, SignalAnalysisData& data);
+
+    /**
+     * @brief Refits the outer ellipse to sub-pixel points of the marker's outline.
+     *
+     * The binarised outline's moments place the centre to ~0.07 px, as much as the perspective
+     * offset that tells the two pose solutions apart on markers under 20 px. Points found along
+     * normals of that ellipse, at the detector's own edge threshold, fit it far closer.
+     *
+     * @param image_handler The image handler containing the frame data.
+     * @param inner The inner ellipse: its mean grey is the outline's light side.
+     * @param outer The outer ellipse, refined in place unless the fit is implausible.
+     */
+    void refineOutline(
+        const ImageHandler& image_handler, const MarkerDetector::Marker& inner,
+        MarkerDetector::Marker& outer) const;
+
+    void readCode(SignalAnalysisData& data) const;
+    void setPlaneFrames(const EllipseCenters& centers) const;
+    void accumulateEdges(const SignalAnalysisData& data, int ring_index) const;
+
+    /**
+     * @brief Draws a marker's tile on the markers debug panel.
+     *
+     * A zoomed crop of the grey frame around the outline, with the outline, the cue rings, the
+     * code ring's samples coloured by the bit each reads, each code segment's bit and both pose
+     * solutions' centres.
+     *
+     * @param debug_manager The debug panels; nothing is drawn once every tile is used.
+     * @param image_handler The image handler containing the frame data.
+     * @param centers Both pose solutions of the outline.
+     * @param outline The outer ellipse the pose was computed from.
+     * @param code_ring The ring the code was read from, or nullptr if none was.
+     * @param favourite The solution this frame favours.
+     * @param top Two lines above the marker.
+     * @param problems The ID checks that failed, in red under the top lines.
+     * @param bottom Two lines below the marker.
+     */
+    void drawMarkerTile(
+        DebugImageManager& debug_manager, const ImageHandler& image_handler,
+        const EllipseCenters& centers, const MarkerDetector::Marker& outline,
+        const SignalAnalysisData* code_ring, int favourite, std::string_view top,
+        std::string_view problems, std::string_view bottom) const;
 
     /**
      * @brief Applies camera undistortion to an image point.
@@ -607,19 +671,16 @@ private:
     void calcEigen(EllipseCenters& result) const;
 
     /**
-     * @brief Resolves orientation ambiguity using both inner and outer ellipses.
-     * @param pose Output pose to update.
+     * @brief Picks the solution whose projected centre is nearer the inner ellipse's centre.
      * @param centers EllipseCenters with both possible solutions.
      * @param marker Inner marker ellipse parameters.
-     *
-     * Compares both solutions and selects the one that best matches the inner marker.
+     * @return Index of the nearer solution.
      */
-    void resolveAmbiguity(
-        MarkerPose& pose, const EllipseCenters& centers, const MarkerDetector::Marker& marker);
+    int nearestSolution(const EllipseCenters& centers, const MarkerDetector::Marker& marker) const;
 
     // Orientation calculation utilities
-    void calculateOrientation(MarkerPose& pose) const;
-    void updateEulerAngles(MarkerPose& pose) const;
+    Quaternion orientationFromNormal(const std::array<float, 3>& normal) const;
+    void       updateEulerAngles(MarkerPose& pose) const;
 };
 }  // namespace whycon
 

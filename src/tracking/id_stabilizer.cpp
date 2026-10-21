@@ -38,8 +38,9 @@ int IDStabilizer::stabilize(int tracking_id, int current_decoded_id)
     // Case 2: This is an existing track
     IDHistory& history = it->second;
 
-    // If the new detection matches the locked ID, reset its confidence
-    if (current_decoded_id == history.locked_id)
+    // If the new detection matches the locked ID, reset its confidence. A failed decode is no
+    // match: on a track still waiting for its first ID it would hold off the first valid one.
+    if (isValidID(current_decoded_id) && current_decoded_id == history.locked_id)
     {
         updateConfidenceForMatch(history);
     }
