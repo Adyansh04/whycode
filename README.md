@@ -86,7 +86,12 @@ measures, how to run it, and its latest results.
 
 ## Architecture
 
-![WhyCon Architecture](docs/architecture.svg)
+One camera frame through the detector, a stage per panel with the class that runs it. The first
+four panels replay the detector's own steps on a coarse pixel grid: the search meets clutter first,
+then the scanline fill takes the ring and its centre run by run, in the order the code does.
+[docs/architecture.md](docs/architecture.md) covers the runtime, composition and triangulation.
+
+![A camera frame through the detector](docs/architecture.svg)
 
 ## Documentation
 
