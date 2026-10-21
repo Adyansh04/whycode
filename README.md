@@ -1,321 +1,237 @@
-# WhyCon/WhyCode Localization ROS Package
+![whycode_vision: the detector finding, decoding and tracking WhyCode markers](docs/media/banner.svg)
 
-## Overview
+A ROS 2 detector for WhyCon and WhyCode markers: black rings on white, with an ID coded in the
+centre for WhyCode. In every camera frame it finds each marker, decodes its ID, estimates its 6-DoF
+pose from the ring's outline and tracks it to the next frame, in about 1.3 ms of one CPU core at
+1280x720. It runs as a node or as a composable component.
 
-`whycode_vision` is a ROS2 package for detecting and localizing circular WhyCon/WhyCode markers and decoding embedded WhyCode IDs. It estimates the 3D pose of these markers relative to a camera.
+## Demo
 
-## Features
+A lap of the warehouse loop in Isaac Sim, replayed through the detector with every debug output on:
+the annotated image, the detections over the ground truth in 3D, the binary, candidates and marker
+panels, and Isaac Sim's view of the robot. Recorded with
+[whycode-bench](https://github.com/Adyansh04/whycode-bench)'s `scripts/demos/whycode.sh replay`.
 
-* **Multi-Marker Detection**: Detects multiple circular black and white WhyCon markers simultaneously.
-* **WhyCode Decoding**: Decodes WhyCode IDs embedded within the markers.
-* **Pose Estimation**: Estimates the 6-DOF pose (position and orientation) of each detected marker.
-* **ROS2 Deployment Options**: Run as a standalone node or as a composable component.
-* **ID Tracking and Stabilization**: Reduces ID flicker using a hysteresis-based ID stabilizer and maintains tracks over time with lightweight 2D tracking.
-* **Modular Build Options**: Enable or disable triangulation and benchmarks using CMake options.
+https://github.com/user-attachments/assets/69ed1863-5ebb-4684-8899-67896d51971d
 
-## Demo Videos
+## Detection range and CPU
 
-### Moving camera and detection
+| D435 colour camera | WhyCode 0.20 m | WhyCode 0.146 m | WhyCon 0.20 m | WhyCon 0.146 m | WhyCode CPU per frame |
+|:---|---:|---:|---:|---:|---:|
+| 640x480, HFOV 55.6 deg | 16.5 m | 12.5 m | 14.5 m | 10.5 m | 0.75 ms (2.3%) |
+| 1280x720, HFOV 70.3 deg | 23.5 m | 18.5 m | 20.0 m | 15.0 m | 1.34 ms (4.0%) |
+| 1920x1080, HFOV 70.3 deg | 34.0 m | 27.5 m | 31.5 m | 24.0 m | 2.42 ms (7.3%) |
 
-![Moving camera and detection](docs/demo_media/demo1.gif)
+* Measured in Isaac Sim with [whycode-bench](https://github.com/Adyansh04/whycode-bench): the
+  camera looks back at two markers while the robot drives 41.5 m straight away from them. The
+  sizes are the marker's outer diameter.
+* Range: the distance out to which the detector finds the marker in at least 90% of frames, with
+  the right ID for WhyCode. An ID is decoded from about 9 px across and the tracker keeps it as the
+  marker shrinks, so here it lasts to the full range. Plain WhyCon falls short of WhyCode as its
+  white centre is smaller: 17% of the marker's area, against WhyCode's 24% with the teeth.
+* CPU: the detector process's CPU time per frame, every thread, with only `/whycon/poses`
+  published, on an Intel i9-14900HX with nothing else running; in brackets, the share of one core
+  at 30 Hz. Repeat runs agree within about 5%.
+* A rendered scene has no noise, blur or glare; expect less range from a real camera.
 
-### Four-marker triangulation demo
+## Compared with AprilTag
 
-![Four-marker triangulation demo](docs/demo_media/demo2.gif)
+![WhyCode against AprilTag: range and CPU at 1280x720](docs/media/benchmark_summary.svg)
 
-## WhyCon Marker Detection Range
+The same runs on AprilTag 36h11 tags whose black square is as wide as the ring, so it covers 27%
+more than the disc, with AprilTag 3 through `apriltag_ros` at its default half-resolution
+decimation and at full resolution, NVIDIA's GPU detector in Isaac ROS, and OpenCV's ArUco
+module.
 
-The maximum detection range of WhyCon markers depends on both the **physical size of the marker** and the **camera resolution**. Below are reference values measured in typical warehouse lighting with a RealSense camera:
+| 1280x720 | WhyCode | WhyCon | AprilTag 3 | AprilTag 3, full res | Isaac ROS (GPU) | OpenCV ArUco |
+|:---|---:|---:|---:|---:|---:|---:|
+| Range, 0.20 m marker | 23.5 m | 20.0 m | 10.0 m | 14.5 m | 5.5 m | 5.5 m |
+| Range, 0.146 m marker | 18.5 m | 15.0 m | 6.0 m | 9.5 m | 4.0 m | 4.0 m |
+| Range error at 2-10 m, median | 0.20% | 0.33% | 1.50% | 1.51% | 5.30% | 1.17% |
+| Steepest view, 90% of frames | 60 deg | 60 deg | 65 deg | 70 deg | 60 deg | - |
+| Warehouse lap: markers found | 99.3% | 99.5% | 96.0% | 100.0% | 67.1% | 72.2% |
+| CPU per frame | 1.3 ms | 1.2 ms | 9.0 ms | 23.5 ms | 3.5 ms + GPU | 16.9 ms |
 
-| Marker Outer Diameter (m) | Marker Inner Diameter (m) | Resolution | Max Detection Range (m) | CPU Usage (%) |
-|--------------------------:|--------------------------:|:----------:|------------------------:|--------------:|
-| 0.146                     | 0.088                     | 640x480    | 10                      | 10-13         |
-| 0.146                     | 0.088                     | 1280x720   | 14                      | 30-33         |
-| 0.146                     | 0.088                     | 1920x1080  | 17                      | 80 - 85       |
-| 0.206                     | 0.124                     | 1280x720   | 20                      | 30-33         |
-| 0.206                     | 0.124                     | 1920x1080  | 32                      | 80 - 85       |
+* No detector reported a wrong ID, or an ID on anything but its marker, in any run.
+* WhyCode and WhyCon also find other black rings on white, such as the 0s on the aisle signs:
+  WhyCode publishes them without an ID (`id_valid` false), plain WhyCon cannot tell them apart.
+* The viewing angle counts the 2 and 4 m circles, within every detector's range. WhyCode stops
+  where a circle seen off head-on reaches `max_eccentricity` (0.9, 64 deg); AprilTag keeps tags
+  further round. OpenCV ArUco misses half the head-on frames even on the 2 m circle.
+* The AprilTag detectors read a tag about half a pixel narrower than it is (two pixels for Isaac
+  ROS), so their range error grows as the tag shrinks in the image.
+* At 640x480 and 1920x1080, and per marker size:
+  [detection against distance](docs/media/range.png),
+  [pose error against distance](docs/media/accuracy.png),
+  [detection against viewing angle](docs/media/angle.png).
 
-**Notes:**
+![The benchmark's three scenes, from above](docs/media/benchmark_scenes.svg)
 
-* CPU usage was measured using `top` in a Docker container with specified CPU cores, ensuring no other process runs on the same core.
-* CPU usage values can fluctuate by approximately +/- 5% depending on system load and runtime conditions.
-* Tests used the standard ROS image input path (a subscription in a separate process).
+## Performance
 
-## Tools
+![The detector's CPU per frame before and after the optimisation](docs/media/perf_summary.svg)
 
-Utility tools live in `src/tools`. The ROS2 port currently exposes the marker generator below; other tools in this folder are not ported yet and are skipped by default.
+An optimisation pass cut the detector's CPU per 1280x720 frame on the warehouse lap from 5.9 to
+1.25 ms, and the detection core alone from 4.95 to 0.27 ms, with the same detections. The flame
+graphs show where the time went: before, the flood fill took most of it; after, the detector is
+about a fifth, and most of the rest is ROS 2 bringing the 2.7 MB image in, which running the
+detector in the camera driver's process (`use_composition`) mostly removes.
 
-### WhyCode Marker Generator (`whycon-id-gen`)
+![Flame graphs of the detector process before and after, on one time scale](docs/media/flamegraphs.svg)
 
-Generates printable WhyCon/WhyCode markers for lab testing and simulation assets.
+## Build
 
-* Help: `ros2 run whycode_vision whycon-id-gen -h`
-* Examples:
-  * Basic WhyCon marker: `ros2 run whycode_vision whycon-id-gen -- -l`
-  * WhyCode with 6 bits: `ros2 run whycode_vision whycon-id-gen -- 6`
-  * WhyCode with 8 bits, Hamming distance 2: `ros2 run whycode_vision whycon-id-gen -- -d 2 8`
-
-## Triangulation nodes (src/triangulate)
-
-These ROS2 nodes estimate poses using known marker layouts. They are built when `BUILD_TRIANGULATION=ON` (default).
-
-### two_marker_whycode_triangulation_node
-
-* Purpose: Compute a pose from two WhyCode markers with a known separation.
-* Input: `whycode_vision/msg/WhyCodePoseArray` (from the main WhyCon node).
-* Output: `geometry_msgs/msg/PoseStamped` and TF (broadcast), plus optional `nav_msgs/msg/Odometry` if enabled.
-* Notes: Expects two specific marker IDs; includes utilities to compute roll, pitch, and yaw from the camera plane.
-
-### four_marker_whycode_triangulation_node
-
-* Purpose: Hierarchical triangulation using four WhyCode markers to improve robustness.
-* Input: `whycode_vision/msg/WhyCodePoseArray`.
-* Output: `geometry_msgs/msg/PoseStamped` and TF (broadcast), plus optional `nav_msgs/msg/Odometry`.
-* Notes: Designed for rigs with four arranged WhyCode markers; see `src/triangulate/four_marker_whycode_triangulation.cpp` for parameter hints.
-
-Where these fit:
-
-* Run alongside the main detector node. Point their input topic to the detector's published WhyCode poses.
-* Use TF to integrate the estimated pose into your robot's frame tree.
-
-## Benchmarks (src/benchmarks)
-
-Built when `BUILD_BENCHMARKS=ON` (default). Requires xsimd. Timing and self-check programs for
-the per-frame kernels; [src/benchmarks/README.md](src/benchmarks/README.md) says what each
-measures, how to run it, and its latest results.
-
-## Architecture
-
-![WhyCon Architecture](docs/architecture.svg)
-
-## Documentation
-
-* [docs/architecture.md](docs/architecture.md) - System architecture and module overview
-* [docs/configuration/README.md](docs/configuration/README.md) - Parameter reference and tuning
-
-## Dependencies
-
-### System Dependencies
-
-* OpenCV 4.2
-* yaml-cpp
-* [SIMD](https://github.com/ermig1979/Simd)
-* [xSimd](https://github.com/xtensor-stack/xsimd)
-
-### ROS Dependencies
-
-* `rclcpp`, `rclcpp_components`
-* `std_msgs`, `sensor_msgs`, `geometry_msgs`, `nav_msgs`, `visualization_msgs`
-* `cv_bridge`
-* `tf2`, `tf2_ros`, `tf2_geometry_msgs`
-* `std_srvs`, `rosidl_default_runtime`
-
-## Building the Package
-
-The build is modular and controlled via CMake options exposed to ament. Defaults are shown in parentheses.
-
-Build options:
-
-* BUILD_TOOLS (OFF): Build utility tools under `src/tools` (currently skipped in the ROS2 port).
-* BUILD_TRIANGULATION (ON): Build triangulation nodes under `src/triangulate`.
-  * Executables: `two_marker_whycode_triangulation_node`, `four_marker_whycode_triangulation_node`.
-* BUILD_BENCHMARKS (ON): Build benchmarks under `src/benchmarks` (requires xsimd).
-* DISABLE_ROS (OFF): Not supported in the ROS2 port yet.
-
-Typical builds:
-
-1. Default (recommended)
+Needs ROS 2 Jazzy, OpenCV 4, yaml-cpp, [Simd](https://github.com/ermig1979/Simd) and the
+header-only [xsimd](https://github.com/xtensor-stack/xsimd), which the binarisation and
+localisation kernels use.
 
 ```bash
-source /opt/ros/${ROS_DISTRO}/setup.bash
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+colcon build --symlink-install --packages-select whycode_vision \
+  --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 ```
 
-1. Minimal runtime (no tools, no benchmarks, no triangulation)
-
-```bash
-colcon build --symlink-install --cmake-args -DBUILD_TOOLS=OFF -DBUILD_BENCHMARKS=OFF -DBUILD_TRIANGULATION=OFF
-```
-
-1. Only triangulation nodes
-
-```bash
-colcon build --symlink-install --cmake-args -DBUILD_TOOLS=OFF -DBUILD_BENCHMARKS=OFF -DBUILD_TRIANGULATION=ON
-```
-
-Optimization notes:
-
-* The build enables high-performance flags by default (e.g., `-O3`, vectorization, and `-mavx2` when supported).
-* Benchmarks make use of xsimd; ensure xsimd is installed if `BUILD_BENCHMARKS=ON`.
-
-### Install prerequisite libraries (Simd, xsimd)
-
-These projects depend on Simd and xsimd. Expand the sections below to see installation commands.
+`-DBUILD_BENCHMARKS=OFF` leaves out the benchmarks, built by default. The release flags include
+`-march=native`, so build on the machine that runs the detector.
 
 <details>
-<summary><strong>Install Simd (ermig1979/Simd)</strong></summary>
+<summary>Installing Simd and xsimd from source</summary>
 
 ```bash
-git clone https://github.com/ermig1979/Simd.git
-
-cd Simd
-mkdir -p build
-cd build
-
-cmake ../prj/cmake \
-  -DSIMD_TOOLCHAIN="" \
-  -DSIMD_TARGET="" \
-  -DSIMD_AVX512=ON \
-  -DSIMD_AVX512VNNI=ON \
-  -DSIMD_AMXBF16=ON \
-  -DSIMD_TEST=ON \
-  -DSIMD_INFO=ON \
-  -DSIMD_PERF=OFF \
-  -DSIMD_SHARED=ON \
-  -DSIMD_GET_VERSION=ON \
-  -DSIMD_SYNET=ON \
-  -DSIMD_INT8_DEBUG=OFF \
-  -DSIMD_HIDE=OFF \
-  -DSIMD_RUNTIME=ON \
-  -DSIMD_OPENCV=ON \
-  -DSIMD_INSTALL=ON \
-  -DSIMD_UNINSTALL=ON \
-  -DSIMD_PYTHON=ON
-
-make -j 20
-sudo make install
+git clone https://github.com/ermig1979/Simd.git && cd Simd && mkdir -p build && cd build
+cmake ../prj/cmake -DSIMD_TOOLCHAIN="" -DSIMD_TARGET="" -DSIMD_AVX512=ON -DSIMD_AVX512VNNI=ON \
+  -DSIMD_AMXBF16=ON -DSIMD_TEST=ON -DSIMD_INFO=ON -DSIMD_PERF=OFF -DSIMD_SHARED=ON \
+  -DSIMD_GET_VERSION=ON -DSIMD_SYNET=ON -DSIMD_INT8_DEBUG=OFF -DSIMD_HIDE=OFF -DSIMD_RUNTIME=ON \
+  -DSIMD_OPENCV=ON -DSIMD_INSTALL=ON -DSIMD_UNINSTALL=ON -DSIMD_PYTHON=ON
+make -j"$(nproc)" && sudo make install
 ```
 
- </details>
-
-<details>
-<summary><strong>Install xsimd (xtensor-stack/xsimd)</strong></summary>
-
 ```bash
-git clone https://github.com/xtensor-stack/xsimd.git
-
-cd xsimd
-mkdir -p build
-cd build
-
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local ..
-make -j"$(nproc)"
-sudo make install
+git clone https://github.com/xtensor-stack/xsimd.git && cd xsimd && mkdir -p build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make -j"$(nproc)" && sudo make install
 ```
 
- </details>
+</details>
 
-## Usage
-
-The primary way to run the package is through the `whycon.launch.py` file, which can start the system as a standard node or as a composable node.
-
-### Running with composition
+## Run
 
 ```bash
-ros2 launch whycode_vision whycon.launch.py use_composition:=true
-```
-
-The image subscription accepts intra-process messages. It pays off when the camera driver is loaded
-into the same container (`whycon_container`) with `use_intra_process_comms` on the driver: frames
-then arrive without DDS serialisation, fragmentation or copies.
-
-### Running as a standalone node
-
-```bash
-ros2 launch whycode_vision whycon.launch.py use_composition:=false
-```
-
-### Launch Arguments
-
-* `use_composition` (bool, default: `false`): If true, runs as a composable node in a component container.
-* `config_file` (string, default: `.../config/whycon_config_sim.yaml`): Path to the main configuration file.
-* `image_view` (bool, default: `false`): If true, launches an `image_view` node to display the annotated image output.
-
-### Debugging and tuning
-
-```bash
+ros2 launch whycode_vision whycon.launch.py                          # as a node
+ros2 launch whycode_vision whycon.launch.py use_composition:=true     # in whycon_container
 ros2 launch whycode_vision whycon_debug.launch.py bag:=/root/data/whycode_1lap
 ```
 
-The same detector with every output switched on (poses, annotated image, TF, RViz markers and the
-debug panels; the YAML file itself is not changed), and RViz laid out for a full-screen 3840x1600
-window: the detected markers next to the bag's ground truth in 3D, the annotated image and the
-three debug panels described under Published Topics. `bag:=` plays a bag on its own clock, in a
-loop; without it, the detector reads the configured camera topic. The ground truth needs
-`whycode_sim`, whose `ground_truth_viz_node` renders `/marker_ground_truth`.
+`whycon.launch.py` takes `config_file` (default `config/whycon_config_sim.yaml`),
+`use_composition` and `image_view`, a window on the annotated image. Load the camera driver into
+the same container with its `use_intra_process_comms` on, and frames arrive without DDS copies.
 
-Arguments: those of `whycon.launch.py` (here `config_file` defaults to
-`whycon_config_isaac.yaml`), plus `bag`, `rate`, `loop`, `use_sim_time` (`auto`: true when a bag is
-played), `ground_truth`, `marker_size_m` and `rviz`.
+`whycon_debug.launch.py` runs the same detector with every output on, in a copy of the
+configuration, and opens RViz laid out for a 3840x1600 screen: the detections over a bag's ground
+truth (from whycode_sim), the annotated image and the debug panels. `bag:=` plays a bag on its own
+clock, in a loop. It also takes `rate`, `loop`, `use_sim_time`, `ground_truth`, `marker_size_m` and
+`rviz`, and its `config_file` defaults to `whycon_config_isaac.yaml`.
 
 ## Configuration
 
-* **`config/whycon_config_*.yaml`**: Main configuration for the detector, including number of targets, marker dimensions, and tracking parameters.
-* **`config/camera_intrinsics_*.yaml`**: Camera calibration parameters, including the camera matrix and distortion coefficients.
+Each setup is a YAML file in `config/` that names a camera intrinsics file.
+[docs/configuration/README.md](docs/configuration/README.md) explains every parameter, the values
+derived at startup (`auto`) and how to tune the checks. The loader has no defaults, so a file sets
+every key. For a new camera or marker, set:
 
-[docs/configuration/README.md](docs/configuration/README.md) describes every parameter, how the
-`auto` values are derived from the camera and the marker, and how to tune the checks. The loader has
-no defaults: a configuration must set every key. A configuration detects one marker type: WhyCode
-with `identification.enabled`, WhyCon without.
+| Parameter | To |
+|---|---|
+| `camera.config_path` | intrinsics calibrated at the resolution the camera streams |
+| `ros_interface.image_input_topic`, `image_encoding` | the camera's raw image topic and its encoding |
+| `detector.outer_diameter` | the printed ring's outer diameter in metres; the pose scales with it |
+| `identification.enabled`, `id_bits` | WhyCode (`true`, the generator's bit count) or plain WhyCon (`false`) |
+| `system.targets` | at least the number of markers in view at once |
+| `ros_interface.parent_frame_id` | the camera's body frame (X forward, Y left, Z up) in your TF tree |
 
-## Subscribed Topics
+## Topics
 
-* The node subscribes to the camera image topic (raw `sensor_msgs/msg/Image`, in the encoding `ros_interface.image_encoding` names; frames of another size or encoding are dropped). The name of this topic is specified in the YAML configuration file.
-* Camera calibration parameters are loaded from a dedicated YAML file specified in the main configuration file (see the `camera.config_path` parameter).
+| Topic | Type | Carries |
+|---|---|---|
+| `image_input_topic` (in) | `sensor_msgs/Image` | raw frames; another size or encoding is dropped with a logged error |
+| `/whycon/poses` | `whycode_vision/WhyCodePoseArray` | each marker's pose, ID (`id_valid`), track and `orientation_confidence` |
+| `/whycon/image_out` | `sensor_msgs/Image` | the annotated frame |
+| `/whycon/debug_images/{binary,candidates,markers}` | `sensor_msgs/Image` | tuning panels, drawn only while subscribed (`publish_debug_images`) |
+| `/tf` | `tf2_msgs/TFMessage` | `<tf_frame_prefix><ID>` under `parent_frame_id`, or `<prefix>track_<n>` without an ID |
+| `/whycon/visualization_markers` | `visualization_msgs/MarkerArray` | the markers as RViz discs |
 
-## Published Topics
+* `orientation_confidence`: a tilted circle fits two orientations, mirror images about the line of
+  sight. It is the probability that the published one is right; 0.5 means undecided, typical below
+  about 20 px.
+* `binary` shows the frame thresholded at the search's level. `candidates` paints every segment the
+  search examined by the check that rejected it, with its value against the limit; markers are
+  green. `markers` zooms on each marker: its outline, the code ring's samples and bits, both pose
+  solutions and every ID check that failed.
 
-* `/whycon/poses` (`whycode_vision/msg/WhyCodePoseArray`): Poses for all detected markers. A tilted
-  circle fits two orientations, mirror images about the line of sight; `orientation_confidence` is the
-  probability that the published one is right (0.5: undecided, typical below ~20 px).
-* `/whycon/image_out` (`sensor_msgs/msg/Image`): Annotated image showing detected WhyCode/WhyCon markers.
-* `/whycon/debug_images/{binary,candidates,markers}` (`sensor_msgs/msg/Image`, rgb8): debug panels
-  for tuning, published when `ros_interface.publish_debug_images` is true (false in every config).
-  Each panel is drawn only while something subscribes to it, so they cost nothing otherwise.
-  * `binary`: the frame binarised at the first searching detector's threshold, with every
-    detector's threshold.
-  * `candidates`: every segment the search examined, painted by the check that dropped it (key in
-    the corner) and labelled with its value against the limit; markers are green, with their fitted
-    outlines.
-  * `markers`: a zoomed tile per marker with its outline, the code ring's samples by the bit each
-    reads, every segment's bit, both pose solutions' centres (the favoured one green), and the ID,
-    the code, the log-odds between the solutions and every ID check that failed.
-* `/tf` (`tf2_msgs/msg/TFMessage`): A frame per marker under `ros_interface.parent_frame_id`, stamped
-  with its image: `<tf_frame_prefix><ID>` (e.g. `whycode_3`), or `<tf_frame_prefix>track_<track id>`
-  while the marker has no ID.
-* `/whycon/visualization_markers` (`visualization_msgs/msg/MarkerArray`): RViz markers for visualizing detections and poses.
+## Markers
 
-## Further docs and test assets
+```bash
+ros2 run whycode_vision whycon-id-gen -- -l        # a plain WhyCon marker
+ros2 run whycode_vision whycon-id-gen -- 6         # WhyCode markers with 6 bits
+ros2 run whycode_vision whycon-id-gen -- -d 2 8    # 8 bits, Hamming distance 2
+```
 
-* Gazebo testing: WhyCode marker worlds and models - [Whycode Sim](https://github.com/Adyansh04/whycode-sim/tree/jazzy-harmonic)
+Print each ring with a white border around it; `-h` lists the options.
 
-## Known Limitations
+## Benchmarks
 
-* **Lighting Conditions:** Detection performance is sensitive to illumination. Strong glare, deep shadows, or very low light can significantly hinder detection. Uniform, diffuse lighting is ideal.
-* **Marker Occlusion:** Markers must be clearly and fully visible. Partial occlusion will likely lead to detection failure or inaccurate pose.
-* **Motion Blur:** Fast camera or marker motion can cause image blur, degrading detection accuracy and reliability.
-* **Computational Load:** Processing very high-resolution images or attempting to track a very large number of targets can be computationally intensive.
-* **WhyCode Decoding:** Requires the marker to be reasonably large, clear, and well-lit in the image. Small, blurry, or poorly contrasted markers may not be decoded correctly or at all.
-* **Planarity Assumption:** The system assumes markers are planar. Non-planar markers will result in inaccurate pose estimation.
+`src/benchmarks` holds timing and self-check programs for the per-frame kernels;
+[src/benchmarks/README.md](src/benchmarks/README.md) says what each measures, how to run it, and
+its latest results.
+
+## Architecture
+
+One camera frame through the detector, a stage per panel with the class that runs it. The first
+four panels replay the detector's own steps on a coarse pixel grid: the search meets clutter first,
+then the scanline fill takes the ring and its centre run by run, in the order the code does.
+[docs/architecture.md](docs/architecture.md) covers the runtime and composition.
+
+![A camera frame through the detector](docs/architecture.svg)
+
+## Limitations
+
+* **Steep views.** A marker more than about 64 deg off head-on is lost: its outline passes
+  `detector.max_eccentricity` (0.9). Raising it reaches further round at the cost of more false
+  circles; AprilTag 3 holds tags to about 70 deg.
+* **Orientation.** Position is accurate, 0.2% of the range at 2-10 m; orientation less so. A small
+  or face-on ring fits two mirror-image poses, and past about 5 m a 0.20 m marker's normal is off by
+  5-10 deg at 1280x720. `orientation_confidence` says how sure each pose is.
+* **IDs need pixels.** An ID is decoded once the ring has `identification.min_marker_pixels` (75,
+  about 9 px across), and a tracked marker keeps it as it shrinks. A marker first seen further away
+  is found at once but identified only as it comes closer.
+* **Ring-like clutter.** Any black ring on white, such as a printed 0, looks like a WhyCon marker.
+  WhyCode publishes it without an ID; plain WhyCon cannot tell it apart.
+* **Whole rings only.** A ring cut by the image edge, partly hidden, or touching a dark background
+  without a white border is not found.
+* **Measured on rendered frames.** The numbers above have no motion blur, sensor noise or glare.
+  The threshold follows the last marker found, so slow changes in light are fine, but glare or a
+  hard shadow across a ring breaks it.
 
 ## Troubleshooting
 
-* **No markers detected:**
-  * Adjust lighting conditions. Try to reduce glare and ensure markers are adequately illuminated.
-  * Ensure `detector.outer_diameter` is correctly set (though this primarily affects pose accuracy, not initial detection).
-  * If markers appear distorted or oddly shaped in the image, try relaxing some detector parameters (e.g., circularity, eccentricity constraints) in your YAML configuration.
-* **Incorrect marker poses (e.g., wrong distance or orientation):**
-  * **Double-check `detector.outer_diameter`.** This is the most common cause of scaling errors in the estimated pose.
-  * Verify the camera calibration in your `camera_intrinsics_file` thoroughly. Even small errors can lead to significant pose inaccuracies. Ensure the file is correctly formatted and the values precisely match your camera.
-  * Ensure the `frame_id` used in your camera intrinsics file matches the `frame_id` of the incoming images if TF consistency is important.
-* **Incorrect or no marker IDs:**
-  * Ensure `identification.enabled` is `true` in the configuration.
-  * The marker needs to be large enough in the image. Try increasing `identification.min_marker_pixels` if decoding is noisy or failing for markers that appear small.
-  * Check for good contrast and clarity of the marker's black and white pattern in the image. Lighting is key.
-  * Ensure the physical marker pattern matches the expected WhyCode bit length (e.g., `id_bits` in configuration).
+* **Nothing is detected.**
+  * A logged `Dropping WxH ... frame` means the camera's frame size or encoding differs from the
+    configuration's (`camera.config_path`, `ros_interface.image_encoding`).
+  * Run `whycon_debug.launch.py` and look at the candidates panel: it shows which check rejected
+    each segment, and by how much.
+  * Give the printed ring a white border. If more markers are in view than `system.targets`,
+    raise it.
+* **The distance is wrong.** Set `detector.outer_diameter` to the printed ring's outer diameter in
+  metres, and use intrinsics calibrated at the resolution the camera streams. The startup log prints
+  the marker geometry and the camera the detector's limits were derived from.
+* **No IDs, or wrong ones.** Check `identification.enabled`, and that `id_bits` matches the
+  generator's. Lowering `min_marker_pixels` decodes smaller markers, but below 75, 1-5% of reads
+  come out wrong. The markers panel shows each marker's code samples, its bits and the ID checks
+  that failed.
+* **The pose is in the wrong frame.** Poses and TF are in `ros_interface.parent_frame_id`, the
+  camera's body frame (X forward, Y left, Z up), which must exist in your TF tree.
 
 ## References
 
 * [jiriUlr/whycon-ros](https://github.com/jiriUlr/whycon-ros/tree/master)
 * [lrse/whycon](https://github.com/lrse/whycon)
 * [gestom/whycon-orig](https://github.com/gestom/whycon-orig)
+* [Adyansh04/whycode-sim](https://github.com/Adyansh04/whycode-sim): the Isaac Sim warehouse these
+  numbers come from; its `jazzy-harmonic` branch has the earlier Gazebo worlds
