@@ -37,6 +37,9 @@ text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", 
 <rect x="28" y="241" width="63.8" height="8" rx="2" fill="var(--accent)"/>
 <rect x="91.8" y="241" width="4.4" height="8" rx="2" fill="var(--gone)"/>
 <text class="val" x="104.2" y="249">1.25 ms<tspan class="tick">  −0.09 ms</tspan></text>
+<text class="lab" x="28" y="266">Today's code, measured again on 21 Oct</text>
+<rect x="28" y="271" width="63.9" height="8" rx="2" fill="var(--accent)"/>
+<text class="val" x="99.8" y="279">1.25 ms<tspan class="tick"></tspan></text>
 <text class="h" x="520" y="86">Where a frame's CPU goes</text>
 <text class="lab" x="520" y="114">Before, 5.4 ms a frame (profile)</text>
 <rect x="520.0" y="122" width="309.8" height="22" rx="3" fill="var(--detector)"/>
@@ -45,20 +48,20 @@ text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", 
 <rect x="847.6" y="122" width="65.4" height="22" rx="3" fill="var(--transport)"/>
 <text class="val" x="852.6" y="137" fill="#ffffff">17%</text>
 <rect x="914.0" y="122" width="5.0" height="22" rx="3" fill="var(--rest)"/>
-<text class="lab" x="520" y="178">After, 1.1 ms a frame (profile)</text>
-<rect x="520.0" y="186" width="17.1" height="22" rx="3" fill="var(--detector)"/>
-<rect x="538.1" y="186" width="12.9" height="22" rx="3" fill="var(--image)"/>
-<rect x="552.0" y="186" width="43.5" height="22" rx="3" fill="var(--transport)"/>
-<text class="val" x="557.0" y="201" fill="#ffffff">55%</text>
-<rect x="596.5" y="186" width="4.0" height="22" rx="3" fill="var(--rest)"/>
+<text class="lab" x="520" y="178">After, 1.3 ms a frame (profile)</text>
+<rect x="520.0" y="186" width="19.5" height="22" rx="3" fill="var(--detector)"/>
+<rect x="540.5" y="186" width="15.6" height="22" rx="3" fill="var(--image)"/>
+<rect x="557.1" y="186" width="49.0" height="22" rx="3" fill="var(--transport)"/>
+<text class="val" x="562.1" y="201" fill="#ffffff">54%</text>
+<rect x="607.2" y="186" width="5.2" height="22" rx="3" fill="var(--rest)"/>
 <rect x="520" y="245" width="11" height="11" rx="2" fill="var(--detector)"/>
 <text class="lg" x="537" y="254">finding rings, pose, IDs, tracking: <tspan class="val">78% → 22%</tspan></text>
 <rect x="520" y="263" width="11" height="11" rx="2" fill="var(--image)"/>
-<text class="lg" x="537" y="272">image preparation: grey, binarisation: <tspan class="val">4% → 17%</tspan></text>
+<text class="lg" x="537" y="272">image preparation: grey, binarisation: <tspan class="val">4% → 18%</tspan></text>
 <rect x="520" y="281" width="11" height="11" rx="2" fill="var(--transport)"/>
-<text class="lg" x="537" y="290">ROS 2 and DDS bringing the image in: <tspan class="val">17% → 55%</tspan></text>
+<text class="lg" x="537" y="290">ROS 2 and DDS bringing the image in: <tspan class="val">17% → 54%</tspan></text>
 <rect x="520" y="299" width="11" height="11" rx="2" fill="var(--rest)"/>
-<text class="lg" x="537" y="308">kernel and the rest: <tspan class="val">2% → 6%</tspan></text>
+<text class="lg" x="537" y="308">kernel and the rest: <tspan class="val">2% → 7%</tspan></text>
 <text class="cap" x="520" y="328">After the work the detector is a fifth of the frame; most of the rest is</text>
 <text class="cap" x="520" y="343">ROS 2 moving the 2.7 MB image, which composition removes.</text>
 <rect x="28.0" y="378" width="212.5" height="100" rx="10" fill="none" stroke="var(--line)"/>

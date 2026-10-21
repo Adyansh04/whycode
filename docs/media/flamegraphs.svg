@@ -23,7 +23,7 @@ text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", 
 <text class="lg" x="415.6" y="72">libc copy or fill</text>
 <rect class="c-kernel" x="556.0" y="62" width="12" height="12" rx="2"/>
 <text class="lg" x="573.0" y="72">kernel</text>
-<text class="h" x="20" y="112">Before: 10.3 s of CPU over the lap, 5.4 ms a frame</text>
+<text class="h" x="20" y="112">Before the optimisation: 5.4 ms of CPU a frame</text>
 <g><title>detector process, all threads (5128 samples)</title><rect class="c-root" x="20.00" y="341.0" width="919.60" height="15.5" rx="1.5"/>
 <text class="fl" x="23.00" y="353.0">detector process, all threads</text>
 </g>
@@ -312,1025 +312,1203 @@ text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", 
 </g>
 <g><title>[vdso] (9 samples)</title><rect class="c-other" x="938.03" y="324.0" width="1.21" height="15.5" rx="1.5"/>
 </g>
-<text class="h" x="20" y="388">After: 2.1 s, 1.1 ms a frame, on the same scale</text>
-<g><title>detector process, all threads (1067 samples)</title><rect class="c-root" x="20.00" y="617.0" width="187.17" height="15.5" rx="1.5"/>
+<text class="h" x="20" y="388">Today's code: 1.3 ms a frame, on the same scale</text>
+<g><title>detector process, all threads (1166 samples)</title><rect class="c-root" x="20.00" y="617.0" width="214.90" height="15.5" rx="1.5"/>
 <text class="fl" x="23.00" y="629.0">detector process, all threads</text>
 </g>
-<g><title>Executor::execute_subscription (546 samples)</title><rect class="c-ros" x="20.00" y="600.0" width="95.58" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="612.0">Executor::exe…</text>
+<g><title>Executor::execute_subscription (443 samples)</title><rect class="c-ros" x="20.00" y="600.0" width="81.40" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="612.0">Executor::e…</text>
 </g>
-<g><title>image_transport (438 samples)</title><rect class="c-ros" x="20.00" y="583.0" width="76.60" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="595.0">image_tran…</text>
+<g><title>Subscription::handle_message (427 samples)</title><rect class="c-detector" x="20.00" y="583.0" width="78.44" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="595.0">Subscripti…</text>
 </g>
-<g><title>WhyconRosInterface::onRosImageReceived (438 samples)</title><rect class="c-detector" x="20.00" y="566.0" width="76.60" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="578.0">WhyconRosI…</text>
+<g><title>std::__do_visit (427 samples)</title><rect class="c-ros" x="20.00" y="566.0" width="78.44" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="578.0">std::__do_…</text>
 </g>
-<g><title>WhyconRosInterface::processLatestFrame (303 samples)</title><rect class="c-detector" x="20.00" y="549.0" width="52.87" height="15.5" rx="1.5"/>
+<g><title>dispatch::lambda (427 samples)</title><rect class="c-other" x="20.00" y="549.0" width="78.44" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="561.0">dispatch::…</text>
 </g>
-<g><title>MultiMarkerDetector::detectMarkers (227 samples)</title><rect class="c-detector" x="20.00" y="532.0" width="39.51" height="15.5" rx="1.5"/>
+<g><title>WhyconRosInterface::processLatestFrame (257 samples)</title><rect class="c-detector" x="20.00" y="532.0" width="47.05" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerDetector::detectMarkerPair (174 samples)</title><rect class="c-detector" x="20.00" y="515.0" width="30.19" height="15.5" rx="1.5"/>
+<g><title>MultiMarkerDetector::detectMarkers (164 samples)</title><rect class="c-detector" x="20.00" y="515.0" width="29.88" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerDetector::examineSeed (89 samples)</title><rect class="c-detector" x="20.00" y="498.0" width="15.25" height="15.5" rx="1.5"/>
+<g><title>MarkerDetector::detectMarkerPair (164 samples)</title><rect class="c-detector" x="20.00" y="498.0" width="29.88" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerDetector::analyzeMarkerCandidate (88 samples)</title><rect class="c-detector" x="20.00" y="481.0" width="15.07" height="15.5" rx="1.5"/>
+<g><title>.constprop.0] (164 samples)</title><rect class="c-detector" x="20.00" y="481.0" width="29.88" height="15.5" rx="1.5"/>
 </g>
-<g><title>.constprop.0] (13 samples)</title><rect class="c-detector" x="20.00" y="464.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>MarkerDetector::examineSeed (164 samples)</title><rect class="c-detector" x="20.00" y="464.0" width="29.88" height="15.5" rx="1.5"/>
 </g>
-<g><title>detectMarkerPair::lambda (74 samples)</title><rect class="c-detector" x="35.65" y="498.0" width="12.61" height="15.5" rx="1.5"/>
+<g><title>MarkerDetector::analyzeMarkerCandidate (164 samples)</title><rect class="c-detector" x="20.00" y="447.0" width="29.88" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerDetector::examineSeed (74 samples)</title><rect class="c-detector" x="35.65" y="481.0" width="12.61" height="15.5" rx="1.5"/>
+<g><title>WhyconRosInterface::publishResults (93 samples)</title><rect class="c-detector" x="50.28" y="515.0" width="16.77" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerDetector::analyzeMarkerCandidate (71 samples)</title><rect class="c-detector" x="35.65" y="464.0" width="12.08" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::estimateMarkerPose (59 samples)</title><rect class="c-detector" x="50.28" y="498.0" width="10.49" height="15.5" rx="1.5"/>
 </g>
-<g><title>.constprop.0] (11 samples)</title><rect class="c-detector" x="35.65" y="447.0" width="1.53" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::identifyAndWeighSolutions (38 samples)</title><rect class="c-detector" x="50.28" y="481.0" width="6.62" height="15.5" rx="1.5"/>
 </g>
-<g><title>PackedBinaryImage::binarizeBitPacked (49 samples)</title><rect class="c-image" x="50.59" y="515.0" width="8.21" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::sampleRing (31 samples)</title><rect class="c-detector" x="50.28" y="464.0" width="5.32" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishResults (60 samples)</title><rect class="c-detector" x="59.91" y="532.0" width="10.15" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::computeSignal (29 samples)</title><rect class="c-detector" x="50.28" y="447.0" width="4.95" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::estimateMarkerPose (53 samples)</title><rect class="c-detector" x="59.91" y="515.0" width="8.92" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::accumulateEdges (4 samples)</title><rect class="c-detector" x="56.01" y="464.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::identifyAndWeighSolutions (41 samples)</title><rect class="c-detector" x="59.91" y="498.0" width="6.81" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::refineOutline (10 samples)</title><rect class="c-detector" x="57.30" y="481.0" width="1.45" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::sampleRing (30 samples)</title><rect class="c-detector" x="59.91" y="481.0" width="4.87" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::calcEigen (7 samples)</title><rect class="c-detector" x="59.14" y="481.0" width="0.89" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::computeSignal (29 samples)</title><rect class="c-detector" x="59.91" y="464.0" width="4.70" height="15.5" rx="1.5"/>
+<g><title>cv::eigen (7 samples)</title><rect class="c-detector" x="59.14" y="464.0" width="0.89" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::accumulateEdges (8 samples)</title><rect class="c-detector" x="65.18" y="481.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>libopencv_core.so.4.6.0 (6 samples)</title><rect class="c-detector" x="59.14" y="447.0" width="0.71" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::refineOutline (8 samples)</title><rect class="c-detector" x="67.11" y="498.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>Publisher::do_inter_process_publish (18 samples)</title><rect class="c-detector" x="61.18" y="498.0" width="2.92" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishSingleTF (6 samples)</title><rect class="c-detector" x="69.22" y="515.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>librcl.so (18 samples)</title><rect class="c-ros" x="61.18" y="481.0" width="2.92" height="15.5" rx="1.5"/>
 </g>
-<g><title>Publisher::do_inter_process_publish (13 samples)</title><rect class="c-detector" x="70.45" y="532.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (18 samples)</title><rect class="c-ros" x="61.18" y="464.0" width="2.92" height="15.5" rx="1.5"/>
 </g>
-<g><title>librcl.so (13 samples)</title><rect class="c-ros" x="70.45" y="515.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::write_w_timestamp (18 samples)</title><rect class="c-ros" x="61.18" y="447.0" width="2.92" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (13 samples)</title><rect class="c-ros" x="70.45" y="498.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::perform_create_new_change (18 samples)</title><rect class="c-ros" x="61.18" y="430.0" width="2.92" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::write_w_timestamp (13 samples)</title><rect class="c-ros" x="70.45" y="481.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::unsent_change_added_to_history (13 samples)</title><rect class="c-ros" x="61.18" y="413.0" width="2.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::perform_create_new_change (13 samples)</title><rect class="c-ros" x="70.45" y="464.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (13 samples)</title><rect class="c-ros" x="61.18" y="396.0" width="2.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::unsent_change_added_to_history (11 samples)</title><rect class="c-ros" x="70.45" y="447.0" width="1.53" height="15.5" rx="1.5"/>
+<g><title>WhyconRosInterface::publishSingleTF (12 samples)</title><rect class="c-detector" x="64.50" y="498.0" width="1.82" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (11 samples)</title><rect class="c-ros" x="70.45" y="430.0" width="1.53" height="15.5" rx="1.5"/>
+<g><title>TransformBroadcaster::sendTransform (10 samples)</title><rect class="c-ros" x="64.50" y="481.0" width="1.45" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (7 samples)</title><rect class="c-ros" x="70.45" y="413.0" width="0.83" height="15.5" rx="1.5"/>
+<g><title>librcl.so (9 samples)</title><rect class="c-ros" x="64.50" y="464.0" width="1.26" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::send (7 samples)</title><rect class="c-ros" x="70.45" y="396.0" width="0.83" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (9 samples)</title><rect class="c-ros" x="64.50" y="447.0" width="1.26" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::deliver_sample_nts (4 samples)</title><rect class="c-ros" x="71.68" y="413.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::write_w_timestamp (8 samples)</title><rect class="c-ros" x="64.50" y="430.0" width="1.08" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::deliver_sample_to_network (4 samples)</title><rect class="c-ros" x="71.68" y="396.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::perform_create_new_change (8 samples)</title><rect class="c-ros" x="64.50" y="413.0" width="1.08" height="15.5" rx="1.5"/>
 </g>
-<g><title>ImageHandler::updateFromROS (133 samples)</title><rect class="c-image" x="73.27" y="549.0" width="22.98" height="15.5" rx="1.5"/>
+<g><title>WhyconRosInterface::onRosImageReceived (170 samples)</title><rect class="c-detector" x="67.45" y="532.0" width="30.99" height="15.5" rx="1.5"/>
 </g>
-<g><title>SimdRgbToGray (132 samples)</title><rect class="c-image" x="73.27" y="532.0" width="22.80" height="15.5" rx="1.5"/>
+<g><title>ImageHandler::updateFromROS (170 samples)</title><rect class="c-image" x="67.45" y="515.0" width="30.99" height="15.5" rx="1.5"/>
 </g>
-<g><title>RgbToGray (131 samples)</title><rect class="c-image" x="73.27" y="515.0" width="22.63" height="15.5" rx="1.5"/>
+<g><title>SimdRgbToGray (169 samples)</title><rect class="c-image" x="67.45" y="498.0" width="30.81" height="15.5" rx="1.5"/>
 </g>
-<g><title>SubscriptionBase::take_type_erased (108 samples)</title><rect class="c-ros" x="97.00" y="583.0" width="18.59" height="15.5" rx="1.5"/>
+<g><title>RgbToGray (169 samples)</title><rect class="c-image" x="67.45" y="481.0" width="30.81" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_take (108 samples)</title><rect class="c-ros" x="97.00" y="566.0" width="18.59" height="15.5" rx="1.5"/>
+<g><title>SubscriptionBase::take_type_erased (16 samples)</title><rect class="c-ros" x="98.84" y="583.0" width="2.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::_take (108 samples)</title><rect class="c-ros" x="97.00" y="549.0" width="18.59" height="15.5" rx="1.5"/>
+<g><title>rcl_take (16 samples)</title><rect class="c-ros" x="98.84" y="566.0" width="2.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::take (107 samples)</title><rect class="c-ros" x="97.00" y="532.0" width="18.41" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::_take (13 samples)</title><rect class="c-ros" x="98.84" y="549.0" width="2.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::read_or_take (107 samples)</title><rect class="c-ros" x="97.00" y="515.0" width="18.41" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::take (12 samples)</title><rect class="c-ros" x="98.84" y="532.0" width="1.82" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (106 samples)</title><rect class="c-ros" x="97.00" y="498.0" width="18.23" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::read_or_take (12 samples)</title><rect class="c-ros" x="98.84" y="515.0" width="1.82" height="15.5" rx="1.5"/>
 </g>
-<g><title>TypeSupport::deserialize (103 samples)</title><rect class="c-ros" x="97.00" y="481.0" width="17.71" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (11 samples)</title><rect class="c-ros" x="98.84" y="498.0" width="1.63" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw (103 samples)</title><rect class="c-ros" x="97.00" y="464.0" width="17.71" height="15.5" rx="1.5"/>
+<g><title>TypeSupport::deserialize (7 samples)</title><rect class="c-ros" x="98.84" y="481.0" width="0.89" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::cdr_deserialize (102 samples)</title><rect class="c-ros" x="97.00" y="447.0" width="17.53" height="15.5" rx="1.5"/>
+<g><title>rmw (6 samples)</title><rect class="c-ros" x="98.84" y="464.0" width="0.71" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport (101 samples)</title><rect class="c-ros" x="97.00" y="430.0" width="17.36" height="15.5" rx="1.5"/>
+<g><title>typesupport_fastrtps_cpp::cdr_deserialize (5 samples)</title><rect class="c-ros" x="98.84" y="447.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (101 samples)</title><rect class="c-copy" x="97.00" y="413.0" width="17.36" height="15.5" rx="1.5"/>
+<g><title>libc (404 samples)</title><rect class="c-other" x="101.80" y="600.0" width="74.20" height="15.5" rx="1.5"/>
+<text class="fl" x="104.80" y="612.0">libc</text>
 </g>
-<g><title>libc (338 samples)</title><rect class="c-other" x="115.98" y="600.0" width="59.02" height="15.5" rx="1.5"/>
+<g><title>thread::ThreadProxy (314 samples)</title><rect class="c-ros" x="101.80" y="583.0" width="57.58" height="15.5" rx="1.5"/>
 </g>
-<g><title>thread::ThreadProxy (259 samples)</title><rect class="c-ros" x="115.98" y="583.0" width="45.13" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (314 samples)</title><rect class="c-ros" x="101.80" y="566.0" width="57.58" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (259 samples)</title><rect class="c-ros" x="115.98" y="566.0" width="45.13" height="15.5" rx="1.5"/>
+<g><title>ReceiverResource::OnDataReceived (259 samples)</title><rect class="c-ros" x="101.80" y="549.0" width="47.42" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReceiverResource::OnDataReceived (205 samples)</title><rect class="c-ros" x="115.98" y="549.0" width="35.64" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::processCDRMsg (258 samples)</title><rect class="c-ros" x="101.80" y="532.0" width="47.24" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::processCDRMsg (204 samples)</title><rect class="c-ros" x="115.98" y="532.0" width="35.46" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_DataFrag (211 samples)</title><rect class="c-ros" x="101.80" y="515.0" width="38.56" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_DataFrag (168 samples)</title><rect class="c-ros" x="115.98" y="515.0" width="29.13" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::process_data_fragment_message_without_security (205 samples)</title><rect class="c-ros" x="101.80" y="498.0" width="37.45" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::process_data_fragment_message_without_security (161 samples)</title><rect class="c-ros" x="115.98" y="498.0" width="27.90" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::processDataFragMsg (204 samples)</title><rect class="c-ros" x="101.80" y="481.0" width="37.27" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::processDataFragMsg (160 samples)</title><rect class="c-ros" x="115.98" y="481.0" width="27.73" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (177 samples)</title><rect class="c-copy" x="101.80" y="464.0" width="32.28" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (139 samples)</title><rect class="c-copy" x="115.98" y="464.0" width="24.04" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::change_received (6 samples)</title><rect class="c-ros" x="134.48" y="464.0" width="0.71" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::change_received (6 samples)</title><rect class="c-ros" x="140.42" y="464.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>RTPSReader::reserve_cache (6 samples)</title><rect class="c-ros" x="135.59" y="464.0" width="0.71" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (6 samples)</title><rect class="c-ros" x="141.47" y="464.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (5 samples)</title><rect class="c-ros" x="136.70" y="464.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (6 samples)</title><rect class="c-other" x="141.47" y="447.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (5 samples)</title><rect class="c-other" x="136.70" y="447.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (4 samples)</title><rect class="c-ros" x="144.29" y="498.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::NotifyChanges (4 samples)</title><rect class="c-ros" x="137.62" y="464.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_Acknack (13 samples)</title><rect class="c-ros" x="145.52" y="515.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_Acknack (16 samples)</title><rect class="c-ros" x="140.76" y="515.0" width="2.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::process_acknack (13 samples)</title><rect class="c-ros" x="145.52" y="498.0" width="1.89" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::process_acknack (14 samples)</title><rect class="c-ros" x="140.76" y="498.0" width="2.19" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::check_acked_status (6 samples)</title><rect class="c-ros" x="145.52" y="481.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::check_acked_status (8 samples)</title><rect class="c-ros" x="140.76" y="481.0" width="1.08" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_g (5 samples)</title><rect class="c-ros" x="145.52" y="464.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>DataWriterHistory::remove_change_g (5 samples)</title><rect class="c-ros" x="140.76" y="464.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_pub (5 samples)</title><rect class="c-ros" x="145.52" y="447.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>DataWriterHistory::remove_change_pub (5 samples)</title><rect class="c-ros" x="140.76" y="447.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>History::remove_change (4 samples)</title><rect class="c-ros" x="145.52" y="430.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>History::remove_change (4 samples)</title><rect class="c-ros" x="140.76" y="430.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_Heartbeat (6 samples)</title><rect class="c-ros" x="147.80" y="515.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_Heartbeat (7 samples)</title><rect class="c-ros" x="143.71" y="515.0" width="0.89" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::processHeartbeatMsg (5 samples)</title><rect class="c-ros" x="147.80" y="498.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::processHeartbeatMsg (5 samples)</title><rect class="c-ros" x="143.71" y="498.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (28 samples)</title><rect class="c-other" x="152.02" y="549.0" width="4.52" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_InfoDST (4 samples)</title><rect class="c-ros" x="145.00" y="515.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>kernel (20 samples)</title><rect class="c-kernel" x="152.02" y="532.0" width="3.12" height="15.5" rx="1.5"/>
+<g><title>libc (24 samples)</title><rect class="c-other" x="149.62" y="549.0" width="4.03" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (8 samples)</title><rect class="c-copy" x="155.54" y="532.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>entry_SYSCALL_64_after_hwframe (14 samples)</title><rect class="c-kernel" x="149.62" y="532.0" width="2.19" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (6 samples)</title><rect class="c-copy" x="156.94" y="549.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>do_syscall_64 (14 samples)</title><rect class="c-kernel" x="149.62" y="515.0" width="2.19" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (79 samples)</title><rect class="c-ros" x="161.51" y="583.0" width="13.49" height="15.5" rx="1.5"/>
+<g><title>x64_sys_call (12 samples)</title><rect class="c-kernel" x="149.62" y="498.0" width="1.82" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::event_service (79 samples)</title><rect class="c-ros" x="161.51" y="566.0" width="13.49" height="15.5" rx="1.5"/>
+<g><title>__x64_sys_futex (12 samples)</title><rect class="c-kernel" x="149.62" y="481.0" width="1.82" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::do_timer_actions (42 samples)</title><rect class="c-ros" x="161.51" y="549.0" width="6.98" height="15.5" rx="1.5"/>
+<g><title>do_futex (11 samples)</title><rect class="c-kernel" x="149.62" y="464.0" width="1.63" height="15.5" rx="1.5"/>
 </g>
-<g><title>TimedEventImpl::trigger (37 samples)</title><rect class="c-ros" x="161.51" y="532.0" width="6.10" height="15.5" rx="1.5"/>
+<g><title>futex_wait (9 samples)</title><rect class="c-kernel" x="149.62" y="447.0" width="1.26" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (36 samples)</title><rect class="c-ros" x="161.51" y="515.0" width="5.93" height="15.5" rx="1.5"/>
+<g><title>__futex_wait (7 samples)</title><rect class="c-kernel" x="149.62" y="430.0" width="0.89" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::perform_heartbeat_response (26 samples)</title><rect class="c-ros" x="161.51" y="498.0" width="4.17" height="15.5" rx="1.5"/>
+<g><title>futex_wait_queue (4 samples)</title><rect class="c-kernel" x="149.62" y="413.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::send_acknack (26 samples)</title><rect class="c-ros" x="161.51" y="481.0" width="4.17" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (10 samples)</title><rect class="c-copy" x="152.21" y="532.0" width="1.45" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (22 samples)</title><rect class="c-ros" x="161.51" y="464.0" width="3.47" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (5 samples)</title><rect class="c-copy" x="154.05" y="549.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::send (20 samples)</title><rect class="c-ros" x="161.51" y="447.0" width="3.12" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (90 samples)</title><rect class="c-ros" x="159.78" y="583.0" width="16.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::send (20 samples)</title><rect class="c-ros" x="161.51" y="430.0" width="3.12" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::event_service (90 samples)</title><rect class="c-ros" x="159.78" y="566.0" width="16.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (20 samples)</title><rect class="c-ros" x="161.51" y="413.0" width="3.12" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (51 samples)</title><rect class="c-ros" x="159.78" y="549.0" width="9.02" height="15.5" rx="1.5"/>
 </g>
-<g><title>SharedMemTransport::send (15 samples)</title><rect class="c-ros" x="161.51" y="396.0" width="2.24" height="15.5" rx="1.5"/>
+<g><title>libc (38 samples)</title><rect class="c-other" x="159.78" y="532.0" width="6.62" height="15.5" rx="1.5"/>
 </g>
-<g><title>PDPSimple::announceParticipantState (4 samples)</title><rect class="c-ros" x="166.09" y="498.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>entry_SYSCALL_64_after_hwframe (23 samples)</title><rect class="c-kernel" x="159.78" y="515.0" width="3.85" height="15.5" rx="1.5"/>
 </g>
-<g><title>PDPStatelessWriter::reschedule_all_samples (4 samples)</title><rect class="c-ros" x="166.09" y="481.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>do_syscall_64 (23 samples)</title><rect class="c-kernel" x="159.78" y="498.0" width="3.85" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (4 samples)</title><rect class="c-ros" x="166.09" y="464.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>x64_sys_call (16 samples)</title><rect class="c-kernel" x="159.78" y="481.0" width="2.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (32 samples)</title><rect class="c-ros" x="168.90" y="549.0" width="5.23" height="15.5" rx="1.5"/>
+<g><title>__x64_sys_futex (16 samples)</title><rect class="c-kernel" x="159.78" y="464.0" width="2.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (22 samples)</title><rect class="c-other" x="168.90" y="532.0" width="3.47" height="15.5" rx="1.5"/>
+<g><title>do_futex (14 samples)</title><rect class="c-kernel" x="159.78" y="447.0" width="2.19" height="15.5" rx="1.5"/>
 </g>
-<g><title>kernel (16 samples)</title><rect class="c-kernel" x="168.90" y="515.0" width="2.41" height="15.5" rx="1.5"/>
+<g><title>futex_wait (12 samples)</title><rect class="c-kernel" x="159.78" y="430.0" width="1.82" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (6 samples)</title><rect class="c-copy" x="171.71" y="515.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>__futex_wait (8 samples)</title><rect class="c-kernel" x="159.78" y="413.0" width="1.08" height="15.5" rx="1.5"/>
 </g>
-<g><title>SubscriptionBase::take_type_erased (114 samples)</title><rect class="c-ros" x="175.40" y="600.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>futex_wait_queue (5 samples)</title><rect class="c-kernel" x="159.78" y="396.0" width="0.52" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_take (114 samples)</title><rect class="c-ros" x="175.40" y="583.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>syscall_exit_to_user_mode (4 samples)</title><rect class="c-kernel" x="162.73" y="481.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::_take (114 samples)</title><rect class="c-ros" x="175.40" y="566.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (9 samples)</title><rect class="c-copy" x="164.02" y="515.0" width="1.26" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::take (114 samples)</title><rect class="c-ros" x="175.40" y="549.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>[vdso] (4 samples)</title><rect class="c-other" x="165.69" y="515.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::read_or_take (114 samples)</title><rect class="c-ros" x="175.40" y="532.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>pthread_cond_clockwait (7 samples)</title><rect class="c-other" x="166.79" y="532.0" width="0.89" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (114 samples)</title><rect class="c-ros" x="175.40" y="515.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::do_timer_actions (35 samples)</title><rect class="c-ros" x="169.19" y="549.0" width="6.06" height="15.5" rx="1.5"/>
 </g>
-<g><title>TypeSupport::deserialize (114 samples)</title><rect class="c-ros" x="175.40" y="498.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>TimedEventImpl::trigger (30 samples)</title><rect class="c-ros" x="169.19" y="532.0" width="5.14" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw (114 samples)</title><rect class="c-ros" x="175.40" y="481.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (28 samples)</title><rect class="c-ros" x="169.19" y="515.0" width="4.77" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::cdr_deserialize (114 samples)</title><rect class="c-ros" x="175.40" y="464.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>WriterProxy::perform_heartbeat_response (27 samples)</title><rect class="c-ros" x="169.19" y="498.0" width="4.59" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport (114 samples)</title><rect class="c-ros" x="175.40" y="447.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::send_acknack (27 samples)</title><rect class="c-ros" x="169.19" y="481.0" width="4.59" height="15.5" rx="1.5"/>
 </g>
-<g><title>Cdr::deserialize_array (114 samples)</title><rect class="c-ros" x="175.40" y="430.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::~RTPSMessageGroup (23 samples)</title><rect class="c-ros" x="169.19" y="464.0" width="3.85" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (114 samples)</title><rect class="c-copy" x="175.40" y="413.0" width="19.64" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::send (23 samples)</title><rect class="c-ros" x="169.19" y="447.0" width="3.85" height="15.5" rx="1.5"/>
 </g>
-<g><title>_start (44 samples)</title><rect class="c-detector" x="195.44" y="600.0" width="7.33" height="15.5" rx="1.5"/>
+<g><title>WriterProxy::send (22 samples)</title><rect class="c-ros" x="169.19" y="430.0" width="3.66" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (44 samples)</title><rect class="c-other" x="195.44" y="583.0" width="7.33" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (21 samples)</title><rect class="c-ros" x="169.19" y="413.0" width="3.48" height="15.5" rx="1.5"/>
 </g>
-<g><title>main (44 samples)</title><rect class="c-detector" x="195.44" y="566.0" width="7.33" height="15.5" rx="1.5"/>
+<g><title>SharedMemTransport::send (17 samples)</title><rect class="c-ros" x="169.19" y="396.0" width="2.74" height="15.5" rx="1.5"/>
 </g>
-<g><title>spin (44 samples)</title><rect class="c-ros" x="195.44" y="549.0" width="7.33" height="15.5" rx="1.5"/>
+<g><title>SubscriptionBase::take_type_erased (183 samples)</title><rect class="c-ros" x="176.39" y="600.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>SingleThreadedExecutor::spin (44 samples)</title><rect class="c-ros" x="195.44" y="532.0" width="7.33" height="15.5" rx="1.5"/>
+<g><title>rcl_take (183 samples)</title><rect class="c-ros" x="176.39" y="583.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::get_next_executable (41 samples)</title><rect class="c-ros" x="195.44" y="515.0" width="6.81" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::_take (183 samples)</title><rect class="c-ros" x="176.39" y="566.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::wait_for_work (40 samples)</title><rect class="c-ros" x="195.44" y="498.0" width="6.63" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::take (183 samples)</title><rect class="c-ros" x="176.39" y="549.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>rclcpp (40 samples)</title><rect class="c-ros" x="195.44" y="481.0" width="6.63" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::read_or_take (183 samples)</title><rect class="c-ros" x="176.39" y="532.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_wait (30 samples)</title><rect class="c-ros" x="195.44" y="464.0" width="4.87" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (183 samples)</title><rect class="c-ros" x="176.39" y="515.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_wait (28 samples)</title><rect class="c-ros" x="195.44" y="447.0" width="4.52" height="15.5" rx="1.5"/>
+<g><title>TypeSupport::deserialize (183 samples)</title><rect class="c-ros" x="176.39" y="498.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_wait (28 samples)</title><rect class="c-ros" x="195.44" y="430.0" width="4.52" height="15.5" rx="1.5"/>
+<g><title>rmw (183 samples)</title><rect class="c-ros" x="176.39" y="481.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSet::wait (7 samples)</title><rect class="c-ros" x="195.44" y="413.0" width="0.83" height="15.5" rx="1.5"/>
+<g><title>typesupport_fastrtps_cpp::cdr_deserialize (183 samples)</title><rect class="c-ros" x="176.39" y="464.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSetImpl::wait (7 samples)</title><rect class="c-ros" x="195.44" y="396.0" width="0.83" height="15.5" rx="1.5"/>
+<g><title>typesupport (183 samples)</title><rect class="c-ros" x="176.39" y="447.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSetImpl::detach_condition (6 samples)</title><rect class="c-ros" x="196.67" y="413.0" width="0.65" height="15.5" rx="1.5"/>
+<g><title>Cdr::deserialize_array (183 samples)</title><rect class="c-ros" x="176.39" y="430.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::get_first_untaken_info (4 samples)</title><rect class="c-ros" x="197.73" y="413.0" width="0.40" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (183 samples)</title><rect class="c-copy" x="176.39" y="413.0" width="33.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>[vdso] (8 samples)</title><rect class="c-other" x="203.18" y="600.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>_start (55 samples)</title><rect class="c-detector" x="210.18" y="600.0" width="9.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::onRosImageReceived (8 samples)</title><rect class="c-detector" x="204.58" y="600.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>libc (55 samples)</title><rect class="c-other" x="210.18" y="583.0" width="9.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::processLatestFrame (8 samples)</title><rect class="c-detector" x="204.58" y="583.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>main (55 samples)</title><rect class="c-detector" x="210.18" y="566.0" width="9.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishResults (8 samples)</title><rect class="c-detector" x="204.58" y="566.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>spin (55 samples)</title><rect class="c-ros" x="210.18" y="549.0" width="9.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishSingleTF (8 samples)</title><rect class="c-detector" x="204.58" y="549.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>SingleThreadedExecutor::spin (55 samples)</title><rect class="c-ros" x="210.18" y="532.0" width="9.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>TransformBroadcaster::sendTransform (8 samples)</title><rect class="c-ros" x="204.58" y="532.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>Executor::get_next_executable (53 samples)</title><rect class="c-ros" x="210.18" y="515.0" width="9.39" height="15.5" rx="1.5"/>
 </g>
-<g><title>librcl.so (8 samples)</title><rect class="c-ros" x="204.58" y="515.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>Executor::wait_for_work (50 samples)</title><rect class="c-ros" x="210.18" y="498.0" width="8.83" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (8 samples)</title><rect class="c-ros" x="204.58" y="498.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>rclcpp (48 samples)</title><rect class="c-ros" x="210.18" y="481.0" width="8.46" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::write_w_timestamp (8 samples)</title><rect class="c-ros" x="204.58" y="481.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>rcl_wait (43 samples)</title><rect class="c-ros" x="210.18" y="464.0" width="7.54" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::perform_create_new_change (8 samples)</title><rect class="c-ros" x="204.58" y="464.0" width="1.01" height="15.5" rx="1.5"/>
+<g><title>rmw_wait (42 samples)</title><rect class="c-ros" x="210.18" y="447.0" width="7.36" height="15.5" rx="1.5"/>
 </g>
-<g><title>spin (5 samples)</title><rect class="c-ros" x="205.99" y="600.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_wait (42 samples)</title><rect class="c-ros" x="210.18" y="430.0" width="7.36" height="15.5" rx="1.5"/>
 </g>
-<g><title>SingleThreadedExecutor::spin (5 samples)</title><rect class="c-ros" x="205.99" y="583.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>WaitSet::wait (13 samples)</title><rect class="c-ros" x="210.18" y="413.0" width="2.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::execute_any_executable (5 samples)</title><rect class="c-ros" x="205.99" y="566.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>WaitSetImpl::wait (13 samples)</title><rect class="c-ros" x="210.18" y="396.0" width="2.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::execute_subscription (5 samples)</title><rect class="c-ros" x="205.99" y="549.0" width="0.48" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::get_first_untaken_info (11 samples)</title><rect class="c-ros" x="212.58" y="413.0" width="1.63" height="15.5" rx="1.5"/>
 </g>
-<text class="h" x="20" y="664">After, widened to read</text>
-<g><title>detector process, all threads (1067 samples)</title><rect class="c-root" x="20.00" y="893.0" width="919.60" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::get_first_untaken_info (11 samples)</title><rect class="c-ros" x="212.58" y="396.0" width="1.63" height="15.5" rx="1.5"/>
+</g>
+<g><title>WaitSetImpl::detach_condition (4 samples)</title><rect class="c-ros" x="214.62" y="413.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>WaitSetImpl::attach_condition (4 samples)</title><rect class="c-ros" x="215.35" y="413.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>spin (51 samples)</title><rect class="c-ros" x="220.34" y="600.0" width="9.02" height="15.5" rx="1.5"/>
+</g>
+<g><title>SingleThreadedExecutor::spin (51 samples)</title><rect class="c-ros" x="220.34" y="583.0" width="9.02" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (51 samples)</title><rect class="c-ros" x="220.34" y="566.0" width="9.02" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (51 samples)</title><rect class="c-ros" x="220.34" y="549.0" width="9.02" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::handle_message (46 samples)</title><rect class="c-detector" x="220.34" y="532.0" width="8.09" height="15.5" rx="1.5"/>
+</g>
+<g><title>std::__do_visit (46 samples)</title><rect class="c-ros" x="220.34" y="515.0" width="8.09" height="15.5" rx="1.5"/>
+</g>
+<g><title>dispatch::lambda (46 samples)</title><rect class="c-other" x="220.34" y="498.0" width="8.09" height="15.5" rx="1.5"/>
+</g>
+<g><title>WhyconRosInterface::processLatestFrame (45 samples)</title><rect class="c-detector" x="220.34" y="481.0" width="7.91" height="15.5" rx="1.5"/>
+</g>
+<g><title>MultiMarkerDetector::detectMarkers (43 samples)</title><rect class="c-detector" x="220.34" y="464.0" width="7.54" height="15.5" rx="1.5"/>
+</g>
+<g><title>PackedBinaryImage::binarizeBitPacked (39 samples)</title><rect class="c-image" x="220.34" y="447.0" width="6.80" height="15.5" rx="1.5"/>
+</g>
+<g><title>SingleThreadedExecutor::spin (17 samples)</title><rect class="c-ros" x="229.76" y="600.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (17 samples)</title><rect class="c-ros" x="229.76" y="583.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (17 samples)</title><rect class="c-ros" x="229.76" y="566.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::handle_message (17 samples)</title><rect class="c-detector" x="229.76" y="549.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>std::__do_visit (17 samples)</title><rect class="c-ros" x="229.76" y="532.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>dispatch::lambda (17 samples)</title><rect class="c-other" x="229.76" y="515.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>WhyconRosInterface::processLatestFrame (17 samples)</title><rect class="c-detector" x="229.76" y="498.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>MultiMarkerDetector::detectMarkers (17 samples)</title><rect class="c-detector" x="229.76" y="481.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::detectMarkerPair (17 samples)</title><rect class="c-detector" x="229.76" y="464.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>.constprop.0] (17 samples)</title><rect class="c-detector" x="229.76" y="447.0" width="2.74" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (6 samples)</title><rect class="c-ros" x="232.90" y="600.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (6 samples)</title><rect class="c-ros" x="232.90" y="583.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::handle_message (6 samples)</title><rect class="c-detector" x="232.90" y="566.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>std::__do_visit (6 samples)</title><rect class="c-ros" x="232.90" y="549.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>dispatch::lambda (6 samples)</title><rect class="c-other" x="232.90" y="532.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>WhyconRosInterface::processLatestFrame (6 samples)</title><rect class="c-detector" x="232.90" y="515.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>MultiMarkerDetector::detectMarkers (6 samples)</title><rect class="c-detector" x="232.90" y="498.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::detectMarkerPair (6 samples)</title><rect class="c-detector" x="232.90" y="481.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>.constprop.0] (6 samples)</title><rect class="c-detector" x="232.90" y="464.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::examineSeed (6 samples)</title><rect class="c-detector" x="232.90" y="447.0" width="0.71" height="15.5" rx="1.5"/>
+</g>
+<text class="h" x="20" y="664">Today's code, widened to read</text>
+<g><title>detector process, all threads (1166 samples)</title><rect class="c-root" x="20.00" y="893.0" width="919.60" height="15.5" rx="1.5"/>
 <text class="fl" x="23.00" y="905.0">detector process, all threads</text>
 </g>
-<g><title>Executor::execute_subscription (546 samples)</title><rect class="c-ros" x="20.00" y="876.0" width="470.38" height="15.5" rx="1.5"/>
+<g><title>Executor::execute_subscription (443 samples)</title><rect class="c-ros" x="20.00" y="876.0" width="349.14" height="15.5" rx="1.5"/>
 <text class="fl" x="23.00" y="888.0">Executor::execute_subscription</text>
 </g>
-<g><title>image_transport (438 samples)</title><rect class="c-ros" x="20.00" y="859.0" width="377.26" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="871.0">image_transport</text>
+<g><title>Subscription::handle_message (427 samples)</title><rect class="c-detector" x="20.00" y="859.0" width="336.51" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="871.0">Subscription::handle_message</text>
 </g>
-<g><title>WhyconRosInterface::onRosImageReceived (438 samples)</title><rect class="c-detector" x="20.00" y="842.0" width="377.26" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="854.0">WhyconRosInterface::onRosImageReceived</text>
+<g><title>std::__do_visit (427 samples)</title><rect class="c-ros" x="20.00" y="842.0" width="336.51" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="854.0">std::__do_visit</text>
 </g>
-<g><title>WhyconRosInterface::processLatestFrame (303 samples)</title><rect class="c-detector" x="20.00" y="825.0" width="260.86" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="837.0">WhyconRosInterface::processLatestFrame</text>
+<g><title>dispatch::lambda (427 samples)</title><rect class="c-other" x="20.00" y="825.0" width="336.51" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="837.0">dispatch::lambda</text>
 </g>
-<g><title>MultiMarkerDetector::detectMarkers (227 samples)</title><rect class="c-detector" x="20.00" y="808.0" width="195.33" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="820.0">MultiMarkerDetector::detectMar…</text>
+<g><title>WhyconRosInterface::processLatestFrame (257 samples)</title><rect class="c-detector" x="20.00" y="808.0" width="202.38" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="820.0">WhyconRosInterface::processLate…</text>
 </g>
-<g><title>MarkerDetector::detectMarkerPair (174 samples)</title><rect class="c-detector" x="20.00" y="791.0" width="149.63" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="803.0">MarkerDetector::detect…</text>
+<g><title>MultiMarkerDetector::detectMarkers (164 samples)</title><rect class="c-detector" x="20.00" y="791.0" width="129.00" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="803.0">MultiMarkerDetector…</text>
 </g>
-<g><title>MarkerDetector::examineSeed (89 samples)</title><rect class="c-detector" x="20.00" y="774.0" width="76.34" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="786.0">MarkerDete…</text>
+<g><title>MarkerDetector::detectMarkerPair (164 samples)</title><rect class="c-detector" x="20.00" y="774.0" width="129.00" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="786.0">MarkerDetector::det…</text>
 </g>
-<g><title>MarkerDetector::analyzeMarkerCandidate (88 samples)</title><rect class="c-detector" x="20.00" y="757.0" width="75.48" height="15.5" rx="1.5"/>
-<text class="fl" x="23.00" y="769.0">MarkerDete…</text>
+<g><title>.constprop.0] (164 samples)</title><rect class="c-detector" x="20.00" y="757.0" width="129.00" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="769.0">.constprop.0]</text>
 </g>
-<g><title>.constprop.0] (13 samples)</title><rect class="c-detector" x="20.00" y="740.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>MarkerDetector::examineSeed (164 samples)</title><rect class="c-detector" x="20.00" y="740.0" width="129.00" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="752.0">MarkerDetector::exa…</text>
 </g>
-<g><title>detectMarkerPair::lambda (74 samples)</title><rect class="c-detector" x="96.74" y="774.0" width="63.41" height="15.5" rx="1.5"/>
-<text class="fl" x="99.74" y="786.0">detectMa…</text>
+<g><title>MarkerDetector::analyzeMarkerCandidate (164 samples)</title><rect class="c-detector" x="20.00" y="723.0" width="129.00" height="15.5" rx="1.5"/>
+<text class="fl" x="23.00" y="735.0">MarkerDetector::ana…</text>
 </g>
-<g><title>MarkerDetector::examineSeed (74 samples)</title><rect class="c-detector" x="96.74" y="757.0" width="63.41" height="15.5" rx="1.5"/>
-<text class="fl" x="99.74" y="769.0">MarkerDe…</text>
+<g><title>WhyconRosInterface::publishResults (93 samples)</title><rect class="c-detector" x="149.40" y="791.0" width="72.98" height="15.5" rx="1.5"/>
+<text class="fl" x="152.40" y="803.0">WhyconRosI…</text>
 </g>
-<g><title>MarkerDetector::analyzeMarkerCandidate (71 samples)</title><rect class="c-detector" x="96.74" y="740.0" width="60.82" height="15.5" rx="1.5"/>
-<text class="fl" x="99.74" y="752.0">MarkerDe…</text>
+<g><title>LocalizationSystem::estimateMarkerPose (59 samples)</title><rect class="c-detector" x="149.40" y="774.0" width="46.15" height="15.5" rx="1.5"/>
 </g>
-<g><title>.constprop.0] (11 samples)</title><rect class="c-detector" x="96.74" y="723.0" width="9.08" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::identifyAndWeighSolutions (38 samples)</title><rect class="c-detector" x="149.40" y="757.0" width="29.58" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerDetector::computeEllipseParameters (1 samples)</title><rect class="c-detector" x="157.96" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::sampleRing (31 samples)</title><rect class="c-detector" x="149.40" y="740.0" width="24.06" height="15.5" rx="1.5"/>
 </g>
-<g><title>PackedBinaryImage::binarizeBitPacked (49 samples)</title><rect class="c-image" x="170.03" y="791.0" width="41.85" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::computeSignal (29 samples)</title><rect class="c-detector" x="149.40" y="723.0" width="22.48" height="15.5" rx="1.5"/>
 </g>
-<g><title>DetectionContext::cleanupBuffer (2 samples)</title><rect class="c-detector" x="212.28" y="791.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::computeEllipseCoordinates (2 samples)</title><rect class="c-detector" x="172.28" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (1 samples)</title><rect class="c-copy" x="212.28" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::accumulateEdges (4 samples)</title><rect class="c-detector" x="173.86" y="740.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>ImageHandler::binarizeSIMD (1 samples)</title><rect class="c-image" x="214.00" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::readCode (2 samples)</title><rect class="c-detector" x="177.02" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishResults (60 samples)</title><rect class="c-detector" x="215.73" y="808.0" width="51.33" height="15.5" rx="1.5"/>
+<g><title>CNecklace::decode (1 samples)</title><rect class="c-detector" x="178.59" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::estimateMarkerPose (53 samples)</title><rect class="c-detector" x="215.73" y="791.0" width="45.30" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::refineOutline (10 samples)</title><rect class="c-detector" x="179.38" y="757.0" width="7.49" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::identifyAndWeighSolutions (41 samples)</title><rect class="c-detector" x="215.73" y="774.0" width="34.95" height="15.5" rx="1.5"/>
+<g><title>cv::Cholesky (2 samples)</title><rect class="c-detector" x="179.38" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::sampleRing (30 samples)</title><rect class="c-detector" x="215.73" y="757.0" width="25.47" height="15.5" rx="1.5"/>
+<g><title>hypotf (1 samples)</title><rect class="c-other" x="180.96" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::computeSignal (29 samples)</title><rect class="c-detector" x="215.73" y="740.0" width="24.60" height="15.5" rx="1.5"/>
+<g><title>libm.so.6 (1 samples)</title><rect class="c-other" x="181.75" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::computeEllipseCoordinates (1 samples)</title><rect class="c-detector" x="240.73" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::calcEigen (7 samples)</title><rect class="c-detector" x="187.27" y="757.0" width="5.12" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::accumulateEdges (8 samples)</title><rect class="c-detector" x="241.59" y="757.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>cv::eigen (7 samples)</title><rect class="c-detector" x="187.27" y="740.0" width="5.12" height="15.5" rx="1.5"/>
 </g>
-<g><title>CNecklace::decode (1 samples)</title><rect class="c-detector" x="248.49" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>libopencv_core.so.4.6.0 (6 samples)</title><rect class="c-detector" x="187.27" y="723.0" width="4.33" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::readCode (1 samples)</title><rect class="c-detector" x="249.35" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>cv::transpose (2 samples)</title><rect class="c-detector" x="187.27" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::refineOutline (8 samples)</title><rect class="c-detector" x="251.08" y="774.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>libopencv_core.so.4.6.0 (1 samples)</title><rect class="c-detector" x="187.27" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>cv::Cholesky (2 samples)</title><rect class="c-detector" x="251.08" y="757.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>_InputArray::type (1 samples)</title><rect class="c-detector" x="188.06" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>hal::Cholesky64f (2 samples)</title><rect class="c-detector" x="251.08" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>malloc (1 samples)</title><rect class="c-other" x="188.85" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libopencv_core.so.4.6.0 (2 samples)</title><rect class="c-detector" x="251.08" y="723.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>_OutputArray::create (1 samples)</title><rect class="c-detector" x="192.01" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::calcEigen (2 samples)</title><rect class="c-detector" x="257.98" y="774.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::orientationFromNormal (3 samples)</title><rect class="c-detector" x="192.80" y="757.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>cv::eigen (1 samples)</title><rect class="c-detector" x="257.98" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>cv::normalize (2 samples)</title><rect class="c-detector" x="192.80" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Mat::updateContinuityFlag (1 samples)</title><rect class="c-detector" x="257.98" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Mat::convertTo (1 samples)</title><rect class="c-detector" x="192.80" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libopencv_core.so.4.6.0 (1 samples)</title><rect class="c-detector" x="257.98" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>_OutputArray::create (1 samples)</title><rect class="c-detector" x="192.80" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libm.so.6 (1 samples)</title><rect class="c-other" x="259.70" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>acosf32 (1 samples)</title><rect class="c-other" x="194.37" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::orientationFromNormal (1 samples)</title><rect class="c-detector" x="260.56" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>LocalizationSystem::calcEllipseCenters (1 samples)</title><rect class="c-detector" x="195.16" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>cv::normalize (1 samples)</title><rect class="c-detector" x="260.56" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Publisher::do_inter_process_publish (18 samples)</title><rect class="c-detector" x="195.95" y="774.0" width="13.80" height="15.5" rx="1.5"/>
 </g>
-<g><title>_InputArray::type (1 samples)</title><rect class="c-detector" x="260.56" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>librcl.so (18 samples)</title><rect class="c-ros" x="195.95" y="757.0" width="13.80" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishSingleTF (6 samples)</title><rect class="c-detector" x="261.42" y="791.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (18 samples)</title><rect class="c-ros" x="195.95" y="740.0" width="13.80" height="15.5" rx="1.5"/>
 </g>
-<g><title>TransformBroadcaster::sendTransform (3 samples)</title><rect class="c-ros" x="261.42" y="774.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::write_w_timestamp (18 samples)</title><rect class="c-ros" x="195.95" y="723.0" width="13.80" height="15.5" rx="1.5"/>
 </g>
-<g><title>librcl.so (2 samples)</title><rect class="c-ros" x="261.42" y="757.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::perform_create_new_change (18 samples)</title><rect class="c-ros" x="195.95" y="706.0" width="13.80" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (2 samples)</title><rect class="c-ros" x="261.42" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::unsent_change_added_to_history (13 samples)</title><rect class="c-ros" x="195.95" y="689.0" width="9.86" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::write_w_timestamp (2 samples)</title><rect class="c-ros" x="261.42" y="723.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (13 samples)</title><rect class="c-ros" x="195.95" y="672.0" width="9.86" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::check_write_preconditions (1 samples)</title><rect class="c-ros" x="261.42" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rmw (3 samples)</title><rect class="c-ros" x="206.21" y="689.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>Time_t::set_nanosec (1 samples)</title><rect class="c-ros" x="262.29" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>typesupport_fastrtps_cpp::_WhyCodePoseArray__get_serialized_size (3 samples)</title><rect class="c-detector" x="206.21" y="672.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>libtf2_ros.so (1 samples)</title><rect class="c-ros" x="263.15" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="208.58" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>new@plt (1 samples)</title><rect class="c-ros" x="263.15" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>TopicPayloadPool::do_get_payload (1 samples)</title><rect class="c-ros" x="209.37" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Node::now (1 samples)</title><rect class="c-ros" x="264.01" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WhyconRosInterface::publishSingleTF (12 samples)</title><rect class="c-detector" x="210.15" y="774.0" width="9.07" height="15.5" rx="1.5"/>
 </g>
-<g><title>Clock::now (1 samples)</title><rect class="c-ros" x="264.01" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>TransformBroadcaster::sendTransform (10 samples)</title><rect class="c-ros" x="210.15" y="757.0" width="7.49" height="15.5" rx="1.5"/>
 </g>
-<g><title>PublisherBase::get_subscription_count (1 samples)</title><rect class="c-ros" x="266.60" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>librcl.so (9 samples)</title><rect class="c-ros" x="210.15" y="740.0" width="6.70" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_publisher_get_subscription_count (1 samples)</title><rect class="c-ros" x="266.60" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (9 samples)</title><rect class="c-ros" x="210.15" y="723.0" width="6.70" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_publisher_is_valid (1 samples)</title><rect class="c-ros" x="266.60" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::write_w_timestamp (8 samples)</title><rect class="c-ros" x="210.15" y="706.0" width="5.91" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_context_is_valid (1 samples)</title><rect class="c-ros" x="266.60" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataWriterImpl::perform_create_new_change (8 samples)</title><rect class="c-ros" x="210.15" y="689.0" width="5.91" height="15.5" rx="1.5"/>
 </g>
-<g><title>Publisher::do_inter_process_publish (13 samples)</title><rect class="c-detector" x="267.46" y="808.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>TypeSupport::serialize (3 samples)</title><rect class="c-ros" x="210.15" y="672.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>librcl.so (13 samples)</title><rect class="c-ros" x="267.46" y="791.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::unsent_change_added_to_history (3 samples)</title><rect class="c-ros" x="212.52" y="672.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (13 samples)</title><rect class="c-ros" x="267.46" y="774.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>rmw (1 samples)</title><rect class="c-ros" x="214.89" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::write_w_timestamp (13 samples)</title><rect class="c-ros" x="267.46" y="757.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>WriterHistory::prepare_and_add_change@plt (1 samples)</title><rect class="c-ros" x="215.68" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::perform_create_new_change (13 samples)</title><rect class="c-ros" x="267.46" y="740.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>Time_t::now (1 samples)</title><rect class="c-ros" x="216.47" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::unsent_change_added_to_history (11 samples)</title><rect class="c-ros" x="267.46" y="723.0" width="9.08" height="15.5" rx="1.5"/>
+<g><title>libc (1 samples)</title><rect class="c-other" x="216.47" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (11 samples)</title><rect class="c-ros" x="267.46" y="706.0" width="9.08" height="15.5" rx="1.5"/>
+<g><title>[vdso] (1 samples)</title><rect class="c-other" x="216.47" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (7 samples)</title><rect class="c-ros" x="267.46" y="689.0" width="5.64" height="15.5" rx="1.5"/>
+<g><title>libtf2_ros.so (1 samples)</title><rect class="c-ros" x="217.26" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::send (7 samples)</title><rect class="c-ros" x="267.46" y="672.0" width="5.64" height="15.5" rx="1.5"/>
+<g><title>Mat::~Mat (1 samples)</title><rect class="c-detector" x="219.62" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::deliver_sample_nts (4 samples)</title><rect class="c-ros" x="273.50" y="689.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>Mat::Mat (1 samples)</title><rect class="c-detector" x="220.41" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::deliver_sample_to_network (4 samples)</title><rect class="c-ros" x="273.50" y="672.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>PublisherBase::get_subscription_count (1 samples)</title><rect class="c-ros" x="221.20" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw (1 samples)</title><rect class="c-ros" x="276.94" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>librcl.so (1 samples)</title><rect class="c-ros" x="221.20" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::_WhyCodePoseArray__get_serialized_size (1 samples)</title><rect class="c-detector" x="276.94" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_publisher_count_matched_subscriptions (1 samples)</title><rect class="c-ros" x="221.20" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>TypeSupport::serialize (1 samples)</title><rect class="c-ros" x="277.81" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RMWPublisherEvent::subscription_count (1 samples)</title><rect class="c-ros" x="221.20" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::cdr_serialize (1 samples)</title><rect class="c-ros" x="277.81" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="221.20" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::localizeMarkers (1 samples)</title><rect class="c-detector" x="278.67" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>IDStabilizer::stabilize (1 samples)</title><rect class="c-detector" x="221.99" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MarkerTracker::update (1 samples)</title><rect class="c-detector" x="279.53" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WhyconRosInterface::onRosImageReceived (170 samples)</title><rect class="c-detector" x="222.78" y="808.0" width="133.73" height="15.5" rx="1.5"/>
+<text class="fl" x="225.78" y="820.0">WhyconRosInterface::…</text>
 </g>
-<g><title>ImageHandler::updateFromROS (133 samples)</title><rect class="c-image" x="281.26" y="825.0" width="114.28" height="15.5" rx="1.5"/>
-<text class="fl" x="284.26" y="837.0">ImageHandler::up…</text>
+<g><title>ImageHandler::updateFromROS (170 samples)</title><rect class="c-image" x="222.78" y="791.0" width="133.73" height="15.5" rx="1.5"/>
+<text class="fl" x="225.78" y="803.0">ImageHandler::update…</text>
 </g>
-<g><title>SimdRgbToGray (132 samples)</title><rect class="c-image" x="281.26" y="808.0" width="113.41" height="15.5" rx="1.5"/>
-<text class="fl" x="284.26" y="820.0">SimdRgbToGray</text>
+<g><title>SimdRgbToGray (169 samples)</title><rect class="c-image" x="222.78" y="774.0" width="132.94" height="15.5" rx="1.5"/>
+<text class="fl" x="225.78" y="786.0">SimdRgbToGray</text>
 </g>
-<g><title>RgbToGray (131 samples)</title><rect class="c-image" x="281.26" y="791.0" width="112.55" height="15.5" rx="1.5"/>
-<text class="fl" x="284.26" y="803.0">RgbToGray</text>
+<g><title>RgbToGray (169 samples)</title><rect class="c-image" x="222.78" y="757.0" width="132.94" height="15.5" rx="1.5"/>
+<text class="fl" x="225.78" y="769.0">RgbToGray</text>
 </g>
-<g><title>SubscriptionBase::take_type_erased (108 samples)</title><rect class="c-ros" x="397.66" y="859.0" width="92.72" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="871.0">SubscriptionB…</text>
+<g><title>memcmp@plt (1 samples)</title><rect class="c-detector" x="356.12" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_take (108 samples)</title><rect class="c-ros" x="397.66" y="842.0" width="92.72" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="854.0">rcl_take</text>
+<g><title>SubscriptionBase::take_type_erased (16 samples)</title><rect class="c-ros" x="356.91" y="859.0" width="12.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::_take (108 samples)</title><rect class="c-ros" x="397.66" y="825.0" width="92.72" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="837.0">rmw_fastrtps_…</text>
+<g><title>rcl_take (16 samples)</title><rect class="c-ros" x="356.91" y="842.0" width="12.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::take (107 samples)</title><rect class="c-ros" x="397.66" y="808.0" width="91.86" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="820.0">DataReaderImp…</text>
+<g><title>rmw_fastrtps_shared_cpp::_take (13 samples)</title><rect class="c-ros" x="356.91" y="825.0" width="9.86" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::read_or_take (107 samples)</title><rect class="c-ros" x="397.66" y="791.0" width="91.86" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="803.0">DataReaderImp…</text>
+<g><title>DataReaderImpl::take (12 samples)</title><rect class="c-ros" x="356.91" y="808.0" width="9.07" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (106 samples)</title><rect class="c-ros" x="397.66" y="774.0" width="91.00" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="786.0">Fast DDS</text>
+<g><title>DataReaderImpl::read_or_take (12 samples)</title><rect class="c-ros" x="356.91" y="791.0" width="9.07" height="15.5" rx="1.5"/>
 </g>
-<g><title>TypeSupport::deserialize (103 samples)</title><rect class="c-ros" x="397.66" y="757.0" width="88.41" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="769.0">TypeSupport:…</text>
+<g><title>Fast DDS (11 samples)</title><rect class="c-ros" x="356.91" y="774.0" width="8.28" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw (103 samples)</title><rect class="c-ros" x="397.66" y="740.0" width="88.41" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="752.0">rmw</text>
+<g><title>TypeSupport::deserialize (7 samples)</title><rect class="c-ros" x="356.91" y="757.0" width="5.12" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::cdr_deserialize (102 samples)</title><rect class="c-ros" x="397.66" y="723.0" width="87.55" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="735.0">typesupport_…</text>
+<g><title>rmw (6 samples)</title><rect class="c-ros" x="356.91" y="740.0" width="4.33" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport (101 samples)</title><rect class="c-ros" x="397.66" y="706.0" width="86.69" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="718.0">typesupport</text>
+<g><title>typesupport_fastrtps_cpp::cdr_deserialize (5 samples)</title><rect class="c-ros" x="356.91" y="723.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (101 samples)</title><rect class="c-copy" x="397.66" y="689.0" width="86.69" height="15.5" rx="1.5"/>
-<text class="fl" x="400.66" y="701.0">libc: copy o…</text>
+<g><title>Cdr::read_string (2 samples)</title><rect class="c-ros" x="356.91" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Cdr::read_encapsulation (1 samples)</title><rect class="c-ros" x="485.60" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>typesupport (1 samples)</title><rect class="c-ros" x="358.49" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>__dynamic_cast (1 samples)</title><rect class="c-other" x="486.47" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>state::state@plt (1 samples)</title><rect class="c-ros" x="358.49" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderHistory::remove_change_sub (1 samples)</title><rect class="c-ros" x="487.33" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Cdr::read_string@plt (1 samples)</title><rect class="c-ros" x="359.28" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReaderHistory::remove_change_nts (1 samples)</title><rect class="c-ros" x="487.33" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Cdr::read_encapsulation (1 samples)</title><rect class="c-ros" x="360.86" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::change_removed_by_history (1 samples)</title><rect class="c-ros" x="487.33" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>FastBuffer::FastBuffer (1 samples)</title><rect class="c-ros" x="361.65" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="487.33" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::remove_change_sub (2 samples)</title><rect class="c-ros" x="362.44" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::begin_sample_access_nts (1 samples)</title><rect class="c-ros" x="488.19" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="362.44" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::matched_writer_lookup (1 samples)</title><rect class="c-ros" x="488.19" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ReaderHistory::remove_change_nts (1 samples)</title><rect class="c-ros" x="363.22" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::findWriterProxy (1 samples)</title><rect class="c-ros" x="488.19" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::change_removed_by_history (1 samples)</title><rect class="c-ros" x="363.22" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="489.05" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>const@plt (1 samples)</title><rect class="c-ros" x="363.22" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ros_trace_rmw_take (1 samples)</title><rect class="c-other" x="489.92" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::check_and_remove_instance (1 samples)</title><rect class="c-ros" x="364.01" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (338 samples)</title><rect class="c-other" x="490.78" y="876.0" width="291.03" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="888.0">libc</text>
+<g><title>cfree (1 samples)</title><rect class="c-other" x="364.01" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>thread::ThreadProxy (259 samples)</title><rect class="c-ros" x="490.78" y="859.0" width="222.92" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="871.0">thread::ThreadProxy</text>
+<g><title>DataReaderImpl::check_collection_preconditions_and_calc_max_samples@plt (1 samples)</title><rect class="c-ros" x="365.59" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (259 samples)</title><rect class="c-ros" x="490.78" y="842.0" width="222.92" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="854.0">Fast DDS</text>
+<g><title>rmw (1 samples)</title><rect class="c-ros" x="366.38" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReceiverResource::OnDataReceived (205 samples)</title><rect class="c-ros" x="490.78" y="825.0" width="176.36" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="837.0">ReceiverResource::OnDataRe…</text>
+<g><title>new (1 samples)</title><rect class="c-other" x="366.38" y="791.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::processCDRMsg (204 samples)</title><rect class="c-ros" x="490.78" y="808.0" width="175.50" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="820.0">MessageReceiver::processCD…</text>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_take_with_info@plt (1 samples)</title><rect class="c-ros" x="367.17" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_DataFrag (168 samples)</title><rect class="c-ros" x="490.78" y="791.0" width="144.45" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="803.0">MessageReceiver::proc…</text>
+<g><title>rmw_take_with_info (1 samples)</title><rect class="c-ros" x="367.96" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::process_data_fragment_message_without_security (161 samples)</title><rect class="c-ros" x="490.78" y="774.0" width="138.42" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="786.0">MessageReceiver::pro…</text>
+<g><title>libc (404 samples)</title><rect class="c-other" x="369.54" y="876.0" width="318.37" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="888.0">libc</text>
 </g>
-<g><title>StatefulReader::processDataFragMsg (160 samples)</title><rect class="c-ros" x="490.78" y="757.0" width="137.56" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="769.0">StatefulReader::proc…</text>
+<g><title>thread::ThreadProxy (314 samples)</title><rect class="c-ros" x="369.54" y="859.0" width="247.35" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="871.0">thread::ThreadProxy</text>
 </g>
-<g><title>libc: copy or fill (139 samples)</title><rect class="c-copy" x="490.78" y="740.0" width="119.45" height="15.5" rx="1.5"/>
-<text class="fl" x="493.78" y="752.0">libc: copy or fill</text>
+<g><title>Fast DDS (314 samples)</title><rect class="c-ros" x="369.54" y="842.0" width="247.35" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="854.0">Fast DDS</text>
 </g>
-<g><title>StatefulReader::change_received (6 samples)</title><rect class="c-ros" x="610.63" y="740.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>ReceiverResource::OnDataReceived (259 samples)</title><rect class="c-ros" x="369.54" y="825.0" width="203.96" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="837.0">ReceiverResource::OnDataReceived</text>
 </g>
-<g><title>DataReaderHistory::received_change (3 samples)</title><rect class="c-ros" x="610.63" y="723.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::processCDRMsg (258 samples)</title><rect class="c-ros" x="369.54" y="808.0" width="203.17" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="820.0">MessageReceiver::processCDRMsg</text>
 </g>
-<g><title>DataReaderHistory::received_change_keep_last (2 samples)</title><rect class="c-ros" x="610.63" y="706.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_DataFrag (211 samples)</title><rect class="c-ros" x="369.54" y="791.0" width="166.08" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="803.0">MessageReceiver::proc_Sub…</text>
 </g>
-<g><title>DataReaderHistory::add_received_change_with_key (2 samples)</title><rect class="c-ros" x="610.63" y="689.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::process_data_fragment_message_without_security (205 samples)</title><rect class="c-ros" x="369.54" y="774.0" width="161.35" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="786.0">MessageReceiver::process…</text>
 </g>
-<g><title>DataReaderHistory::add_to_instance (2 samples)</title><rect class="c-ros" x="610.63" y="672.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::processDataFragMsg (204 samples)</title><rect class="c-ros" x="369.54" y="757.0" width="160.56" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="769.0">StatefulReader::processD…</text>
 </g>
-<g><title>StatefulReader::NotifyChanges (2 samples)</title><rect class="c-ros" x="613.21" y="723.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (177 samples)</title><rect class="c-copy" x="369.54" y="740.0" width="139.26" height="15.5" rx="1.5"/>
+<text class="fl" x="372.54" y="752.0">libc: copy or fill</text>
 </g>
-<g><title>WriterProxy::consider_all_notified (1 samples)</title><rect class="c-ros" x="613.21" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::change_received (6 samples)</title><rect class="c-ros" x="509.19" y="740.0" width="4.33" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSReader::update_last_notified (1 samples)</title><rect class="c-ros" x="614.08" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::received_change (3 samples)</title><rect class="c-ros" x="509.19" y="723.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatisticsReaderImpl::on_subscribe_throughput (1 samples)</title><rect class="c-ros" x="614.94" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::received_change_keep_last (2 samples)</title><rect class="c-ros" x="509.19" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (6 samples)</title><rect class="c-ros" x="615.80" y="740.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::find_key (1 samples)</title><rect class="c-ros" x="509.19" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (6 samples)</title><rect class="c-other" x="615.80" y="723.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::add_received_change_with_key (1 samples)</title><rect class="c-ros" x="509.98" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSReader::reserve_cache (2 samples)</title><rect class="c-ros" x="620.97" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="510.77" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>CacheChangePool::reserve_cache (1 samples)</title><rect class="c-ros" x="620.97" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatisticsReaderImpl::on_subscribe_throughput (1 samples)</title><rect class="c-ros" x="511.56" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>History::get_change (2 samples)</title><rect class="c-ros" x="622.70" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>Time_t::now@plt (1 samples)</title><rect class="c-ros" x="512.35" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>History::get_change_nts (1 samples)</title><rect class="c-ros" x="622.70" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::NotifyChanges (1 samples)</title><rect class="c-ros" x="513.14" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::received_change_set (1 samples)</title><rect class="c-ros" x="624.42" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSReader::reserve_cache (6 samples)</title><rect class="c-ros" x="513.93" y="740.0" width="4.33" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::cleanup@plt (1 samples)</title><rect class="c-ros" x="624.42" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>CacheChangePool::reserve_cache (2 samples)</title><rect class="c-ros" x="513.93" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::received_change_set@plt (1 samples)</title><rect class="c-ros" x="625.29" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (2 samples)</title><rect class="c-ros" x="515.51" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::NotifyChanges (1 samples)</title><rect class="c-ros" x="626.15" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (5 samples)</title><rect class="c-ros" x="518.66" y="740.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>InnerDataReaderListener::on_data_available (1 samples)</title><rect class="c-ros" x="626.15" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (5 samples)</title><rect class="c-other" x="518.66" y="723.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::on_data_available (1 samples)</title><rect class="c-ros" x="626.15" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::NotifyChanges (4 samples)</title><rect class="c-ros" x="522.61" y="740.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (4 samples)</title><rect class="c-ros" x="629.60" y="774.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::set_read_communication_status (2 samples)</title><rect class="c-ros" x="522.61" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="629.60" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatusConditionImpl::set_status (1 samples)</title><rect class="c-ros" x="522.61" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::willAReaderAcceptMsgDirectedTo (2 samples)</title><rect class="c-ros" x="633.05" y="774.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>ConditionNotifier::notify (1 samples)</title><rect class="c-ros" x="523.40" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="633.05" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WaitSetImpl::wake_up (1 samples)</title><rect class="c-ros" x="523.40" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_Acknack (13 samples)</title><rect class="c-ros" x="635.63" y="791.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="523.40" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::process_acknack (13 samples)</title><rect class="c-ros" x="635.63" y="774.0" width="10.81" height="15.5" rx="1.5"/>
+<g><title>StatisticsReaderImpl::on_data_notify (1 samples)</title><rect class="c-ros" x="524.19" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::check_acked_status (6 samples)</title><rect class="c-ros" x="635.63" y="757.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>InnerDataReaderListener::on_data_available (1 samples)</title><rect class="c-ros" x="524.97" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_g (5 samples)</title><rect class="c-ros" x="635.63" y="740.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::on_data_available (1 samples)</title><rect class="c-ros" x="524.97" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_pub (5 samples)</title><rect class="c-ros" x="635.63" y="723.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::try_notify_read_conditions (1 samples)</title><rect class="c-ros" x="524.97" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>History::remove_change (4 samples)</title><rect class="c-ros" x="635.63" y="706.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::get_conditions_mutex (1 samples)</title><rect class="c-ros" x="524.97" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterHistory::remove_change_nts (2 samples)</title><rect class="c-ros" x="635.63" y="689.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::assert_writer_liveliness (2 samples)</title><rect class="c-ros" x="525.76" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSWriter::release_change (2 samples)</title><rect class="c-ros" x="635.63" y="672.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>ReaderHistory::can_change_be_added_nts (1 samples)</title><rect class="c-ros" x="527.34" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (2 samples)</title><rect class="c-ros" x="637.36" y="689.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::completed_change (1 samples)</title><rect class="c-ros" x="528.13" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Time_t::Time_t (1 samples)</title><rect class="c-ros" x="637.36" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::willAReaderAcceptMsgDirectedTo (2 samples)</title><rect class="c-ros" x="531.29" y="774.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSWriter::get_seq_num_min (1 samples)</title><rect class="c-ros" x="639.94" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (2 samples)</title><rect class="c-ros" x="531.29" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (3 samples)</title><rect class="c-ros" x="640.81" y="757.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (2 samples)</title><rect class="c-other" x="532.86" y="774.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>SendBuffersManager::return_buffer (2 samples)</title><rect class="c-ros" x="640.81" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_Acknack (16 samples)</title><rect class="c-ros" x="536.02" y="791.0" width="12.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_cond_signal@plt (1 samples)</title><rect class="c-other" x="640.81" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::process_acknack (14 samples)</title><rect class="c-ros" x="536.02" y="774.0" width="10.65" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReaderProxy::acked_changes_set (1 samples)</title><rect class="c-ros" x="643.39" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::check_acked_status (8 samples)</title><rect class="c-ros" x="536.02" y="757.0" width="5.91" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReaderProxy::find_change (1 samples)</title><rect class="c-ros" x="643.39" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataWriterHistory::remove_change_g (5 samples)</title><rect class="c-ros" x="536.02" y="740.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="644.25" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>DataWriterHistory::remove_change_pub (5 samples)</title><rect class="c-ros" x="536.02" y="723.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReaderProxy::requested_changes_set (1 samples)</title><rect class="c-ros" x="645.12" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>History::remove_change (4 samples)</title><rect class="c-ros" x="536.02" y="706.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSWriter::get_seq_num_min (1 samples)</title><rect class="c-ros" x="645.98" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WriterHistory::remove_change_nts (3 samples)</title><rect class="c-ros" x="536.02" y="689.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_Heartbeat (6 samples)</title><rect class="c-ros" x="646.84" y="791.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>RTPSWriter::release_change (2 samples)</title><rect class="c-ros" x="536.02" y="672.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::processHeartbeatMsg (5 samples)</title><rect class="c-ros" x="646.84" y="774.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::change_removed_by_history (1 samples)</title><rect class="c-ros" x="537.60" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::process_heartbeat (3 samples)</title><rect class="c-ros" x="646.84" y="757.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="538.39" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::notify (1 samples)</title><rect class="c-ros" x="646.84" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Time_t::set_fraction (1 samples)</title><rect class="c-ros" x="538.39" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (1 samples)</title><rect class="c-other" x="646.84" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="539.97" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>kernel (1 samples)</title><rect class="c-kernel" x="646.84" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSWriter::get_seq_num_min (1 samples)</title><rect class="c-ros" x="540.75" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::missing_changes_update (1 samples)</title><rect class="c-ros" x="647.70" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::RTPSMessageGroup (2 samples)</title><rect class="c-ros" x="542.33" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::NotifyChanges (1 samples)</title><rect class="c-ros" x="649.43" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSParticipantImpl::get_send_buffer (1 samples)</title><rect class="c-ros" x="542.33" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSReader::getListener (1 samples)</title><rect class="c-ros" x="649.43" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>SendBuffersManager::get_buffer (1 samples)</title><rect class="c-ros" x="542.33" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="650.29" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="542.33" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>PDP::assert_remote_participant_liveliness (3 samples)</title><rect class="c-ros" x="652.01" y="791.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>ReaderProxy::acked_changes_set (1 samples)</title><rect class="c-ros" x="543.91" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="652.01" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ReaderProxy::find_change (1 samples)</title><rect class="c-ros" x="543.91" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSParticipantImpl::is_participant_ignored (2 samples)</title><rect class="c-ros" x="654.60" y="791.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>RTPSGapBuilder::flush (1 samples)</title><rect class="c-ros" x="544.70" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="654.60" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="545.49" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="655.46" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::~RTPSMessageGroup (1 samples)</title><rect class="c-ros" x="546.28" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (2 samples)</title><rect class="c-ros" x="656.33" y="791.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_Heartbeat (7 samples)</title><rect class="c-ros" x="548.64" y="791.0" width="5.12" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="656.33" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::processHeartbeatMsg (5 samples)</title><rect class="c-ros" x="548.64" y="774.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::checkRTPSHeader (2 samples)</title><rect class="c-ros" x="658.05" y="791.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>WriterProxy::process_heartbeat (3 samples)</title><rect class="c-ros" x="548.64" y="757.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="658.05" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>TimedEvent::restart_timer (1 samples)</title><rect class="c-ros" x="548.64" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (1 samples)</title><rect class="c-copy" x="658.05" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::NotifyChanges (2 samples)</title><rect class="c-ros" x="551.01" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::checkRTPSHeader@plt (1 samples)</title><rect class="c-ros" x="659.78" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSReader::update_last_notified (2 samples)</title><rect class="c-ros" x="551.01" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::readSubmessageHeader (1 samples)</title><rect class="c-ros" x="660.64" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="552.59" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSParticipantImpl::assert_remote_participant_liveliness (1 samples)</title><rect class="c-ros" x="661.50" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="553.38" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>const@plt (1 samples)</title><rect class="c-ros" x="662.36" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_InfoDST (4 samples)</title><rect class="c-ros" x="554.17" y="791.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::reset (1 samples)</title><rect class="c-ros" x="663.22" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (2 samples)</title><rect class="c-other" x="554.17" y="774.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Time_t::set_nanosec (1 samples)</title><rect class="c-ros" x="663.22" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock@plt (1 samples)</title><rect class="c-ros" x="555.75" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_InfoDST (1 samples)</title><rect class="c-ros" x="664.09" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="556.54" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="664.09" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>PDP::assert_remote_participant_liveliness (3 samples)</title><rect class="c-ros" x="557.32" y="791.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>SecurityManager::decode_rtps_submessage (1 samples)</title><rect class="c-ros" x="664.95" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ParticipantProxyData::assert_liveliness (1 samples)</title><rect class="c-ros" x="557.32" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="664.95" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>libc (1 samples)</title><rect class="c-other" x="557.32" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>MessageReceiver::proc_Submsg_InfoDST@plt (1 samples)</title><rect class="c-ros" x="665.81" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>[vdso] (1 samples)</title><rect class="c-other" x="557.32" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="666.67" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::proc_Submsg_InfoTS (3 samples)</title><rect class="c-ros" x="559.69" y="791.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (28 samples)</title><rect class="c-other" x="667.54" y="825.0" width="23.74" height="15.5" rx="1.5"/>
+<g><title>pthread_cond_broadcast (1 samples)</title><rect class="c-other" x="559.69" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>kernel (20 samples)</title><rect class="c-kernel" x="667.54" y="808.0" width="16.84" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="560.48" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (8 samples)</title><rect class="c-copy" x="684.78" y="808.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>RTPSParticipantImpl::is_participant_ignored (2 samples)</title><rect class="c-ros" x="562.06" y="791.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (6 samples)</title><rect class="c-copy" x="691.68" y="825.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="562.06" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (3 samples)</title><rect class="c-other" x="696.85" y="825.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::reset (2 samples)</title><rect class="c-ros" x="563.64" y="791.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>__gmtime_r (2 samples)</title><rect class="c-other" x="699.44" y="825.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>Time_t::set_nanosec (1 samples)</title><rect class="c-ros" x="563.64" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_timedlock (1 samples)</title><rect class="c-other" x="701.16" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSParticipantImpl::assert_remote_participant_liveliness (1 samples)</title><rect class="c-ros" x="565.21" y="791.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>delete (1 samples)</title><rect class="c-other" x="702.02" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::checkRTPSHeader (1 samples)</title><rect class="c-ros" x="566.00" y="791.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (79 samples)</title><rect class="c-ros" x="714.10" y="859.0" width="67.72" height="15.5" rx="1.5"/>
-<text class="fl" x="717.10" y="871.0">Fast DDS</text>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="566.00" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::event_service (79 samples)</title><rect class="c-ros" x="714.10" y="842.0" width="67.72" height="15.5" rx="1.5"/>
-<text class="fl" x="717.10" y="854.0">ResourceE…</text>
+<g><title>libc: copy or fill (1 samples)</title><rect class="c-copy" x="566.00" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::do_timer_actions (42 samples)</title><rect class="c-ros" x="714.10" y="825.0" width="35.81" height="15.5" rx="1.5"/>
+<g><title>SecurityManager::decode_rtps_submessage (1 samples)</title><rect class="c-ros" x="566.79" y="791.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>TimedEventImpl::trigger (37 samples)</title><rect class="c-ros" x="714.10" y="808.0" width="31.50" height="15.5" rx="1.5"/>
+<g><title>MessageReceiver::notify_network_statistics (1 samples)</title><rect class="c-ros" x="567.58" y="791.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (36 samples)</title><rect class="c-ros" x="714.10" y="791.0" width="30.64" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="568.37" y="791.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::perform_heartbeat_response (26 samples)</title><rect class="c-ros" x="714.10" y="774.0" width="22.02" height="15.5" rx="1.5"/>
+<g><title>libc (24 samples)</title><rect class="c-other" x="573.89" y="825.0" width="18.54" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulReader::send_acknack (26 samples)</title><rect class="c-ros" x="714.10" y="757.0" width="22.02" height="15.5" rx="1.5"/>
+<g><title>entry_SYSCALL_64_after_hwframe (14 samples)</title><rect class="c-kernel" x="573.89" y="808.0" width="10.65" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (22 samples)</title><rect class="c-ros" x="714.10" y="740.0" width="18.57" height="15.5" rx="1.5"/>
+<g><title>do_syscall_64 (14 samples)</title><rect class="c-kernel" x="573.89" y="791.0" width="10.65" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::send (20 samples)</title><rect class="c-ros" x="714.10" y="723.0" width="16.84" height="15.5" rx="1.5"/>
+<g><title>x64_sys_call (12 samples)</title><rect class="c-kernel" x="573.89" y="774.0" width="9.07" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::send (20 samples)</title><rect class="c-ros" x="714.10" y="706.0" width="16.84" height="15.5" rx="1.5"/>
+<g><title>__x64_sys_futex (12 samples)</title><rect class="c-kernel" x="573.89" y="757.0" width="9.07" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (20 samples)</title><rect class="c-ros" x="714.10" y="689.0" width="16.84" height="15.5" rx="1.5"/>
+<g><title>do_futex (11 samples)</title><rect class="c-kernel" x="573.89" y="740.0" width="8.28" height="15.5" rx="1.5"/>
 </g>
-<g><title>SharedMemTransport::send (15 samples)</title><rect class="c-ros" x="714.10" y="672.0" width="12.53" height="15.5" rx="1.5"/>
+<g><title>futex_wait (9 samples)</title><rect class="c-kernel" x="573.89" y="723.0" width="6.70" height="15.5" rx="1.5"/>
 </g>
-<g><title>UDPTransportInterface::send (1 samples)</title><rect class="c-ros" x="727.03" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>__futex_wait (7 samples)</title><rect class="c-kernel" x="573.89" y="706.0" width="5.12" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSParticipantImpl::return_send_buffer (1 samples)</title><rect class="c-ros" x="731.34" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>futex_wait_queue (4 samples)</title><rect class="c-kernel" x="573.89" y="689.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::add_acknack (2 samples)</title><rect class="c-ros" x="733.06" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>hrtimer_sleeper_start_expires (2 samples)</title><rect class="c-kernel" x="573.89" y="672.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageCreator::addSubmessageAcknack (1 samples)</title><rect class="c-ros" x="733.06" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>schedule (2 samples)</title><rect class="c-kernel" x="575.47" y="672.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::insert_submessage (1 samples)</title><rect class="c-ros" x="733.93" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>futex_wait_setup (2 samples)</title><rect class="c-kernel" x="577.05" y="689.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (1 samples)</title><rect class="c-copy" x="733.93" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>get_futex_key (1 samples)</title><rect class="c-kernel" x="577.05" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::RTPSMessageGroup (2 samples)</title><rect class="c-ros" x="734.79" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>__get_user_nocheck_4 (1 samples)</title><rect class="c-kernel" x="577.84" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>PDPSimple::announceParticipantState (4 samples)</title><rect class="c-ros" x="736.51" y="774.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>futex_unqueue (1 samples)</title><rect class="c-kernel" x="578.63" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>PDPStatelessWriter::reschedule_all_samples (4 samples)</title><rect class="c-ros" x="736.51" y="757.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>hrtimer_cancel (1 samples)</title><rect class="c-kernel" x="579.42" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (4 samples)</title><rect class="c-ros" x="736.51" y="740.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>hrtimer_try_to_cancel.part.0 (1 samples)</title><rect class="c-kernel" x="579.42" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (2 samples)</title><rect class="c-ros" x="736.51" y="723.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>_raw_spin_unlock_irqrestore (1 samples)</title><rect class="c-kernel" x="579.42" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::send (2 samples)</title><rect class="c-ros" x="736.51" y="706.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>futex_wait_queue (1 samples)</title><rect class="c-kernel" x="580.21" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocatorSelectorSender::send (2 samples)</title><rect class="c-ros" x="736.51" y="689.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>futex_wake (1 samples)</title><rect class="c-kernel" x="580.99" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatelessWriter::send_nts (2 samples)</title><rect class="c-ros" x="736.51" y="672.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>syscall_exit_to_user_mode (2 samples)</title><rect class="c-kernel" x="583.36" y="774.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatelessWriter::deliver_sample_nts (1 samples)</title><rect class="c-ros" x="738.24" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>__rseq_handle_notify_resume (2 samples)</title><rect class="c-kernel" x="583.36" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>rtps::for_matched_readers (1 samples)</title><rect class="c-ros" x="738.24" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rseq_ip_fixup (2 samples)</title><rect class="c-kernel" x="583.36" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::perform_nack_supression (3 samples)</title><rect class="c-ros" x="739.96" y="774.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>__get_user_8 (2 samples)</title><rect class="c-kernel" x="583.36" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (3 samples)</title><rect class="c-ros" x="739.96" y="757.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (10 samples)</title><rect class="c-copy" x="584.94" y="808.0" width="7.49" height="15.5" rx="1.5"/>
 </g>
-<g><title>TimedEvent::restart_timer (2 samples)</title><rect class="c-ros" x="739.96" y="740.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (5 samples)</title><rect class="c-copy" x="592.83" y="825.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>TimedEventImpl::go_ready (1 samples)</title><rect class="c-ros" x="739.96" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (2 samples)</title><rect class="c-other" x="596.78" y="825.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReaderProxy::perform_nack_supression (1 samples)</title><rect class="c-ros" x="741.69" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>__vdso_gettimeofday (1 samples)</title><rect class="c-other" x="598.35" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ReaderProxy::convert_status_on_all_changes (1 samples)</title><rect class="c-ros" x="741.69" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="599.14" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WriterProxy::perform_heartbeat_response@plt (2 samples)</title><rect class="c-ros" x="742.55" y="774.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>free@plt (1 samples)</title><rect class="c-other" x="599.93" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::send_periodic_heartbeat (1 samples)</title><rect class="c-ros" x="745.14" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>__gmtime_r (1 samples)</title><rect class="c-other" x="600.72" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::send_heartbeat_to_all_readers (1 samples)</title><rect class="c-ros" x="745.14" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>new (1 samples)</title><rect class="c-other" x="601.51" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::~RTPSMessageGroup (1 samples)</title><rect class="c-ros" x="745.14" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>malloc (1 samples)</title><rect class="c-other" x="601.51" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSMessageGroup::send (1 samples)</title><rect class="c-ros" x="745.14" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>sem_timedwait (1 samples)</title><rect class="c-other" x="602.30" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocatorSelectorSender::send (1 samples)</title><rect class="c-ros" x="745.14" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_timedlock@plt (1 samples)</title><rect class="c-ros" x="603.09" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RTPSWriter::send_nts (1 samples)</title><rect class="c-ros" x="745.14" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>cfree (1 samples)</title><rect class="c-other" x="603.88" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>UDPTransportInterface::send (1 samples)</title><rect class="c-ros" x="745.14" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (90 samples)</title><rect class="c-ros" x="617.29" y="859.0" width="70.61" height="15.5" rx="1.5"/>
+<text class="fl" x="620.29" y="871.0">Fast DDS</text>
 </g>
-<g><title>clock_gettime (1 samples)</title><rect class="c-other" x="745.14" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::event_service (90 samples)</title><rect class="c-ros" x="617.29" y="842.0" width="70.61" height="15.5" rx="1.5"/>
+<text class="fl" x="620.29" y="854.0">ResourceE…</text>
 </g>
-<g><title>Fast DDS (32 samples)</title><rect class="c-ros" x="750.31" y="825.0" width="27.19" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (51 samples)</title><rect class="c-ros" x="617.29" y="825.0" width="39.84" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (22 samples)</title><rect class="c-other" x="750.31" y="808.0" width="18.57" height="15.5" rx="1.5"/>
+<g><title>libc (38 samples)</title><rect class="c-other" x="617.29" y="808.0" width="29.58" height="15.5" rx="1.5"/>
 </g>
-<g><title>kernel (16 samples)</title><rect class="c-kernel" x="750.31" y="791.0" width="13.40" height="15.5" rx="1.5"/>
+<g><title>entry_SYSCALL_64_after_hwframe (23 samples)</title><rect class="c-kernel" x="617.29" y="791.0" width="17.75" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (6 samples)</title><rect class="c-copy" x="764.10" y="791.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>do_syscall_64 (23 samples)</title><rect class="c-kernel" x="617.29" y="774.0" width="17.75" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (2 samples)</title><rect class="c-other" x="769.28" y="808.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>x64_sys_call (16 samples)</title><rect class="c-kernel" x="617.29" y="757.0" width="12.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_cond_clockwait (2 samples)</title><rect class="c-other" x="771.00" y="808.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>__x64_sys_futex (16 samples)</title><rect class="c-kernel" x="617.29" y="740.0" width="12.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>__cxa_get_globals@plt (1 samples)</title><rect class="c-other" x="772.73" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>do_futex (14 samples)</title><rect class="c-kernel" x="617.29" y="723.0" width="10.65" height="15.5" rx="1.5"/>
 </g>
-<g><title>__cxa_get_globals (1 samples)</title><rect class="c-other" x="773.59" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>futex_wait (12 samples)</title><rect class="c-kernel" x="617.29" y="706.0" width="9.07" height="15.5" rx="1.5"/>
 </g>
-<g><title>__tls_get_addr (1 samples)</title><rect class="c-other" x="773.59" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>__futex_wait (8 samples)</title><rect class="c-kernel" x="617.29" y="689.0" width="5.91" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="774.45" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>futex_wait_queue (5 samples)</title><rect class="c-kernel" x="617.29" y="672.0" width="3.55" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="777.90" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>_raw_spin_lock (1 samples)</title><rect class="c-kernel" x="621.23" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::update_current_time (1 samples)</title><rect class="c-ros" x="778.76" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>futex_unqueue (1 samples)</title><rect class="c-kernel" x="622.02" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::update_current_time@plt (1 samples)</title><rect class="c-ros" x="779.63" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>futex_setup_timer (2 samples)</title><rect class="c-kernel" x="623.60" y="689.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>SubscriptionBase::take_type_erased (114 samples)</title><rect class="c-ros" x="782.21" y="876.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="888.0">SubscriptionBa…</text>
+<g><title>hrtimer_init_sleeper (2 samples)</title><rect class="c-kernel" x="623.60" y="672.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_take (114 samples)</title><rect class="c-ros" x="782.21" y="859.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="871.0">rcl_take</text>
+<g><title>futex_unqueue (1 samples)</title><rect class="c-kernel" x="625.18" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::_take (114 samples)</title><rect class="c-ros" x="782.21" y="842.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="854.0">rmw_fastrtps_s…</text>
+<g><title>hrtimer_cancel (1 samples)</title><rect class="c-kernel" x="625.97" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::take (114 samples)</title><rect class="c-ros" x="782.21" y="825.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="837.0">DataReaderImpl…</text>
+<g><title>hrtimer_active (1 samples)</title><rect class="c-kernel" x="625.97" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::read_or_take (114 samples)</title><rect class="c-ros" x="782.21" y="808.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="820.0">DataReaderImpl…</text>
+<g><title>futex_wake (2 samples)</title><rect class="c-kernel" x="626.76" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (114 samples)</title><rect class="c-ros" x="782.21" y="791.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="803.0">Fast DDS</text>
+<g><title>get_futex_key (1 samples)</title><rect class="c-kernel" x="626.76" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>TypeSupport::deserialize (114 samples)</title><rect class="c-ros" x="782.21" y="774.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="786.0">TypeSupport::d…</text>
+<g><title>futex_wake (1 samples)</title><rect class="c-kernel" x="628.34" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw (114 samples)</title><rect class="c-ros" x="782.21" y="757.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="769.0">rmw</text>
+<g><title>syscall_exit_to_user_mode (4 samples)</title><rect class="c-kernel" x="629.91" y="757.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::cdr_deserialize (114 samples)</title><rect class="c-ros" x="782.21" y="740.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="752.0">typesupport_fa…</text>
+<g><title>__rseq_handle_notify_resume (2 samples)</title><rect class="c-kernel" x="629.91" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport (114 samples)</title><rect class="c-ros" x="782.21" y="723.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="735.0">typesupport</text>
+<g><title>__put_user_8 (1 samples)</title><rect class="c-kernel" x="629.91" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Cdr::deserialize_array (114 samples)</title><rect class="c-ros" x="782.21" y="706.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="718.0">Cdr::deseriali…</text>
+<g><title>mem_cgroup_handle_over_high (1 samples)</title><rect class="c-kernel" x="633.07" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc: copy or fill (114 samples)</title><rect class="c-copy" x="782.21" y="689.0" width="97.89" height="15.5" rx="1.5"/>
-<text class="fl" x="785.21" y="701.0">libc: copy or …</text>
+<g><title>syscall_exit_to_user_mode_prepare (1 samples)</title><rect class="c-kernel" x="633.86" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>_start (44 samples)</title><rect class="c-detector" x="880.51" y="876.0" width="37.54" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (9 samples)</title><rect class="c-copy" x="635.44" y="791.0" width="6.70" height="15.5" rx="1.5"/>
 </g>
-<g><title>libc (44 samples)</title><rect class="c-other" x="880.51" y="859.0" width="37.54" height="15.5" rx="1.5"/>
+<g><title>[vdso] (4 samples)</title><rect class="c-other" x="642.54" y="791.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>main (44 samples)</title><rect class="c-detector" x="880.51" y="842.0" width="37.54" height="15.5" rx="1.5"/>
+<g><title>__vdso_clock_gettime (2 samples)</title><rect class="c-other" x="645.69" y="791.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>spin (44 samples)</title><rect class="c-ros" x="880.51" y="825.0" width="37.54" height="15.5" rx="1.5"/>
+<g><title>pthread_cond_clockwait (7 samples)</title><rect class="c-other" x="647.27" y="808.0" width="5.12" height="15.5" rx="1.5"/>
 </g>
-<g><title>SingleThreadedExecutor::spin (44 samples)</title><rect class="c-ros" x="880.51" y="808.0" width="37.54" height="15.5" rx="1.5"/>
+<g><title>clock_gettime (2 samples)</title><rect class="c-other" x="652.80" y="808.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::get_next_executable (41 samples)</title><rect class="c-ros" x="880.51" y="791.0" width="34.95" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (2 samples)</title><rect class="c-other" x="654.37" y="808.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::wait_for_work (40 samples)</title><rect class="c-ros" x="880.51" y="774.0" width="34.09" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="655.95" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rclcpp (40 samples)</title><rect class="c-ros" x="880.51" y="757.0" width="34.09" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::do_timer_actions (35 samples)</title><rect class="c-ros" x="657.53" y="825.0" width="27.22" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_wait (30 samples)</title><rect class="c-ros" x="880.51" y="740.0" width="25.47" height="15.5" rx="1.5"/>
+<g><title>TimedEventImpl::trigger (30 samples)</title><rect class="c-ros" x="657.53" y="808.0" width="23.27" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_wait (28 samples)</title><rect class="c-ros" x="880.51" y="723.0" width="23.74" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (28 samples)</title><rect class="c-ros" x="657.53" y="791.0" width="21.69" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_wait (28 samples)</title><rect class="c-ros" x="880.51" y="706.0" width="23.74" height="15.5" rx="1.5"/>
+<g><title>WriterProxy::perform_heartbeat_response (27 samples)</title><rect class="c-ros" x="657.53" y="774.0" width="20.90" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSet::wait (7 samples)</title><rect class="c-ros" x="880.51" y="689.0" width="5.64" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::send_acknack (27 samples)</title><rect class="c-ros" x="657.53" y="757.0" width="20.90" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSetImpl::wait (7 samples)</title><rect class="c-ros" x="880.51" y="672.0" width="5.64" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::~RTPSMessageGroup (23 samples)</title><rect class="c-ros" x="657.53" y="740.0" width="17.75" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSetImpl::detach_condition (6 samples)</title><rect class="c-ros" x="886.54" y="689.0" width="4.77" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::send (23 samples)</title><rect class="c-ros" x="657.53" y="723.0" width="17.75" height="15.5" rx="1.5"/>
 </g>
-<g><title>ConditionNotifier::detach_from (2 samples)</title><rect class="c-ros" x="886.54" y="672.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>WriterProxy::send (22 samples)</title><rect class="c-ros" x="657.53" y="706.0" width="16.96" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (2 samples)</title><rect class="c-other" x="888.27" y="672.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (21 samples)</title><rect class="c-ros" x="657.53" y="689.0" width="16.17" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="889.99" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>SharedMemTransport::send (17 samples)</title><rect class="c-ros" x="657.53" y="672.0" width="13.01" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock@plt (1 samples)</title><rect class="c-ros" x="890.85" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatisticsParticipantImpl::on_rtps_sent (1 samples)</title><rect class="c-ros" x="670.94" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderImpl::get_first_untaken_info (4 samples)</title><rect class="c-ros" x="891.72" y="689.0" width="3.05" height="15.5" rx="1.5"/>
+<g><title>StatefulReader::send_sync_nts (1 samples)</title><rect class="c-ros" x="674.10" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataReaderHistory::get_first_untaken_info (3 samples)</title><rect class="c-ros" x="891.72" y="672.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::add_acknack (3 samples)</title><rect class="c-ros" x="675.68" y="740.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>WaitSetImpl::attach_condition (2 samples)</title><rect class="c-ros" x="895.16" y="689.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>StatisticsReaderImpl::on_acknack (2 samples)</title><rect class="c-ros" x="675.68" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>ConditionNotifier::attach_to (2 samples)</title><rect class="c-ros" x="895.16" y="672.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>StatisticsListenersImpl::are_statistics_writers_enabled (2 samples)</title><rect class="c-ros" x="675.68" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatusCondition::get_entity (1 samples)</title><rect class="c-ros" x="896.89" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageCreator::addSubmessageAcknack (1 samples)</title><rect class="c-ros" x="677.26" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatusConditionImpl::get_raw_status (1 samples)</title><rect class="c-ros" x="897.75" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WriterProxy::missing_changes (1 samples)</title><rect class="c-ros" x="678.04" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="897.75" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>libc (1 samples)</title><rect class="c-other" x="678.83" y="774.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>RMWSubscriptionEvent::get_statuscondition (1 samples)</title><rect class="c-ros" x="898.61" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>entry_SYSCALL_64_after_hwframe (1 samples)</title><rect class="c-kernel" x="678.83" y="757.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>GuardCondition::set_trigger_value (1 samples)</title><rect class="c-ros" x="899.48" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>do_syscall_64 (1 samples)</title><rect class="c-kernel" x="678.83" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>CustomPublisherInfo::get_listener (1 samples)</title><rect class="c-ros" x="900.34" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::send_periodic_heartbeat (2 samples)</title><rect class="c-ros" x="679.62" y="791.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_wait_set_add_service (3 samples)</title><rect class="c-ros" x="906.37" y="740.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>StatefulWriter::send_heartbeat_to_all_readers (2 samples)</title><rect class="c-ros" x="679.62" y="774.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_service_get_rmw_handle (1 samples)</title><rect class="c-ros" x="906.37" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::~RTPSMessageGroup (2 samples)</title><rect class="c-ros" x="679.62" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_service_is_valid (1 samples)</title><rect class="c-ros" x="906.37" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSMessageGroup::send (2 samples)</title><rect class="c-ros" x="679.62" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>rcl_wait_set_add_subscription (1 samples)</title><rect class="c-ros" x="908.96" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>LocatorSelectorSender::send (2 samples)</title><rect class="c-ros" x="679.62" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>SubscriptionBase::get_subscription_handle (1 samples)</title><rect class="c-ros" x="909.82" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RTPSWriter::send_nts (2 samples)</title><rect class="c-ros" x="679.62" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::get_next_ready_executable (1 samples)</title><rect class="c-ros" x="915.00" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>SharedMemTransport::send (1 samples)</title><rect class="c-ros" x="679.62" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rclcpp (1 samples)</title><rect class="c-ros" x="915.00" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>SharedMemTransport::push_discard (1 samples)</title><rect class="c-ros" x="679.62" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>EventHandlerBase::is_ready (1 samples)</title><rect class="c-ros" x="915.00" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>TimedEventImpl::trigger@plt (1 samples)</title><rect class="c-ros" x="681.20" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::get_next_ready_executable (2 samples)</title><rect class="c-ros" x="915.86" y="791.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::sort_timers@plt (1 samples)</title><rect class="c-ros" x="681.99" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>CallbackGroup::type (1 samples)</title><rect class="c-ros" x="915.86" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::sort_timers (1 samples)</title><rect class="c-ros" x="682.78" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>CallbackGroup::can_be_taken_from (1 samples)</title><rect class="c-ros" x="916.72" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="683.57" y="808.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::execute_any_executable (1 samples)</title><rect class="c-ros" x="917.58" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ResourceEvent::update_current_time (1 samples)</title><rect class="c-ros" x="685.15" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>[vdso] (8 samples)</title><rect class="c-other" x="918.44" y="876.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="685.93" y="825.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::onRosImageReceived (8 samples)</title><rect class="c-detector" x="925.34" y="876.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>SubscriptionBase::take_type_erased (183 samples)</title><rect class="c-ros" x="688.30" y="876.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="888.0">SubscriptionBase::tak…</text>
 </g>
-<g><title>WhyconRosInterface::processLatestFrame (8 samples)</title><rect class="c-detector" x="925.34" y="859.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>rcl_take (183 samples)</title><rect class="c-ros" x="688.30" y="859.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="871.0">rcl_take</text>
 </g>
-<g><title>WhyconRosInterface::publishResults (8 samples)</title><rect class="c-detector" x="925.34" y="842.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::_take (183 samples)</title><rect class="c-ros" x="688.30" y="842.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="854.0">rmw_fastrtps_shared_c…</text>
 </g>
-<g><title>WhyconRosInterface::publishSingleTF (8 samples)</title><rect class="c-detector" x="925.34" y="825.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::take (183 samples)</title><rect class="c-ros" x="688.30" y="825.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="837.0">DataReaderImpl::take</text>
 </g>
-<g><title>TransformBroadcaster::sendTransform (8 samples)</title><rect class="c-ros" x="925.34" y="808.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::read_or_take (183 samples)</title><rect class="c-ros" x="688.30" y="808.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="820.0">DataReaderImpl::read_…</text>
 </g>
-<g><title>librcl.so (8 samples)</title><rect class="c-ros" x="925.34" y="791.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (183 samples)</title><rect class="c-ros" x="688.30" y="791.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="803.0">Fast DDS</text>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (8 samples)</title><rect class="c-ros" x="925.34" y="774.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>TypeSupport::deserialize (183 samples)</title><rect class="c-ros" x="688.30" y="774.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="786.0">TypeSupport::deserial…</text>
 </g>
-<g><title>DataWriterImpl::write_w_timestamp (8 samples)</title><rect class="c-ros" x="925.34" y="757.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>rmw (183 samples)</title><rect class="c-ros" x="688.30" y="757.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="769.0">rmw</text>
 </g>
-<g><title>DataWriterImpl::perform_create_new_change (8 samples)</title><rect class="c-ros" x="925.34" y="740.0" width="6.50" height="15.5" rx="1.5"/>
+<g><title>typesupport_fastrtps_cpp::cdr_deserialize (183 samples)</title><rect class="c-ros" x="688.30" y="740.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="752.0">typesupport_fastrtps_…</text>
 </g>
-<g><title>StatefulWriter::unsent_change_added_to_history (3 samples)</title><rect class="c-ros" x="925.34" y="723.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>typesupport (183 samples)</title><rect class="c-ros" x="688.30" y="723.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="735.0">typesupport</text>
 </g>
-<g><title>StatefulWriter::check_acked_status (2 samples)</title><rect class="c-ros" x="925.34" y="706.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>Cdr::deserialize_array (183 samples)</title><rect class="c-ros" x="688.30" y="706.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="718.0">Cdr::deserialize_array</text>
 </g>
-<g><title>RTPSWriter::get_seq_num_min (1 samples)</title><rect class="c-ros" x="925.34" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>libc: copy or fill (183 samples)</title><rect class="c-copy" x="688.30" y="689.0" width="143.99" height="15.5" rx="1.5"/>
+<text class="fl" x="691.30" y="701.0">libc: copy or fill</text>
 </g>
-<g><title>History::get_min_change (1 samples)</title><rect class="c-ros" x="925.34" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>_start (55 samples)</title><rect class="c-detector" x="832.69" y="876.0" width="43.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_g (1 samples)</title><rect class="c-ros" x="926.20" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>libc (55 samples)</title><rect class="c-other" x="832.69" y="859.0" width="43.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatisticsWriterImpl::on_publish_throughput (1 samples)</title><rect class="c-ros" x="927.07" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>main (55 samples)</title><rect class="c-detector" x="832.69" y="842.0" width="43.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatisticsListenersImpl::are_statistics_writers_enabled (1 samples)</title><rect class="c-ros" x="927.07" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>spin (55 samples)</title><rect class="c-ros" x="832.69" y="825.0" width="43.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>TypeSupport::serialize (3 samples)</title><rect class="c-ros" x="927.93" y="723.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>SingleThreadedExecutor::spin (55 samples)</title><rect class="c-ros" x="832.69" y="808.0" width="43.00" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::cdr_serialize (3 samples)</title><rect class="c-ros" x="927.93" y="706.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>Executor::get_next_executable (53 samples)</title><rect class="c-ros" x="832.69" y="791.0" width="41.42" height="15.5" rx="1.5"/>
 </g>
-<g><title>strlen@plt (1 samples)</title><rect class="c-ros" x="927.93" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Executor::wait_for_work (50 samples)</title><rect class="c-ros" x="832.69" y="774.0" width="39.05" height="15.5" rx="1.5"/>
 </g>
-<g><title>Cdr::serialize (1 samples)</title><rect class="c-ros" x="928.79" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rclcpp (48 samples)</title><rect class="c-ros" x="832.69" y="757.0" width="37.47" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw (2 samples)</title><rect class="c-ros" x="930.52" y="723.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>rcl_wait (43 samples)</title><rect class="c-ros" x="832.69" y="740.0" width="33.53" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport (2 samples)</title><rect class="c-ros" x="930.52" y="706.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>rmw_wait (42 samples)</title><rect class="c-ros" x="832.69" y="723.0" width="32.74" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::get_serialized_size (2 samples)</title><rect class="c-ros" x="930.52" y="689.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>rmw_fastrtps_shared_cpp::__rmw_wait (42 samples)</title><rect class="c-ros" x="832.69" y="706.0" width="32.74" height="15.5" rx="1.5"/>
 </g>
-<g><title>typesupport_fastrtps_cpp::get_serialized_size@plt (1 samples)</title><rect class="c-ros" x="930.52" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WaitSet::wait (13 samples)</title><rect class="c-ros" x="832.69" y="689.0" width="9.86" height="15.5" rx="1.5"/>
 </g>
-<g><title>spin (5 samples)</title><rect class="c-ros" x="932.24" y="876.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>WaitSetImpl::wait (13 samples)</title><rect class="c-ros" x="832.69" y="672.0" width="9.86" height="15.5" rx="1.5"/>
 </g>
-<g><title>SingleThreadedExecutor::spin (5 samples)</title><rect class="c-ros" x="932.24" y="859.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>DataReaderImpl::get_first_untaken_info (11 samples)</title><rect class="c-ros" x="842.95" y="689.0" width="8.28" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::execute_any_executable (5 samples)</title><rect class="c-ros" x="932.24" y="842.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>DataReaderHistory::get_first_untaken_info (11 samples)</title><rect class="c-ros" x="842.95" y="672.0" width="8.28" height="15.5" rx="1.5"/>
 </g>
-<g><title>Executor::execute_subscription (5 samples)</title><rect class="c-ros" x="932.24" y="825.0" width="3.91" height="15.5" rx="1.5"/>
+<g><title>WaitSetImpl::detach_condition (4 samples)</title><rect class="c-ros" x="851.63" y="689.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>image_transport (3 samples)</title><rect class="c-ros" x="932.24" y="808.0" width="2.19" height="15.5" rx="1.5"/>
+<g><title>ConditionNotifier::detach_from (2 samples)</title><rect class="c-ros" x="851.63" y="672.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>SubscriptionBase::take_type_erased (2 samples)</title><rect class="c-ros" x="934.83" y="808.0" width="1.32" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_lock (1 samples)</title><rect class="c-other" x="853.21" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="936.55" y="876.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Fast DDS (1 samples)</title><rect class="c-ros" x="854.00" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::processLatestFrame (1 samples)</title><rect class="c-detector" x="937.41" y="876.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>WaitSetImpl::attach_condition (4 samples)</title><rect class="c-ros" x="854.79" y="689.0" width="2.76" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishResults (1 samples)</title><rect class="c-detector" x="937.41" y="859.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>ConditionNotifier::attach_to (3 samples)</title><rect class="c-ros" x="854.79" y="672.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishSingleTF (1 samples)</title><rect class="c-detector" x="937.41" y="842.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="857.15" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>TransformBroadcaster::sendTransform (1 samples)</title><rect class="c-ros" x="937.41" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rmw (1 samples)</title><rect class="c-ros" x="857.94" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>librcl.so (1 samples)</title><rect class="c-ros" x="937.41" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>new (1 samples)</title><rect class="c-other" x="857.94" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>rmw_fastrtps_shared_cpp::__rmw_publish (1 samples)</title><rect class="c-ros" x="937.41" y="791.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>StatusConditionImpl::get_raw_status (1 samples)</title><rect class="c-ros" x="858.73" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::write_w_timestamp (1 samples)</title><rect class="c-ros" x="937.41" y="774.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="858.73" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterImpl::perform_create_new_change (1 samples)</title><rect class="c-ros" x="937.41" y="757.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>RMWPublisherEvent::get_statuscondition (1 samples)</title><rect class="c-ros" x="859.52" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::unsent_change_added_to_history (1 samples)</title><rect class="c-ros" x="937.41" y="740.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>asm_sysvec_apic_timer_interrupt (1 samples)</title><rect class="c-kernel" x="865.83" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>StatefulWriter::check_acked_status (1 samples)</title><rect class="c-ros" x="937.41" y="723.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>sysvec_apic_timer_interrupt (1 samples)</title><rect class="c-kernel" x="865.83" y="706.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_g (1 samples)</title><rect class="c-ros" x="937.41" y="706.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>irq_exit_rcu (1 samples)</title><rect class="c-kernel" x="865.83" y="689.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>DataWriterHistory::remove_change_pub (1 samples)</title><rect class="c-ros" x="937.41" y="689.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>__irq_exit_rcu (1 samples)</title><rect class="c-kernel" x="865.83" y="672.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>History::remove_change (1 samples)</title><rect class="c-ros" x="937.41" y="672.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rcl_wait_set_add_service (2 samples)</title><rect class="c-ros" x="866.62" y="740.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>ResourceEvent::do_timer_actions (1 samples)</title><rect class="c-ros" x="938.28" y="876.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rcl_service_get_rmw_handle (2 samples)</title><rect class="c-ros" x="866.62" y="723.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>pthread_mutex_unlock (1 samples)</title><rect class="c-other" x="938.28" y="859.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rcl_service_is_valid (2 samples)</title><rect class="c-ros" x="866.62" y="706.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>WhyconRosInterface::publishResults (1 samples)</title><rect class="c-detector" x="939.14" y="876.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>detail::add_guard_condition_to_rcl_wait_set (1 samples)</title><rect class="c-ros" x="868.20" y="740.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::estimateMarkerPose (1 samples)</title><rect class="c-detector" x="939.14" y="859.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>GuardCondition::get_rcl_guard_condition (1 samples)</title><rect class="c-ros" x="868.20" y="723.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
-<g><title>LocalizationSystem::orientationFromNormal (1 samples)</title><rect class="c-detector" x="939.14" y="842.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>Executor::get_next_ready_executable (3 samples)</title><rect class="c-ros" x="872.14" y="774.0" width="1.97" height="15.5" rx="1.5"/>
 </g>
-<g><title>cv::normalize (1 samples)</title><rect class="c-detector" x="939.14" y="825.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>rclcpp (2 samples)</title><rect class="c-ros" x="872.14" y="757.0" width="1.18" height="15.5" rx="1.5"/>
 </g>
-<g><title>cv::norm (1 samples)</title><rect class="c-detector" x="939.14" y="808.0" width="0.46" height="15.5" rx="1.5"/>
+<g><title>TypedIntraProcessBuffer::has_data (1 samples)</title><rect class="c-detector" x="872.14" y="740.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>ExecutorNotifyWaitable::is_ready (1 samples)</title><rect class="c-ros" x="872.93" y="740.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>ros_trace_rclcpp_executor_get_next_ready (1 samples)</title><rect class="c-other" x="873.72" y="757.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (1 samples)</title><rect class="c-ros" x="874.51" y="791.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (1 samples)</title><rect class="c-ros" x="874.51" y="774.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>spin (51 samples)</title><rect class="c-ros" x="876.09" y="876.0" width="39.84" height="15.5" rx="1.5"/>
+</g>
+<g><title>SingleThreadedExecutor::spin (51 samples)</title><rect class="c-ros" x="876.09" y="859.0" width="39.84" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (51 samples)</title><rect class="c-ros" x="876.09" y="842.0" width="39.84" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (51 samples)</title><rect class="c-ros" x="876.09" y="825.0" width="39.84" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::handle_message (46 samples)</title><rect class="c-detector" x="876.09" y="808.0" width="35.90" height="15.5" rx="1.5"/>
+</g>
+<g><title>std::__do_visit (46 samples)</title><rect class="c-ros" x="876.09" y="791.0" width="35.90" height="15.5" rx="1.5"/>
+</g>
+<g><title>dispatch::lambda (46 samples)</title><rect class="c-other" x="876.09" y="774.0" width="35.90" height="15.5" rx="1.5"/>
+</g>
+<g><title>WhyconRosInterface::processLatestFrame (45 samples)</title><rect class="c-detector" x="876.09" y="757.0" width="35.11" height="15.5" rx="1.5"/>
+</g>
+<g><title>MultiMarkerDetector::detectMarkers (43 samples)</title><rect class="c-detector" x="876.09" y="740.0" width="33.53" height="15.5" rx="1.5"/>
+</g>
+<g><title>PackedBinaryImage::binarizeBitPacked (39 samples)</title><rect class="c-image" x="876.09" y="723.0" width="30.37" height="15.5" rx="1.5"/>
+</g>
+<g><title>DetectionContext::cleanupBuffer (1 samples)</title><rect class="c-detector" x="906.86" y="723.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>libc: copy or fill (1 samples)</title><rect class="c-copy" x="906.86" y="706.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::getCurrentThreshold (1 samples)</title><rect class="c-detector" x="907.65" y="723.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>ImageHandler::binarizeSIMD (1 samples)</title><rect class="c-image" x="908.44" y="723.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>Mat::empty (1 samples)</title><rect class="c-detector" x="908.44" y="706.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerTracker::update (2 samples)</title><rect class="c-detector" x="910.02" y="740.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>libm.so.6 (1 samples)</title><rect class="c-other" x="910.02" y="723.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>SubscriptionBase::get_delivered_message_kind (2 samples)</title><rect class="c-ros" x="912.38" y="808.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>SubscriptionBase::take_type_erased (1 samples)</title><rect class="c-ros" x="913.96" y="808.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>SubscriptionBase::matches_any_intra_process_publishers (1 samples)</title><rect class="c-ros" x="913.96" y="791.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>MessageInfo::~MessageInfo (1 samples)</title><rect class="c-ros" x="914.75" y="808.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::create_message (1 samples)</title><rect class="c-detector" x="915.54" y="808.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>SingleThreadedExecutor::spin (17 samples)</title><rect class="c-ros" x="916.33" y="876.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (17 samples)</title><rect class="c-ros" x="916.33" y="859.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (17 samples)</title><rect class="c-ros" x="916.33" y="842.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::handle_message (17 samples)</title><rect class="c-detector" x="916.33" y="825.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>std::__do_visit (17 samples)</title><rect class="c-ros" x="916.33" y="808.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>dispatch::lambda (17 samples)</title><rect class="c-other" x="916.33" y="791.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>WhyconRosInterface::processLatestFrame (17 samples)</title><rect class="c-detector" x="916.33" y="774.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>MultiMarkerDetector::detectMarkers (17 samples)</title><rect class="c-detector" x="916.33" y="757.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::detectMarkerPair (17 samples)</title><rect class="c-detector" x="916.33" y="740.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>.constprop.0] (17 samples)</title><rect class="c-detector" x="916.33" y="723.0" width="13.01" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::examineSeed (1 samples)</title><rect class="c-detector" x="916.33" y="706.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_any_executable (6 samples)</title><rect class="c-ros" x="929.74" y="876.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>Executor::execute_subscription (6 samples)</title><rect class="c-ros" x="929.74" y="859.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>Subscription::handle_message (6 samples)</title><rect class="c-detector" x="929.74" y="842.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>std::__do_visit (6 samples)</title><rect class="c-ros" x="929.74" y="825.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>dispatch::lambda (6 samples)</title><rect class="c-other" x="929.74" y="808.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>WhyconRosInterface::processLatestFrame (6 samples)</title><rect class="c-detector" x="929.74" y="791.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>MultiMarkerDetector::detectMarkers (6 samples)</title><rect class="c-detector" x="929.74" y="774.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::detectMarkerPair (6 samples)</title><rect class="c-detector" x="929.74" y="757.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>.constprop.0] (6 samples)</title><rect class="c-detector" x="929.74" y="740.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::examineSeed (6 samples)</title><rect class="c-detector" x="929.74" y="723.0" width="4.33" height="15.5" rx="1.5"/>
+</g>
+<g><title>pow (2 samples)</title><rect class="c-other" x="929.74" y="706.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>libm.so.6 (2 samples)</title><rect class="c-other" x="929.74" y="689.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::computeEllipseParameters (2 samples)</title><rect class="c-detector" x="931.32" y="706.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>MarkerDetector::analyzeMarkerCandidate (2 samples)</title><rect class="c-detector" x="932.90" y="706.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>rcl_take (3 samples)</title><rect class="c-ros" x="934.48" y="876.0" width="1.97" height="15.5" rx="1.5"/>
+</g>
+<g><title>rcutils_logging_logger_is_enabled_for (3 samples)</title><rect class="c-other" x="934.48" y="859.0" width="1.97" height="15.5" rx="1.5"/>
+</g>
+<g><title>rcutils_logging_get_logger_effective_level (2 samples)</title><rect class="c-other" x="934.48" y="842.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>rcutils_hash_map_get_size (2 samples)</title><rect class="c-other" x="934.48" y="825.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>Fast DDS (2 samples)</title><rect class="c-ros" x="936.84" y="876.0" width="1.18" height="15.5" rx="1.5"/>
+</g>
+<g><title>MessageReceiver::processCDRMsg (1 samples)</title><rect class="c-ros" x="938.42" y="876.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>MessageReceiver::readSubmessageHeader (1 samples)</title><rect class="c-ros" x="938.42" y="859.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>StatefulReader::processHeartbeatMsg (1 samples)</title><rect class="c-ros" x="939.21" y="876.0" width="0.40" height="15.5" rx="1.5"/>
+</g>
+<g><title>WriterProxy::process_heartbeat (1 samples)</title><rect class="c-ros" x="939.21" y="859.0" width="0.40" height="15.5" rx="1.5"/>
 </g>
 </svg>
