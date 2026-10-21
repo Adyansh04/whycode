@@ -22,7 +22,7 @@ detector:
   center_distance_tolerance_abs: 2.0      # Center distance tolerance (absolute)
   roundness_tolerance: 0.35               # Roundness tolerance
   circularity_tolerance: 0.15            # Circularity tolerance. The outline fit is exact, true markers sit within ~0.1
-  ratio_tolerance: 0.4                    # Black/white area ratio tolerance. Measured 0.76-1.11 of expected; rejects thin rings
+  ratio_tolerance: 0.4                    # Black/white area ratio tolerance. True markers measure 0.77-1.15 of expected (99%); rejects thin rings
   max_eccentricity: 0.9                   # Maximum eccentricity
   
   # Marker physical dimensions (meters)

@@ -82,5 +82,6 @@ flowchart LR
 - `src/core/*`: candidate detection, WhyCode decoding, pose math.
 - `src/tracking/*`: temporal data association and stabilization.
 - `src/triangulate/*`: 2-marker and 4-marker geometric triangulation nodes.
-- `src/utils/*`: YAML config loading and global config access.
+- `src/utils/*`: YAML config loading and global config access, and the values derived at startup from
+  the camera (`CameraScaling`) and the marker (`MarkerGeometry`) for `auto` keys.
 - `src/benchmarks/*`: benchmarks and self-checks of the hot kernels (built with `BUILD_BENCHMARKS`).

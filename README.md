@@ -91,6 +91,7 @@ measures, how to run it, and its latest results.
 ## Documentation
 
 * [docs/architecture.md](docs/architecture.md) - System architecture and module overview
+* [docs/configuration/README.md](docs/configuration/README.md) - Parameter reference and tuning
 
 ## Dependencies
 
@@ -252,20 +253,10 @@ played), `ground_truth`, `marker_size_m` and `rviz`.
 * **`config/whycon_config_*.yaml`**: Main configuration for the detector, including number of targets, marker dimensions, and tracking parameters.
 * **`config/camera_intrinsics_*.yaml`**: Camera calibration parameters, including the camera matrix and distortion coefficients.
 
-Every parameter is described next to its value in the YAML files. The loader has no defaults: a
-configuration must set every key.
-
-Three limits depend on the camera and default to `auto`: `detector.max_size` (the image area),
-`tracking.max_association_dist` and `tracking.max_unseen_frames`. They are derived at startup from
-the focal length in the intrinsics file, `camera.frame_rate` and the image size. Two values depend
-on the marker and default to `auto` too: `detector.inner_diameter`, the printed white centre with
-its teeth (0.6 of `outer_diameter` on `whycode_gen` markers, 0.41 on WhyCon markers), and
-`detector.center_distance_tolerance_ratio`, which allows for the teeth moving the centre's bounding
-box, more with fewer `identification.id_bits`. Derived values are logged once; a number overrides
-any of them. The detector's other pixel limits and its shape tolerances do not depend on the
-camera's resolution, and the shape tolerances not on the marker's design.
-
-A configuration detects one marker type: WhyCode with `identification.enabled`, WhyCon without.
+[docs/configuration/README.md](docs/configuration/README.md) describes every parameter, how the
+`auto` values are derived from the camera and the marker, and how to tune the checks. The loader has
+no defaults: a configuration must set every key. A configuration detects one marker type: WhyCode
+with `identification.enabled`, WhyCon without.
 
 ## Subscribed Topics
 
